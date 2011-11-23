@@ -1,0 +1,6 @@
+(set-face-attribute 'default nil :height 120)
+(setq-default compilation-ask-about-save nil)
+(setq-default indent-tabs-mode nil)
+(setq-default inhibit-startup-screen t)
+(setq-default show-trailing-whitespace t)
+(tool-bar-mode -1)
