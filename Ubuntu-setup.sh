@@ -1,12 +1,13 @@
 set -e
 
+# This script assumes that the id_rsa file has already been downloaded
+# to ~/Downloads.
+
 sudo apt-get -y install \
     git \
     emacs \
     php-elisp \
     #
-
-# Download id_rsa
 
 [ -d ~/.ssh ] || \
    ( mkdir ~/.ssh && chmod go-rwx ~/.ssh )
@@ -20,6 +21,11 @@ sudo apt-get -y install \
 for f in gitconfig emacs; do
     ln -s ~/github-misc/dot-$f ~/.$f;
 done
+
+which \
+    git \
+    emacs \
+    #
 
 ls -l \
     ~/.ssh \
