@@ -1,5 +1,9 @@
+#!/bin/bash
+
 # This script assumes that the id_rsa file has already been downloaded
 # to ~/Downloads.
+
+set -x
 
 sudo apt-get -y install \
     git \
