@@ -1,15 +1,27 @@
 #!/bin/bash
 
-# This script assumes that the id_rsa file has already been downloaded
-# to ~/Downloads.
+# This script assumes that the id_rsa file is already in ~/Downloads.
+
+# Debian:
+#     add self to sudo group, then graphically log out & back in
+#     I added myself to sudo group with the graphical admin tool.
+#     I don't know how to do that from the command line.
+# Debian as VirtualBox guest:
+#     mount VirtualBox Additions
+#     sudo apt-get remove virtualbox-ose-guest*
+#     sudo sh /media/cdrom0/VBoxLinuxAdditions.run
+# All:
+#    Download or paste contents of id_rsa into Downloads
+#    Download or paste contents of Ubuntu-setup.sh wherever
 
 set -x
 
 sudo apt-get -y install \
     git \
+    git-gui \
+    gitk \
     emacs \
     php-elisp \
-    git-el \
     || \
     exit
 
