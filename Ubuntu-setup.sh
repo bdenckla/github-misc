@@ -11,8 +11,8 @@
 #     sudo apt-get remove virtualbox-ose-guest*
 #     sudo sh /media/cdrom0/VBoxLinuxAdditions.run
 # All:
-#    Download or paste contents of id_rsa into Downloads
-#    Download or paste contents of Ubuntu-setup.sh wherever
+#    Download id_rsa from Google Docs into Downloads.
+#    Download this file by downloading github-misc from github as a tarball.
 
 set -x
 
