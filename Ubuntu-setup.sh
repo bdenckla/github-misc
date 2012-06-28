@@ -14,6 +14,15 @@
 #    Download id_rsa from Google Docs into Downloads.
 #    Download this file by downloading github-misc from github as a tarball.
 
+# Notes on Brother MFC-8660DN scanner install:
+# After install on 64-bit, do
+#
+#     cd /usr/lib64
+#     sudo cp libbrcolm2.so* libbrscandec2.so* /usr/lib
+#     sudo cp sane/libsane-brother2.so* /usr/lib/sane
+#
+# also do the thing where you edit some udev file to allow non-superuser use of the printer
+
 set -x
 
 sudo apt-get -y install \
