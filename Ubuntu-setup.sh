@@ -17,9 +17,10 @@
 # Notes on Brother MFC-8660DN scanner install:
 # After install on 64-bit, do
 #
-#     cd /usr/lib64
-#     sudo cp libbrcolm2.so* libbrscandec2.so* /usr/lib
-#     sudo cp sane/libsane-brother2.so* /usr/lib/sane
+#     cd /usr/lib
+#     for f in /usr/lib64/libbrcolm2.so* /usr/lib64/libbrscandec2.so*; do sudo ln -s $f; done
+#     cd /usr/lib/sane
+#     for f in /usr/lib64/sane/libsane-brother2.so*; do sudo ln -s $f; done
 #
 # also do the thing where you edit some udev file to allow non-superuser use of the printer
 
