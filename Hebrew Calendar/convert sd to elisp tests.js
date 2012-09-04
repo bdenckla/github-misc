@@ -23,13 +23,11 @@ function handle_date( date )
     hd = date[3];
 
     var outstr =
-        'rd: ' + rd + ' '
-        +
-        'hy: ' + hy + ' '
-        +
-        'hm: ' + hm + ' '
-        +
-        'hd: ' + hd + '\n';
+        '(hebrew-calendar-conversion-test ' +
+        rd + ' (list '
+        + hm + ' '
+        + hd + ' '
+        + hy + '))\n'
     ;
 
     process.stdout.write( outstr );
