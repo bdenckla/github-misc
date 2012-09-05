@@ -13,7 +13,17 @@ process.stdin.on('end', function () {
 
     pd = parsed.data;
 
+    header =
+        '(defun hebrew-calendar-conversion-test-data ()\n' +
+        '(list\n';
+
+    process.stdout.write( header );
+
     pd.forEach( handle_date );
+
+    footer = '))';
+
+    process.stdout.write( footer );
 });
 
 function handle_date( date )
@@ -24,6 +34,7 @@ function handle_date( date )
     hd = date[3];
 
     var outstr =
+        '        ' +
         '(list ' +
         rd + ' (list '
         + hm + ' '
