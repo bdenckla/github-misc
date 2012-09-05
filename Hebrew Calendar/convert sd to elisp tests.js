@@ -1,4 +1,3 @@
-// cat 'sample dates.json' | node 'convert sd to elisp tests.js'
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
