@@ -1,4 +1,7 @@
-(require 'cal-hebrew)
+;(require 'cal-hebrew)
+
+(load-file "./cal-hebrew.el")
+(load-file "./cal-hebrew-test-data.el")
 
 (defun hebrew-calendar-conversion-test-2 (rd hd)
   (let
@@ -12,11 +15,6 @@
 
 (defun hebrew-calendar-conversion-test (rdhd)
   (apply 'hebrew-calendar-conversion-test-2 rdhd))
-
-(defun hebrew-calendar-conversion-test-data ()
-  (list (list -214193 (list 5 11 3174))
-        (list -61387 (list 9 25 3593))
-        (list 25469 (list 7 3 3831))))
 
 (defun hebrew-calendar-conversion-test-results ()
   (mapcar 'hebrew-calendar-conversion-test
