@@ -1,2 +1,5 @@
 http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/lisp/calendar/cal-hebrew.el
 
+Common LISPs to try: clisp, gcl, sbcl
+
+next languages: Scheme, Clojure

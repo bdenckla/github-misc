@@ -3,28 +3,28 @@
 (load-file "./cal-hebrew.el")
 (load-file "./cal-hebrew-test-data.el")
 
-(defun hebrew-calendar-conversion-test-3 (aymd eymd ard erd)
+(defun hebrew-calendar-conversion-test-3 (amdy emdy ard erd)
   (let
       ((eq-rd (equal ard erd))
-       (eq-ymd (equal aymd eymd)))
-    (if (and eq-rd eq-ymd)
+       (eq-mdy (equal amdy emdy)))
+    (if (and eq-rd eq-mdy)
           nil
-          (list (list aymd eymd ard erd)))))
+          (list (list amdy emdy ard erd)))))
 
 (defun header ()
-  (list "actual Hebrew year-month-day"
-        "expected Hebrew year-month-day"
+  (list "actual Hebrew month-day-year"
+        "expected Hebrew month-day-year"
         "actual Rata Die"
         "expected Rata Die" ))
 
-(defun hebrew-calendar-conversion-test-2 (rd ymd)
+(defun hebrew-calendar-conversion-test-2 (rd mdy)
   (let
-      ((aymd (calendar-hebrew-from-absolute rd))
-       (ard (calendar-hebrew-to-absolute ymd)))
-    (hebrew-calendar-conversion-test-3 aymd ymd ard rd)))
+      ((amdy (calendar-hebrew-from-absolute rd))
+       (ard (calendar-hebrew-to-absolute mdy)))
+    (hebrew-calendar-conversion-test-3 amdy mdy ard rd)))
 
-(defun hebrew-calendar-conversion-test (rd-and-ymd)
-  (apply 'hebrew-calendar-conversion-test-2 rd-and-ymd))
+(defun hebrew-calendar-conversion-test (rd-and-mdy)
+  (apply 'hebrew-calendar-conversion-test-2 rd-and-mdy))
 
 (defun hebrew-calendar-conversion-test-results-3 ()
   (mapcar 'hebrew-calendar-conversion-test
