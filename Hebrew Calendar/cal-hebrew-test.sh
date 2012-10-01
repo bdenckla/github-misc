@@ -3,6 +3,8 @@
 set -e
 set -x
 
-'./convert sd to elisp tests.sh'
+cat 'sample dates.json' \
+    | node 'cal-hebrew-generate-test-data.js' \
+    > cal-hebrew-test-data.el
 
 emacs --no-site-file --script cal-hebrew-test.el
