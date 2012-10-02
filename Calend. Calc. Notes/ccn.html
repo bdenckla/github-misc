@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Notes on Calendrical Calculations</title>
+  </head>
+  <body>
+
+    <h1>Notes on <em>Calendrical Calculations</em></h1>
+
+    <p><em>Calendrical Calculations</em>, by Dershowitz and Reingold,
+    is a great source of information about the Hebrew Calendar. Heck,
+    it seems to be <em>the</em> source, as far as I can tell.</p>
+
+    <p>But, one thing I found a bit difficult in it was that the same
+    quantity appears in different guises.</p>
+
+    <p>In particular,
+
+    <table border="1">
+      <tr><td>5 hours and 204 parts after sunset (6 p.m.)</td><td>page 92 line 6</td></tr>
+      <tr><td>-(48m 40s)</td><td>page 95 equation 7.18</td></tr>
+      <tr><td>-876/25920 [days]</td><td>page 95 equation 7.19</td></tr>
+      <tr><td>11h 11m 20s&mdash;that is, 12,084 parts</td><td>page 96 line 12</td></tr>
+      <tr><td>12084 [parts]</td><td>page 97 equation 7.20</td></tr>
+    </table>
+
+    </p>
+
+    <p>These normalize to the following. (Recall that there are 18
+    parts to a minute.)
+
+    <table border="0">
+      <tr><th>-</th><th>h</th><th>m</th><th>p</th></tr>
+      <tr><td></td><td align="right">23</td><td align="right">11</td><td align="right">6</td></tr>
+      <tr><td>-</td><td align="right"></td><td align="right">48</td><td align="right">12</td></tr>
+      <tr><td>-</td><td align="right"></td><td align="right">48</td><td align="right">12</td></tr>
+      <tr><td></td><td align="right">11</td><td align="right">11</td><td align="right">6</td></tr>
+      <tr><td></td><td align="right">11</td><td align="right">11</td><td align="right">6</td></tr>
+    </table>
+
+    </p>
+
+    <p>These can be expressed in terms of -(48m 12p) as follows.
+
+    <ol>
+      <li>-(48m 12p) + 24h</li>
+      <li>-(48m 12p)</li>
+      <li>-(48m 12p)</li>
+      <li>-(48m 12p) + 12h</li>
+      <li>-(48m 12p) + 12h</li>
+    </ol>
+
+    </p>
+
+    <p></p>
+
+  </body>
+</html>
