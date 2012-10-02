@@ -10,4 +10,4 @@ cat 'sample dates.json' \
     | node 'calendrica-generate-test-data.js' \
     > calendrica-test-data.cl
 
-clisp calendrica-3.0-test.cl
+clisp calendrica-tw-test.lisp
