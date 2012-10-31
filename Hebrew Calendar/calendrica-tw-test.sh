@@ -6,8 +6,11 @@ set -x
 which clisp || \
     sudo apt-get -y install clisp
 
+which nodejs || \
+    sudo apt-get -y install nodejs
+
 cat 'sample dates.json' \
-    | node 'calendrica-generate-test-data.js' \
+    | nodejs 'calendrica-generate-test-data.js' \
     > calendrica-test-data.cl
 
 clisp calendrica-tw-test.lisp
