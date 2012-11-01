@@ -643,26 +643,51 @@
   ;; or one day later.
   (let* ((months-elapsed  ; Since start of Hebrew calendar.
           (quotient (- (* 235 h-year) 234) 19))
-         (parts-elapsed; Fractions of days since prior noon.
-          (+ 12084 (* 13753 months-elapsed)))
          (days  ; Whole days since prior noon.
           (+ (* 29 months-elapsed)
-             (quotient parts-elapsed 25920)))
-      ;; If (* 13753 months-elapsed) causes integers that
-      ;; are too large, use instead:
-      ;; (parts-elapsed
-      ;;  (+ 204 (* 793 (mod months-elapsed 1080))))
-      ;; (hours-elapsed
-      ;;  (+ 11 (* 12 months-elapsed)
-      ;;     (* 793 (quotient months-elapsed 1080))
-      ;;     (quotient parts-elapsed 1080)))
-      ;; (days
-      ;;  (+ (* 29 months-elapsed)
-      ;;     (quotient hours-elapsed 24)))
+             (leftover-days-3 months-elapsed)))
          )
     (if (< (mod (* 3 (1+ days)) 7) 3); Sun, Wed, or Fri
         (+ days 1) ; Delay one day.
       days)))
+
+(defun leftover-days (months-elapsed)
+  (let* ((parts-elapsed; Fractions of days since prior noon.
+          (+ 12084 (* 13753 months-elapsed))))
+    (quotient parts-elapsed 25920)))
+
+(defun leftover-days-2 (months-elapsed)
+  ;; This fn is to be used if (* 13753 months-elapsed) causes integers
+  ;; that are too large.
+  (let* ((parts-elapsed
+          (+ 204 (* 793 (mod months-elapsed 1080))))
+         (hours-elapsed
+          (+ 11 (* 12 months-elapsed)
+             (* 793 (quotient months-elapsed 1080))
+             (quotient parts-elapsed 1080))))
+    (quotient hours-elapsed 24)))
+
+(defun leftover-days-3 (months-elapsed)
+  ;; This fn is to be used if (* 13753 months-elapsed) causes integers
+  ;; that are too large.
+  (let* ((c1 '(2 36 360 25920))
+         (c2 '(12960 720 72 1))
+         (qrm (lambda (c) (quo-rem months-elapsed c)))
+         (qr (mapcar qrm c1))
+         (q (mapcar 'car qr))
+         (r (mapcar 'cadr qr))
+         (p (+ 12084 (dot r c2))))
+    (+ (sum-sequence q)
+       (quotient p 25920))))
+
+(defun quo-rem (x y)
+  (multiple-value-list (floor x y)))
+
+(defun sum-sequence (s)
+  (reduce #'+ s))
+
+(defun dot (x y)
+  (sum-sequence (mapcar #'* x y)))
 
 (defun hebrew-new-year (h-year)
   ;; TYPE hebrew-year -> fixed-date
