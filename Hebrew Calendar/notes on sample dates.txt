@@ -1,0 +1,10 @@
+The date 3174,5,10 is good for testing since its conversion to
+R.D. shows good sensitivity to the constant of 12084 parts in the
+algorithm. In particular, if you tweak it to 12078 or below, the
+conversion will be incorrect. I think this has to do with the fact
+that the molad of Tishri in the next year falls only 5 parts after
+noon or something like that.
+
+I feel like we should have a date that is similarly sensitive on the
+high side, e.g. a date for which conversion to R.D. fails if you tweak
+12084 it to 12090 or above.
