@@ -4,31 +4,42 @@
 (defun months-to-parts (months)
   (mod (+ 12084 (* 13753 months)) 25920))
 
-(defun ymp (years)
-  (let*
-      ((months (years-to-months years))
-       (parts (months-to-parts months)))
-    (list years months parts (- parts 25920))))
+(defun years-to-parts (years)
+  (months-to-parts (years-to-months years)))
 
-; extracts the "parts" member of a ymp (year-month-parts)
-(defun ymp-p (ymp)
-  (third ymp))
+(defun years-to-yp (years)
+  (list "years:" years
+        "parts:" (years-to-parts years)))
+
+; extracts the "parts" member of a yp (year/parts pair)
+(defun yp-p (yp)
+  (fourth yp))
 
 (defun iota (count)
   (loop repeat count for i from 0 collect i))
 
-(defun candidates ()
-  (mapcar 'ymp (iota 7000)))
+(defun candidate-years ()
+  (iota 7000))
 
-(defun return-the-better (cmp)
-  (lambda (a b)
-    (if (funcall cmp (ymp-p a) (ymp-p b)) a b)))
+(defun candidate-yps ()
+  (mapcar 'years-to-yp (candidate-years)))
 
-(defun find-best-test-date (cmp)
-  (reduce (return-the-better cmp) (candidates)))
+(defun return-the-better-yp (cmp)
+  (lambda (a b) ; a and b have type yp
+    (if (funcall cmp (yp-p a) (yp-p b)) a b)))
 
-(defun find-best-test-dates ()
-  (list (find-best-test-date '<)
-        (find-best-test-date '>)))
+(defun best-yp (cmp)
+  (reduce (return-the-better-yp cmp) (candidate-yps)))
 
-(print (find-best-test-dates))
+(defun best-two-yps ()
+  (list (best-yp '<)
+        (best-yp '>)))
+
+; psd: parts short of a day
+(defun add-psd (yp)
+  (append yp (list "psd:" (- 25920 (yp-p yp)))))
+
+(defun best-two-yps-with-psd ()
+  (mapcar 'add-psd (best-two-yps)))
+
+(print (best-two-yps-with-psd))
