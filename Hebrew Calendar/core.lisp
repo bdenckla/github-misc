@@ -1,89 +1,3 @@
-;;;; 
-;;;; CALENDRICA 3.0 -- Common Lisp
-;;;; E. M. Reingold and N. Dershowitz
-;;;;
-;;;; ================================================================
-;;;; 
-;;;; The Functions (code, comments, and definitions) contained in this
-;;;; file (the "Program") were written by Edward M. Reingold and Nachum
-;;;; Dershowitz (the "Authors"), who retain all rights to them except as
-;;;; granted in the License and subject to the warranty and liability
-;;;; limitations below.  These Functions are explained in the Authors'
-;;;; book, "Calendrical Calculations", 3rd ed. (Cambridge University
-;;;; Press, 2008), and are subject to an international copyright.
-;;;;
-;;;; The Authors' public service intent is more liberal than suggested
-;;;; by the License below, as are their licensing policies for otherwise
-;;;; nonallowed uses such as--without limitation--those in commercial,
-;;;; web-site, and large-scale academic contexts.  Please see the
-;;;; web-site
-;;;;
-;;;;     http://www.calendarists.com
-;;;;
-;;;; for all uses not authorized below; in case there is cause for doubt
-;;;; about whether a use you contemplate is authorized, please contact
-;;;; the Authors (e-mail: reingold@iit.edu).  For commercial licensing
-;;;; information, contact the first author at the Department of Computer
-;;;; Science, Illinois Institute of Technology, Chicago, IL 60616-3729 USA.
-;;;;
-;;;; 1. LICENSE.  The Authors grant you a license for personal use.
-;;;; This means that for strictly personal use you may copy and use the
-;;;; code, and keep a backup or archival copy also.  The Authors grant you a 
-;;;; license for re-use within non-commercial, non-profit softeare provided prominent
-;;;; credit is given and the Authors' rights are preserved.  Any other uses,
-;;;; including without limitation, allowing the code or its output to be
-;;;; accessed, used, or available to others, is not permitted.
-;;;;
-;;;; 2. WARRANTY.
-;;;;
-;;;; (a) THE AUTHORS PROVIDE NO WARRANTIES OF ANY KIND, EITHER
-;;;;     EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITING THE
-;;;;     GENERALITY OF THE FOREGOING, ANY IMPLIED WARRANTY OF
-;;;;     MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
-;;;;
-;;;; (b) THE AUTHORS SHALL NOT BE LIABLE TO YOU OR ANY THIRD PARTIES
-;;;;     FOR DAMAGES OF ANY KIND, INCLUDING WITHOUT LIMITATION, ANY LOST
-;;;;     PROFITS, LOST SAVINGS, OR ANY OTHER INCIDENTAL OR CONSEQUENTIAL
-;;;;     DAMAGES ARISING OUT OF OR RELATED TO THE USE, INABILITY TO USE,
-;;;;     OR INACCURACY OF CALCULATIONS, OF THE CODE AND FUNCTIONS
-;;;;     CONTAINED HEREIN, OR THE BREACH OF ANY EXPRESS OR IMPLIED
-;;;;     WARRANTY, EVEN IF THE AUTHORS OR PUBLISHER HAVE BEEN ADVISED OF
-;;;;     THE POSSIBILITY OF THOSE DAMAGES.
-;;;;
-;;;; (c) THE FOREGOING WARRANTY MAY GIVE YOU SPECIFIC LEGAL
-;;;;     RIGHTS WHICH MAY VARY FROM STATE TO STATE IN THE U.S.A.
-;;;;
-;;;; 3. LIMITATION OF LICENSEE REMEDIES.  You acknowledge and agree that
-;;;; your exclusive remedy (in law or in equity), and Authors' entire
-;;;; liability with respect to the material herein, for any breach of
-;;;; representation or for any inaccuracy shall be a refund of the license
-;;;; fee or service and handling charge which you paid the Authors, if any.
-;;;;
-;;;; SOME STATES IN THE U.S.A. DO NOT ALLOW THE EXCLUSION OR LIMITATION OF
-;;;; LIABILITY FOR INCIDENTAL OR CONSEQUENTIAL DAMAGES, SO THE ABOVE
-;;;; EXCLUSIONS OR LIMITATION MAY NOT APPLY TO YOU.
-;;;;
-;;;; 4. DISCLAIMER.  Except as expressly set forth above, the Authors:
-;;;;
-;;;;   (a) make no other warranties with respect to the material in the
-;;;;   Program and expressly disclaim any others;
-;;;;
-;;;;   (b) do not warrant that the material contained in the Program will
-;;;;   meet your requirements or that their operation shall be
-;;;;   uninterrupted or error-free;
-;;;;
-;;;;   (c) license this material on an "as is" basis, and the entire risk
-;;;;   as to the quality, accuracy, and performance of the Program is
-;;;;   yours, should the code prove defective (except as expressly
-;;;;   warranted herein).  You alone assume the entire cost of all
-;;;;   necessary corrections.
-;;;;
-;;;; Sample values for the functions (useful for debugging) are given in
-;;;; Appendix C of the book and on the accompanying CD.  
-;;;; These sample values are not available electronically.
-
-;;;; Last modified 23 August 2007.
-
 (if (not (find-package "CC3"))
     (defpackage "CC3"))
 (in-package "CC3")
@@ -618,22 +532,31 @@
       29
     30))
 
-(defun molad (h-month h-year)
-  ;; TYPE (hebrew-month hebrew-year) -> moment
-  ;; Moment of mean conjunction of $h-month$ in Hebrew
-  ;; $h-year$.
-  (let* ((y ;; Treat Nisan as start of year.
-          (if (< h-month tishri)
-              (1+ h-year)
-            h-year))
-         (months-elapsed
-          (+ (- h-month tishri)  ;; Months this year.
-             (quotient ;; Months until New Year.
-               (- (* 235 y) 234) 
-               19))))
-    (+ hebrew-epoch
-       -876/25920
-       (* months-elapsed (+ 29 (hr 12) 793/25920)))))
+(defconstant years-to-months-phase -234)
+
+(defconstant epoch-phase 12084)
+
+(defconstant parts-per-day 25920)
+
+(defconstant parts-per-lunation
+  (+ (* 29 parts-per-day)
+     13753))
+
+(defun avoid-certain-days-of-week (days)
+  (+ days
+     (if (< (mod (* 3 (1+ days)) 7) 3); Sun, Wed, or Fri
+         1 ; Delay one day.
+       0)))
+
+(defun months-elapsed (h-year)
+  (quotient (+ (* 235 h-year) years-to-months-phase) 19))
+
+(defun parts-elapsed (h-year)
+  (+ (* (months-elapsed h-year) parts-per-lunation)
+     epoch-phase))
+
+(defun days-elapsed (h-year)
+  (quotient (parts-elapsed h-year) parts-per-day))
 
 (defun hebrew-calendar-elapsed-days (h-year)
   ;; TYPE hebrew-year -> integer
@@ -641,53 +564,7 @@
   ;; to the epoch of the Hebrew calendar to the mean
   ;; conjunction (molad) of Tishri of Hebrew year $h-year$,
   ;; or one day later.
-  (let* ((months-elapsed  ; Since start of Hebrew calendar.
-          (quotient (- (* 235 h-year) 234) 19))
-         (days  ; Whole days since prior noon.
-          (+ (* 29 months-elapsed)
-             (leftover-days months-elapsed)))
-         )
-    (if (< (mod (* 3 (1+ days)) 7) 3); Sun, Wed, or Fri
-        (+ days 1) ; Delay one day.
-      days)))
-
-(defun leftover-days (months-elapsed)
-  (let* ((parts-elapsed; Fractions of days since prior noon.
-          (+ 12084 (* 13753 months-elapsed))))
-    (quotient parts-elapsed 25920)))
-
-(defun leftover-days-2 (months-elapsed)
-  ;; This fn is to be used if (* 13753 months-elapsed) causes integers
-  ;; that are too large.
-  (let* ((parts-elapsed
-          (+ 204 (* 793 (mod months-elapsed 1080))))
-         (hours-elapsed
-          (+ 11 (* 12 months-elapsed)
-             (* 793 (quotient months-elapsed 1080))
-             (quotient parts-elapsed 1080))))
-    (quotient hours-elapsed 24)))
-
-(defun leftover-days-3 (months-elapsed)
-  ;; This fn is to be used if (* 13753 months-elapsed) causes integers
-  ;; that are too large.
-  (let* ((c1 '(2 36 360 25920))
-         (c2 '(12960 720 72 1))
-         (qrm (lambda (c) (quo-rem months-elapsed c)))
-         (qr (mapcar qrm c1))
-         (q (mapcar 'car qr))
-         (r (mapcar 'cadr qr))
-         (p (+ 12084 (dot r c2))))
-    (+ (sum-sequence q)
-       (quotient p 25920))))
-
-(defun quo-rem (x y)
-  (multiple-value-list (floor x y)))
-
-(defun sum-sequence (s)
-  (reduce #'+ s))
-
-(defun dot (x y)
-  (sum-sequence (mapcar #'* x y)))
+  (avoid-certain-days-of-week (days-elapsed h-year)))
 
 (defun hebrew-new-year (h-year)
   ;; TYPE hebrew-year -> fixed-date

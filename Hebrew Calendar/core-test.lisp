@@ -1,7 +1,7 @@
 ;(require 'cal-hebrew)
 
-(load "./calendrica-3.0.cl")
-(load "./calendrica-test-data.cl")
+(load "./core.lisp")
+(load "./calendrica-test-data.lisp")
 
 (defun hebrew-calendar-conversion-test-3 (aymd eymd ard erd)
   (let

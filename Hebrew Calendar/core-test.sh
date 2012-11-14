@@ -5,4 +5,4 @@ set -x
 
 ./generic-clisp-test.sh
 
-clisp calendrica-3.0-test.lisp
+clisp core-test.lisp

@@ -1,10 +1,29 @@
-The date 3174,5,10 is good for testing since its conversion to
+The date 3174-05-10 is good for testing since its conversion to
 R.D. shows good sensitivity to the constant of 12084 parts in the
-algorithm. In particular, if you tweak it to 12078 or below, the
-conversion will be incorrect. I think this has to do with the fact
-that the molad of Tishri in the next year falls only 5 parts after
-noon or something like that.
+algorithm. In particular, if you tweak that constant to 12078 or
+below, the conversion will be incorrect. I think this has to do with
+the fact that the molad of Tishri in the next year falls only 5 parts
+after noon. Or something like that.
 
-I feel like we should have a date that is similarly sensitive on the
-high side, e.g. a date for which conversion to R.D. fails if you tweak
-12084 it to 12090 or above.
+The date 2994-01-01 is even more sensitive, but on the high side: if
+you tweak 12084 to 12086 or above, the conversion will be incorrect.
+
+3174-05-10 was already in the test set of Reingold and
+Dershowitz. 2994-01-01 was arrived at by running the following
+program.
+
+    ./find-good-test-dates.sh
+
+That program gave the following output. (The abbreviation "psd" stands
+for "parts short of a day.")
+
+    (("years:" 3175 "parts:"     5 "psd:" 25915)
+     ("years:" 2994 "parts:" 25918 "psd:"     2))
+
+The sensitivity of year 3175 discovered by this process was already
+covered by the 3174-05-10 test date. (Presumably 3174 reflects the
+future sensitivity of 3175 because of the interdependence of neighbor
+years.)
+
+The sensitivity of year 2994 discovered by this process caused me to
+add 2994-01-01 to the test set.

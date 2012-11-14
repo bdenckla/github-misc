@@ -1,5 +1,6 @@
 (defun hebrew-calendar-conversion-test-data ()
 (list
+        (list -280057 (list 1 1 2994))
         (list -214193 (list 5 10 3174))
         (list -61387 (list 9 25 3593))
         (list 25469 (list 7 3 3831))
