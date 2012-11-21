@@ -543,8 +543,11 @@
      13753))
 
 (defun avoid-certain-days-of-week (days)
+  ;; The argument "days" is days since the Hebrew epoch, which was a
+  ;; Monday.  I.e. day 0 was a Monday.  So, for example, day 2 was a
+  ;; Wednesday, as is any day whose 7-modulus is 2.
   (+ days
-     (if (< (mod (* 3 (1+ days)) 7) 3); Sun, Wed, or Fri
+     (if (member (mod days 7) '(2 4 6)); W, F, or Su
          1 ; Delay one day.
        0)))
 
