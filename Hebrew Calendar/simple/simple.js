@@ -41,7 +41,7 @@ var constant_m = math("m");
 
 var h = "is";
 
-var i = "29 13753/29520 days (about 29.531 days)";
+var i = "29 13753/29520 days per month (about 29.531 days per month)";
 
 var hi = sp( h, i );
 
@@ -56,8 +56,8 @@ var constant_y0 = math("a");
 var m = "is";
 
 var n =
-    "235/19"
-    + " (about 12.37)";
+    "235/19 months per year"
+    + " (about 12.37 months per year)";
 
 var klmn = sp( co( k, constant_y0, m ), n );
 
@@ -69,7 +69,7 @@ var constant_y = math("y");
 
 var k3 = "is closely related. It is the same estimate of a year, but expressed in days:"
 
-var k4 = "a" + constant_m + " (about 365.2468 days)";
+var k4 = "a" + constant_m + " (about 365.2468 days per year)";
 
 var klmn2 = sp( co( k2, constant_y, k3 ), k4 );
 
@@ -84,36 +84,33 @@ var r = "Divide time into chunks of 19 years. For each chunk, make 7 years have 
 var s = "This will make the year have mean length ((7 * 13 + 12 * 12)/19)"+constant_m+", which is (235/19)"+constant_m;
 
 /*
-  The SLC's job is to say what multiple of d begins any year. I.e. it
-  says, for any year n, where New Year's Day falls, in terms of whole
-  days elapsed since the SLC origin. We will abbreviate "SLC New
-  Year's Day for year n" to s(n).
+  The SLC will tell us, for any year n, where New Year's Day falls, in
+  terms of whole days elapsed since the SLC origin. We will abbreviate
+  "SLC New Year's Day for year n" to s(n).
 
-  We want s(n) to fall near ny <emph>and</emph> near a multiple of
-  m. This additional criteria is what makes the SLC a lunisolar
-  calendar rather than just a solar calendar.
+  We want s(n) to be near ny and be near a multiple of m. These two
+  criteria make the SLC a lunisolar calendar.
 
   But, how near is near? The answer is as follows.  We want s(n) to
-  fall on ny or less than m after it. Additionally, we want s(n) to
-  fall on a multiple of m or less than a day after it.
+  fall on or less than m after ny. (s(n) - ny is in [0,m).)
+  Additionally, we want s(n) to fall on or less than a day after a
+  multiple of m. (s(n) - km is in [0,1) for some integer k.)
 
-  Let's split the SLC's job in two to see how it does all this.
+  How can we define s(n) such that it does all this?
 
-  The first half of the SLC's job is to say what multiple of m begins
-  any year. I.e. it says, for any year n, where "New Year's Month"
+  First let's figure out, for any year n, where "New Year's Month"
   falls, in terms of whole months elapsed since the SLC origin. We
   will abbreviate "SLC New Year's Month for year n" to σ(n). Though
   the word "month" has many different meanings, here we use it as a
   synonym for m.
 
-  The value of σ(n) is the multiple of m that falls on ny or is less
-  than m after it. In mathematical notation, this has the succint
-  description floor( ny/m ), which reduces to floor( an ).
+  The value of σ(n) is the multiple of m that falls on or less
+  than m after ny. I.e. σ(n) = k where km - ny is in [0,m). In closed
+  form, σ(n) = floor(ny/m), which reduces to floor(na).
 
-  The second half of the SLC's job is to say what multiple of d begins
-  the month that begins any year. This is floor( mσ(n) ).
+  The value of s(n) is then floor(mσ(n)).
 
-  Putting the two together, s(n) = floor( m*floor( an )
+  Or, "inlining" σ(n), s(n) = floor(m*floor( an )).
 
 */
 
