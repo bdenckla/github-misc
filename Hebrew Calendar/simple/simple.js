@@ -62,7 +62,7 @@ var c4 = "In other words, using only an integral number of days per calendar yea
 var c5 = "It does this, of course, by varying the length of the calendar year.";
 
 var b6 = "Really what the SLC attempts to reconcile are approximations of the"
-    +" mean lengths of these cycles.";
+    +" mean lengths of these cycles, not the cycles themselves."
 
 var b7 = "I.e. the SLC is an arithmetic calendar.";
 
@@ -71,30 +71,20 @@ var b8 = "The values of its constants are motivated, of course, by a desire"
 
 var b9 = "But the SLC is an algorithm divorced from observation.";
 
-var b10 = "The SLC only needs to approximate 2 of the 3 cycles since it is"
-    +" only concerned with the ratios between the cycles.";
+var b10 = "Let m and y be the SLC's approximations for the synodic month and tropical year.";
 
-var b11 = "The SLC approximates the synodic month and tropical year, leaving"
-    +" the solar day as the unit of time.";
+var b11 = "Using only an integral number of days per calendar year, the SLC tries to make calendar year n start near ny and near km for some integer m.";
 
-var b12 = "In other words, the day is undefined and the approximations of the"
-    +" synodic month and tropical year are defined with respect to the day.";
+var b12 = "So ny is the SLC's model of \"the same phase of the tropical year\" and \"km for some integer m\" is the SLC's model of \"the same phase of the synodic month\"."
 
-var b13 = "This is a sensible division, since the day is the shortest cycle,"
-    +" but everything would work equally well with either of the other"
-    +" choices of unit.";
-
-var b14 = "Though the day is the unit of time, we shall see that it is not the"
-    +" smallest amount of time used; very small fractions of a day are"
-    +" used.";
 
 var bs1 = se( b1, b2, b3, b4, b5 );
 
-var cs = se( c1, c2, c3a, c4 );
+var cs = se( c1, c2, c3a, c4, c5 );
 
 var bs2 = se( b6, b7, b8, b9 );
 
-var bs3 = se( b10, b11, b12, b13, b14 );
+var bs3 = se( b10, b11, b12 );
 
 
 var e = "The approximations of the synodic month and tropical year are as follows.";
@@ -123,7 +113,7 @@ var n =
 
 var klmn = sp( co( k, constant_y0, m ), n );
 
-var k2 = "For convenience the SLC uses a derived constant";
+var k2 = "For convenience, the SLC uses a derived constant";
 
 var constant_y = math("y");
 
