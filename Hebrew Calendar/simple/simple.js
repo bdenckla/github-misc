@@ -73,7 +73,7 @@ var b9 = "But the SLC is an algorithm divorced from observation.";
 
 var b10 = "Let m and y be the SLC's approximations for the synodic month and tropical year.";
 
-var b11 = "Using only an integral number of days per calendar year, the SLC tries to make calendar year n start near ny and near km for some integer m.";
+var b11 = "Using only an integral number of days per calendar year, the SLC tries to make calendar year n start near ny and near km for some integer k.";
 
 var b12 = "So ny is the SLC's model of \"the same phase of the tropical year\" and \"km for some integer m\" is the SLC's model of \"the same phase of the synodic month\"."
 
