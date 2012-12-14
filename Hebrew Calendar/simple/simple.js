@@ -25,29 +25,91 @@ var parts_per_cycle =
 
 /////////////////////////////////////////
 
-var a = "We will begin with a simple lunisolar calendar";
+var a = "We will begin with a simple lunisolar calendar.";
 
-var b = "We will then complicate this calendar to make it Jewish";
+var ba = "We will then complicate this calendar to make it Jewish.";
 
-var c = "The day is our basic unit of time";
+var bb = "We will call our simple lunisolar calendar the SLC.";
 
-var d = "For our purposes, we do not need to define what a day is";
+var b1 = "Like any lunisolar calendar, the SLC will try to reconcile"
+    +" three disparate cycles: the solar day, the synodic month, and the"
+    +" tropical year.";
 
-var e = "We will use 3 constants";
 
-var f = "The first";
+var b2 = "These cycles reflect the following underlying behaviors: the"
+    +" rotation of the earth about its axis, the orbit of the moon around"
+    +" the earth, and the orbit of the earth around the sun.";
+
+var b3 = "There are other cycles reflecting the same underlying behaviors,"
+    +" e.g. the sidereal month and sidereal year.";
+
+var b4 = "But, without getting into details, suffice it to say that the solar"
+    +" day, the synodic month, and the tropical year are defined in a way"
+    +" that makes them the cycles most relevant to life on earth.";
+
+var b5 = "So, it is these cycles that a lunisolar calendar tries to"
+    +" reconcile.";
+
+var c1 = 'But what do we mean by "tries to reconcile"?';
+
+var c2 = "We mean that it tries to have each New Year's Day fall near the same seasonal moment and near the same phase of the moon.";
+
+var c3a = "For the Jewish calendar, the seasonal moment is roughly the"
+    +" autumnal equinox and the phase of the moon is the new moon.";
+
+var c4 = "In other words, using only an integral number of days per calendar year, a lunisolar calendar tries to make each calendar year start in the same phase of the tropical year and the same phase of the synodic month.";
+
+var c5 = "It does this, of course, by varying the length of the calendar year.";
+
+var b6 = "Really what the SLC attempts to reconcile are approximations of the"
+    +" mean lengths of these cycles.";
+
+var b7 = "I.e. the SLC is an arithmetic calendar.";
+
+var b8 = "The values of its constants are motivated, of course, by a desire"
+    +" to match observable cycles.";
+
+var b9 = "But the SLC is an algorithm divorced from observation.";
+
+var b10 = "The SLC only needs to approximate 2 of the 3 cycles since it is"
+    +" only concerned with the ratios between the cycles.";
+
+var b11 = "The SLC approximates the synodic month and tropical year, leaving"
+    +" the solar day as the unit of time.";
+
+var b12 = "In other words, the day is undefined and the approximations of the"
+    +" synodic month and tropical year are defined with respect to the day.";
+
+var b13 = "This is a sensible division, since the day is the shortest cycle,"
+    +" but everything would work equally well with either of the other"
+    +" choices of unit.";
+
+var b14 = "Though the day is the unit of time, we shall see that it is not the"
+    +" smallest amount of time used; very small fractions of a day are"
+    +" used.";
+
+var bs1 = se( b1, b2, b3, b4, b5 );
+
+var cs = se( c1, c2, c3a, c4 );
+
+var bs2 = se( b6, b7, b8, b9 );
+
+var bs3 = se( b10, b11, b12, b13, b14 );
+
+
+var e = "The approximations of the synodic month and tropical year are as follows.";
+
+var f = "The first constant";
 
 var constant_m = math("m");
 
 var h = "is";
 
-var i = "29 13753/29520 days per month (about 29.531 days per month)";
+var i = "29 13753/29520 and has units \"days per synodic month\". In decimal, it is about 29.531.";
 
 var hi = sp( h, i );
 
 var fghi = co( f, constant_m, hi );
-
-var j = "It is an estimate of a synodic month";
 
 var k = "The second constant";
 
@@ -56,32 +118,19 @@ var constant_y0 = math("a");
 var m = "is";
 
 var n =
-    "235/19 months per year"
-    + " (about 12.37 months per year)";
+    "235/19 and has units \"synodic months per tropical year\"."
+    + " In decimal, it is about 12.37.";
 
 var klmn = sp( co( k, constant_y0, m ), n );
 
-var k1 = "It is an estimate of a year, expressed in units of "+constant_m+", though left unitless."
-
-var k2 = "The third constant";
+var k2 = "For convenience the SLC uses a derived constant";
 
 var constant_y = math("y");
 
-var k3 = "is closely related. It is the same estimate of a year, but expressed in days:"
+var k3 = "which is equal to "+"a" + constant_m + " and as a result has units \"days per tropical year\". In decimal, it is about 365.2468.";
 
-var k4 = "a" + constant_m + " (about 365.2468 days per year)";
+var klmn2 = sp( co( k2, constant_y, k3 ) );
 
-var klmn2 = sp( co( k2, constant_y, k3 ), k4 );
-
-var o = "It is an estimate of a year"
-
-var p = "Our simple lunisolar calendar uses the following system to make its years have mean length";
-
-var pq = sp( p, constant_y );
-
-var r = "Divide time into chunks of 19 years. For each chunk, make 7 years have mean length 13" + constant_m + " and make the remaining 12 years have mean length 12"+ constant_m;
-
-var s = "This will make the year have mean length ((7 * 13 + 12 * 12)/19)"+constant_m+", which is (235/19)"+constant_m;
 
 /*
   The SLC will tell us, for any year n, where New Year's Day falls, in
@@ -116,18 +165,25 @@ var s = "This will make the year have mean length ((7 * 13 + 12 * 12)/19)"+const
 
 
 var outstr =
-    se( a, b, c, d, e, fghi, j, klmn, klmn2, o, pq, r, s );
+    pa( se( a, ba, bb ), bs1, cs, bs2, bs3, se( e, fghi, klmn, klmn2 ) );
 
 function math( s )
 {
     return s;
 }
 
+function pa() { return paragraph_join( Array.prototype.slice.call( arguments ) ); }
+
+function paragraph_join( a )
+{
+    return a.join( "\n\n---\n\n" );
+}
+
 function se() { return sentence_join( Array.prototype.slice.call( arguments ) ); }
 
 function sentence_join( a )
 {
-    return a.join( ".\n\n" ) + ".";
+    return a.join( "\n\n" );
 }
 
 function co() { return comma_join( Array.prototype.slice.call( arguments ) ); }
