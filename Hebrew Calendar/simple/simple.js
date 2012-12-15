@@ -25,13 +25,19 @@ var parts_per_cycle =
 
 /////////////////////////////////////////
 
-var a = "We will begin with a simple lunisolar calendar.";
+var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
 
-var ba = "We will then complicate this calendar to make it Jewish.";
+var a2 = "In the first stage, we will discuss lunisolar calendars in general.";
 
-var bb = "We will call our simple lunisolar calendar the SLC.";
+var a3 = "In the second stage, we will present the specifics of simple lunisolar calendar."
 
-var b1 = "Like any lunisolar calendar, the SLC will try to reconcile"
+var a4 = "We will call this calendar the SLC."
+
+var a6 = "In the third and final stage, we will present the Jewish calendar as a set of complications added to the SLC.";
+
+var as = se( a1, a2, a3, a4, a6 );
+
+var b1 = "Lunisolar calendars try to reconcile"
     +" three disparate cycles: the solar day, the synodic month, and the"
     +" tropical year.";
 
@@ -40,6 +46,10 @@ var b2 = "These cycles reflect the following underlying behaviors: the"
     +" rotation of the earth about its axis, the orbit of the moon around"
     +" the earth, and the orbit of the earth around the sun.";
 
+// TODO: Find out whether, to include all relevant behaviors, we need
+// to say something like "orbit (including precession!) of the earth"
+// instead of just "orbit of the earth"?
+
 var b3 = "There are other cycles reflecting the same underlying behaviors,"
     +" e.g. the sidereal month and sidereal year.";
 
@@ -47,44 +57,96 @@ var b4 = "But, without getting into details, suffice it to say that the solar"
     +" day, the synodic month, and the tropical year are defined in a way"
     +" that makes them the cycles most relevant to life on earth.";
 
-var b5 = "So, it is these cycles that a lunisolar calendar tries to"
+var b5 = "So, it is these cycles that lunisolar calendars try to"
     +" reconcile.";
 
-var c1 = 'But what do we mean by "tries to reconcile"?';
+var bs1 = se( b1, b2, b3, b4, b5 );
 
-var c2 = "We mean that it tries to have each New Year's Day fall near the same seasonal moment and near the same phase of the moon.";
+var c1 = 'But what do we mean when we say that lunisolar calendars'
+    +' "try to reconcile" these cycles?';
 
-var c3a = "For the Jewish calendar, the seasonal moment is roughly the"
-    +" autumnal equinox and the phase of the moon is the new moon.";
+var c2 = "We mean that they choose New Year's Days in a way that"
+    +" comes close to achieving the following two goals.";
 
-var c4 = "In other words, using only an integral number of days per calendar year, a lunisolar calendar tries to make each calendar year start in the same phase of the tropical year and the same phase of the synodic month.";
+function c2a1s( a, c )
+{
+    return "The " + c + a
+        + " goal is that New Year's Days fall";
+}
 
-var c5 = "It does this, of course, by varying the length of the calendar year.";
+function c2a1( a )
+{
+    return c2a1s( a, "first" ) + " on (and only on!)"
+        +" each of the times that"
+        +" a certain phase of the"
+        +" tropical year"
+        +" is reached.";
+}
 
-var b6 = "Really what the SLC attempts to reconcile are approximations of the"
+function c2b1( a )
+{
+    return c2a1s( a, "second") +" only on"
+        +" a certain phase of the"
+        +" synodic month.";
+}
+
+var c2a = c2a1( "" );
+
+var c2b = c2b1( "" );
+
+var c3a = "For the Jewish calendar,"
+    +" the desired phase of the tropical year"
+    +" is roughly the autumnal equinox"
+    +" and"
+    +" the desired phase of the synodic month"
+    +" is the new moon.";
+
+// TODO: Find out whether we need to constrain our claim about the
+// aut. eq. to something like "nowadays" or "in modern times".
+// I.e. find out whether mean RhSh was significantly distant from the
+// aut. eq. 1000 or so years ago when the calendar stabilized/was
+// standardized.
+
+var c4b = "Now, what do we mean when we say that a day \"falls on\" a point in time?";
+
+var c4c = "We mean that some point of time identified with that day,"
+    +" e.g. its noon, falls there.";
+
+var c4d = "(Later we shall see that for the purposes of choosing"
+    +" Jewish New Year's Days, the point of time identified with"
+    +" a day is the noon of the day before!)";
+
+// var c5 = "It does this by varying the length of the calendar year.";
+
+var cs = se( c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
+
+var b6 = "Really what the SLC tries to reconcile are approximations of the"
     +" mean lengths of these cycles, not the cycles themselves."
 
 var b7 = "I.e. the SLC is an arithmetic calendar.";
 
-var b8 = "The values of its constants are motivated, of course, by a desire"
+var b8 = "The values of its constants are motivated by a desire"
     +" to match observable cycles.";
 
 var b9 = "But the SLC is an algorithm divorced from observation.";
 
-var b10 = "Let m and y be the SLC's approximations for the synodic month and tropical year.";
-
-var b11 = "Using only an integral number of days per calendar year, the SLC tries to make calendar year n start near ny and near km for some integer k.";
-
-var b12 = "So ny is the SLC's model of \"the same phase of the tropical year\" and \"km for some integer m\" is the SLC's model of \"the same phase of the synodic month\"."
-
-
-var bs1 = se( b1, b2, b3, b4, b5 );
-
-var cs = se( c1, c2, c3a, c4, c5 );
-
 var bs2 = se( b6, b7, b8, b9 );
 
-var bs3 = se( b10, b11, b12 );
+var b10 = "Let m and y be the SLC's approximations for the synodic month and tropical year.";
+
+var b11 = "Using only an integral number of days per calendar year, the SLC goals are to make calendar year n start on ny and on km for some integer k.";
+
+var b12 = "Let's see how these specific gaols of the SLC match up to the generic goals that all lunisolar calendars try to meet."
+
+var b13 = c2a1( " generic" );
+
+var b14 = "This matches up to the SLC-specific goal that the calendar year start on ny."
+
+var b15 = c2b1( " generic" );
+
+var b16 = "This matches up to the SLC-specific goal that the calendar year start on km for some integer k."
+
+var bs3 = se( b10, b11, b12, b13, b14, b15, b16 );
 
 
 var e = "The approximations of the synodic month and tropical year are as follows.";
@@ -155,7 +217,7 @@ var klmn2 = sp( co( k2, constant_y, k3 ) );
 
 
 var outstr =
-    pa( se( a, ba, bb ), bs1, cs, bs2, bs3, se( e, fghi, klmn, klmn2 ) );
+    pa( as, bs1, cs, bs2, bs3, se( e, fghi, klmn, klmn2 ) );
 
 function math( s )
 {
