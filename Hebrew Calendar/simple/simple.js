@@ -71,7 +71,7 @@ var c2 = "We mean that they choose New Year's Days in a way that"
 function c2a1s( a, c )
 {
     return "The " + c + a
-        + " goal is that New Year's Days fall";
+        + " goal is to have New Year's Days fall";
 }
 
 function c2a1( a )
