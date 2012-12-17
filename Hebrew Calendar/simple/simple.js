@@ -29,13 +29,16 @@ var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
 
 var a2 = "In the first stage, we will discuss lunisolar calendars in general.";
 
-var a3 = "In the second stage, we will present the specifics of simple lunisolar calendar."
+var a3 = "In the second stage, we will present the specifics of a simple lunisolar calendar."
 
 var a4 = "We will call this calendar the SLC."
 
 var a6 = "In the third and final stage, we will present the Jewish calendar as a set of complications added to the SLC.";
 
-var as = se( a1, a2, a3, a4, a6 );
+var work_our_way_up = se( a1, a2, a3, a4, a6 );
+
+// TODO: verify that my generalizations about lunisolar calendars are
+// correct.
 
 var b1 = "Lunisolar calendars try to reconcile"
     +" three disparate cycles: the solar day, the synodic month, and the"
@@ -60,7 +63,7 @@ var b4 = "But, without getting into details, suffice it to say that the solar"
 var b5 = "So, it is these cycles that lunisolar calendars try to"
     +" reconcile.";
 
-var bs1 = se( b1, b2, b3, b4, b5 );
+var reconcile_cycles = se( b1, b2, b3, b4, b5 );
 
 var c1 = 'But what do we mean when we say that lunisolar calendars'
     +' "try to reconcile" these cycles?';
@@ -118,7 +121,7 @@ var c4d = "(Later we shall see that for the purposes of choosing"
 
 // var c5 = "It does this by varying the length of the calendar year.";
 
-var cs = se( c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
+var lunisolar_goals = se( c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
 
 var b6 = "Really what the SLC tries to reconcile are approximations of the"
     +" mean lengths of these cycles, not the cycles themselves."
@@ -130,23 +133,23 @@ var b8 = "The values of its constants are motivated by a desire"
 
 var b9 = "But the SLC is an algorithm divorced from observation.";
 
-var bs2 = se( b6, b7, b8, b9 );
+var slc_is_arithmetic = se( b6, b7, b8, b9 );
 
 var b10 = "Let m and y be the SLC's approximations for the synodic month and tropical year.";
 
-var b11 = "Using only an integral number of days per calendar year, the SLC goals are to make calendar year n start on ny and on km for some integer k.";
+var b11 = "Using only an integral number of days per calendar year, the SLC's goals are to make calendar year n start on ny and on km for some integer k.";
 
-var b12 = "Let's see how these specific gaols of the SLC match up to the generic goals that all lunisolar calendars try to meet."
+var b12 = "Let's see how these specific goals of the SLC match up to the generic goals that all lunisolar calendars try to meet."
 
 var b13 = c2a1( " generic" );
 
-var b14 = "This matches up to the SLC-specific goal that the calendar year start on ny."
+var b14 = "This matches up to the SLC's specific goal that the calendar year start on ny."
 
 var b15 = c2b1( " generic" );
 
-var b16 = "This matches up to the SLC-specific goal that the calendar year start on km for some integer k."
+var b16 = "This matches up to the SLC's specific goal that the calendar year start on km for some integer k."
 
-var bs3 = se( b10, b11, b12, b13, b14, b15, b16 );
+var slc_goals = se( b10, b11, b12, b13, b14, b15, b16 );
 
 
 var e = "The approximations of the synodic month and tropical year are as follows.";
@@ -179,45 +182,61 @@ var k2 = "For convenience, the SLC uses a derived constant";
 
 var constant_y = math("y");
 
-var k3 = "which is equal to "+"a" + constant_m + " and as a result has units \"days per tropical year\". In decimal, it is about 365.2468.";
+var k3 = "which is equal to " + constant_m+"a" + " and as a result has units \"days per tropical year\". In decimal, it is about 365.2468.";
 
 var klmn2 = sp( co( k2, constant_y, k3 ) );
 
+var constant_values = se( e, fghi, klmn, klmn2 );
+
 
 /*
-  The SLC will tell us, for any year n, where New Year's Day falls, in
-  terms of whole days elapsed since the SLC origin. We will abbreviate
-  "SLC New Year's Day for year n" to s(n).
+  But first let's choose, for any year n, what "New Year's Month"
+  should be, in terms of whole months elapsed since the SLC
+  origin.
 
-  We want s(n) to be near ny and be near a multiple of m. These two
-  criteria make the SLC a lunisolar calendar.
+  Here we use "month" to mean m.
 
-  But, how near is near? The answer is as follows.  We want s(n) to
-  fall on or less than m after ny. (s(n) - ny is in [0,m).)
-  Additionally, we want s(n) to fall on or less than a day after a
-  multiple of m. (s(n) - km is in [0,1) for some integer k.)
+  We will abbreviate "SLC New Year's Month for year n" to σ(n).
 
-  How can we define s(n) such that it does all this?
+  In other words σ(n) yields a k such that km is near ny.
 
-  First let's figure out, for any year n, where "New Year's Month"
-  falls, in terms of whole months elapsed since the SLC origin. We
-  will abbreviate "SLC New Year's Month for year n" to σ(n). Though
-  the word "month" has many different meanings, here we use it as a
-  synonym for m.
+  In particular we will choose the k such that km is closest to ny
+  without going over.
 
-  The value of σ(n) is the multiple of m that falls on or less
-  than m after ny. I.e. σ(n) = k where km - ny is in [0,m). In closed
-  form, σ(n) = floor(ny/m), which reduces to floor(na).
+  Mathematically this means, σ(n) = floor(ny/m), which reduces to
+  floor(na).
 
-  The value of s(n) is then floor(mσ(n)).
+  Now let's choose, for any year n, what New Year's Day should be, in
+  terms of whole days elapsed since the SLC origin.
 
-  Or, "inlining" σ(n), s(n) = floor(m*floor( an )).
+  We will abbreviate "SLC New Year's Day for year n" to s(n).
+
+  Let's make s(n) be the day that is closest to mσ(n) without going over.
+
+  Mathematically, we can express this as s(n) = floor(mσ(n)).
+
+  Or, "inlining" σ(n), s(n) = floor(m*floor(na)).
+
+  So, how close is s(n) to ny, and how close is it to km for some integer k?
+
+  It is within (-1,0] of km for some k.
+
+  I.e. it is less than a day before and not after.
+
+  It is within (-m-1,0] of ny.
+
+  I.e. it is less than m+1 before and not after.
 
 */
 
 
 var outstr =
-    pa( as, bs1, cs, bs2, bs3, se( e, fghi, klmn, klmn2 ) );
+    pa( work_our_way_up,
+        reconcile_cycles,
+        lunisolar_goals,
+        slc_is_arithmetic,
+        slc_goals,
+        constant_values );
 
 function math( s )
 {
@@ -254,3 +273,5 @@ function space_join( a )
 
 process.stdout.write( outstr );
 
+
+//  LocalWords:  TODO synodic SLC's ny na inlining
