@@ -23,7 +23,7 @@ var parts_per_cycle =
     +
     parts_per_non_leap * non_leaps_per_cycle;
 
-/////////////////////////////////////////
+// ****************************************
 
 var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
 
@@ -39,6 +39,10 @@ var work_our_way_up = se( a1, a2, a3, a4, a6 );
 
 // TODO: verify that my generalizations about lunisolar calendars are
 // correct.
+
+// TODO: Acknowledge Dershowitz & Reingold.
+
+// TODO: explain why we don't bother with months
 
 var b1 = "Lunisolar calendars try to reconcile"
     +" three disparate cycles: the solar day, the synodic month, and the"
@@ -105,10 +109,10 @@ var c3a = "For the Jewish calendar,"
     +" is the new moon.";
 
 // TODO: Find out whether we need to constrain our claim about the
-// aut. eq. to something like "nowadays" or "in modern times".
+// autumnal equinox to something like "nowadays" or "in modern times".
 // I.e. find out whether mean RhSh was significantly distant from the
-// aut. eq. 1000 or so years ago when the calendar stabilized/was
-// standardized.
+// autumnal equinox 1000 or so years ago when the calendar
+// stabilized/was standardized.
 
 var c4b = "Now, what do we mean when we say that a day \"falls on\" a point in time?";
 
