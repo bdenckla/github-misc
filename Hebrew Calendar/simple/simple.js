@@ -156,7 +156,11 @@ var b16 = "This matches up to the SLC's specific goal that the calendar year sta
 var slc_goals = se( b10, b11, b12, b13, b14, b15, b16 );
 
 
-var e = "The approximations of the synodic month and tropical year are as follows.";
+var e = "Before showing how the SLC pursues its goals, i.e. before showing our implementation, we will present the constants used by the SLC.";
+
+var e2 = "Their exact values are not important to understanding the SLC, in the sense that even if they were slightly different, the calendar would behave similarly, and our implementation would remain the same.";
+
+var e3 = "But it may help understand the SLC to have concrete numbers in mind.";
 
 var f = "The first constant";
 
@@ -182,6 +186,10 @@ var n =
 
 var klmn = sp( co( k, constant_y0, m ), n );
 
+var k1 = "With "+ math("a") +", we come closest to a case where the exact value of a constant gives rise to specific behavior of the calendar."
+
+var k1a = "The denominator's value of 19 gives rise to a 19-year cycle of leap and non-leap years."
+
 var k2 = "For convenience, the SLC uses a derived constant";
 
 var constant_y = math("y");
@@ -190,48 +198,51 @@ var k3 = "which is equal to " + constant_m+"a" + " and as a result has units \"d
 
 var klmn2 = sp( co( k2, constant_y, k3 ) );
 
-var constant_values = se( e, fghi, klmn, klmn2 );
+var constant_values = se( e, e2, e3, fghi, klmn, k1, k1a, klmn2 );
 
 
-/*
-  But first let's choose, for any year n, what "New Year's Month"
-  should be, in terms of whole months elapsed since the SLC
-  origin.
+var d1 =
+    "But first let's choose, for any year n, what \"New Year's Month\""
+    +" should be, in terms of whole months elapsed since the SLC"
+    +" origin."
 
-  Here we use "month" to mean m.
+var d2 = "Here we use \"month\" to mean m.";
 
-  We will abbreviate "SLC New Year's Month for year n" to σ(n).
+var d3 = "We will abbreviate \"SLC New Year's Month for year n\" to σ(n).";
 
-  In other words σ(n) yields a k such that km is near ny.
+var d4 = "In other words σ(n) yields a k such that km is near ny.";
 
-  In particular we will choose the k such that km is closest to ny
-  without going over.
+var d5 = "In particular we will choose the k such that km is closest to ny"
+    +" without going over.";
 
-  Mathematically this means, σ(n) = floor(ny/m), which reduces to
-  floor(na).
+var d6 = "Mathematically this means, σ(n) = floor(ny/m), which reduces to"
+    +" floor(na).";
 
-  Now let's choose, for any year n, what New Year's Day should be, in
-  terms of whole days elapsed since the SLC origin.
+var d7 = "Now let's choose, for any year n, what New Year's Day should be, in"
+    +" terms of whole days elapsed since the SLC origin.";
 
-  We will abbreviate "SLC New Year's Day for year n" to s(n).
+var d8 = "We will abbreviate \"SLC New Year's Day for year n\" to s(n).";
 
-  Let's make s(n) be the day that is closest to mσ(n) without going over.
+var d9 = "Let's make s(n) be the day that is closest to mσ(n) without going over.";
 
-  Mathematically, we can express this as s(n) = floor(mσ(n)).
+var da = "Mathematically, we can express this as s(n) = floor(mσ(n)).";
 
-  Or, "inlining" σ(n), s(n) = floor(m*floor(na)).
+var db = "Or, \"inlining\" σ(n), s(n) = floor(m*floor(na)).";
 
-  So, how close is s(n) to ny, and how close is it to km for some integer k?
 
-  It is within (-1,0] of km for some k.
+var dc = "So, how close is s(n) to ny, and how close is it to km for some integer k?";
 
-  I.e. it is less than a day before and not after.
+var dd = "It is within (-1,0] of km for some k.";
 
-  It is within (-m-1,0] of ny.
+var de = "I.e. it is less than a day before and not after.";
 
-  I.e. it is less than m+1 before and not after.
+var df = "It is within (-m-1,0] of ny.";
 
-*/
+var dg = "I.e. it is less than m+1 before and not after.";
+
+var slc_details = se( d1, d2, d3, d4, d5, d6, d7, d8, d9, da, db );
+
+var slc_bounds = se( dc, dd, de, df, dg );
 
 
 var outstr =
@@ -240,7 +251,9 @@ var outstr =
         lunisolar_goals,
         slc_is_arithmetic,
         slc_goals,
-        constant_values );
+        constant_values,
+        slc_details,
+        slc_bounds );
 
 function math( s )
 {
