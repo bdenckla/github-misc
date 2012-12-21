@@ -249,8 +249,8 @@ function what_implement_means()
     var b = "In general, to implement a calendar is to give a day number for"
         +" each day name.";
 
-    var c = "By \"day number\" we mean \"integer day from some absolute origin.\""
-        +" and by \"day name\" we mean \"represention in that calendar\"";
+    var c = "By \"day number\" we mean \"integer day from some absolute origin,\""
+        +" and by \"day name\" we mean \"represention in that calendar.\"";
 
     var d = "For our purposes, we are only concerned about New Year's Days, though.";
 
@@ -263,7 +263,7 @@ function what_implement_means()
     var g = "E.g. instead of saying for \"New Year's Day 5773\","
         +" \"Rosh ha-Shanah 5773,\", or"
         +" \"Tishri 1, 5773,\""
-        +"we simply say \"5773.\"";
+        +" we simply say \"5773.\"";
 
     return se( a, b, c, d, e, f, g);
 }
