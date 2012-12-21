@@ -25,17 +25,24 @@ var parts_per_cycle =
 
 // ****************************************
 
-var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
+function work_our_way_up()
+{
+    var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
 
-var a2 = "In the first stage, we will discuss lunisolar calendars in general.";
+    var a2 = "In the first stage,"
+        +" we will discuss lunisolar calendars in general.";
 
-var a3 = "In the second stage, we will present the specifics of a simple lunisolar calendar."
+    var a3 = "In the second stage,"
+        +" we will present the specifics of a simple lunisolar calendar."
 
-var a4 = "We will call this calendar the SLC."
+    var a4 = "We will call this calendar the SLC."
 
-var a6 = "In the third and final stage, we will present the Jewish calendar as a set of complications added to the SLC.";
+    var a6 = "In the third and final stage,"
+        +" we will present the Jewish calendar"
+        +" as a set of complications added to the SLC.";
 
-var work_our_way_up = se( a1, a2, a3, a4, a6 );
+    return se( a1, a2, a3, a4, a6 );
+}
 
 // TODO: verify that my generalizations about lunisolar calendars are
 // correct.
@@ -44,36 +51,34 @@ var work_our_way_up = se( a1, a2, a3, a4, a6 );
 
 // TODO: explain why we don't bother with months
 
-var b1 = "Lunisolar calendars try to reconcile"
-    +" three disparate cycles: the solar day, the synodic month, and the"
-    +" tropical year.";
+function reconcile_cycles()
+{
+
+    var b1 = "Lunisolar calendars try to reconcile"
+        +" three disparate cycles: the solar day, the synodic month, and the"
+        +" tropical year.";
 
 
-var b2 = "These cycles reflect the following underlying behaviors: the"
-    +" rotation of the earth about its axis, the orbit of the moon around"
-    +" the earth, and the orbit of the earth around the sun.";
+    var b2 = "These cycles reflect the following underlying behaviors: the"
+        +" rotation of the earth about its axis, the orbit of the moon around"
+        +" the earth, and the orbit of the earth around the sun.";
 
-// TODO: Find out whether, to include all relevant behaviors, we need
-// to say something like "orbit (including precession!) of the earth"
-// instead of just "orbit of the earth"?
+    // TODO: Find out whether, to include all relevant behaviors, we need
+    // to say something like "orbit (including precession!) of the earth"
+    // instead of just "orbit of the earth"?
 
-var b3 = "There are other cycles reflecting the same underlying behaviors,"
-    +" e.g. the sidereal month and sidereal year.";
+    var b3 = "There are other cycles reflecting the same underlying behaviors,"
+        +" e.g. the sidereal month and sidereal year.";
 
-var b4 = "But, without getting into details, suffice it to say that the solar"
-    +" day, the synodic month, and the tropical year are defined in a way"
-    +" that makes them the cycles most relevant to life on earth.";
+    var b4 = "But, without getting into details, suffice it to say that the solar"
+        +" day, the synodic month, and the tropical year are defined in a way"
+        +" that makes them the cycles most relevant to life on earth.";
 
-var b5 = "So, it is these cycles that lunisolar calendars try to"
-    +" reconcile.";
+    var b5 = "So, it is these cycles that lunisolar calendars try to"
+        +" reconcile.";
 
-var reconcile_cycles = se( b1, b2, b3, b4, b5 );
-
-var c1 = 'But what do we mean when we say that lunisolar calendars'
-    +' "try to reconcile" these cycles?';
-
-var c2 = "We mean that they choose New Year's Days in a way that"
-    +" comes close to achieving the following two goals.";
+    return se( b1, b2, b3, b4, b5 );
+}
 
 function c2a1s( a, c )
 {
@@ -97,163 +102,231 @@ function c2b1( a )
         +" synodic month.";
 }
 
-var c2a = c2a1( "" );
+function lunisolar_goals()
+{
+    var c1 = 'But what do we mean when we say that lunisolar calendars'
+        +' "try to reconcile" these cycles?';
 
-var c2b = c2b1( "" );
+    var c2 = "We mean that they choose New Year's Days in a way that"
+        +" comes close to achieving the following two goals.";
 
-var c3a = "For the Jewish calendar,"
-    +" the desired phase of the tropical year"
-    +" is roughly the autumnal equinox"
-    +" and"
-    +" the desired phase of the synodic month"
-    +" is the new moon.";
+    var c2a = c2a1( "" );
 
-// TODO: Find out whether we need to constrain our claim about the
-// autumnal equinox to something like "nowadays" or "in modern times".
-// I.e. find out whether mean RhSh was significantly distant from the
-// autumnal equinox 1000 or so years ago when the calendar
-// stabilized/was standardized.
+    var c2b = c2b1( "" );
 
-var c4b = "Now, what do we mean when we say that a day \"falls on\" a point in time?";
+    var c3a = "For the Jewish calendar,"
+        +" the desired phase of the tropical year"
+        +" is roughly the autumnal equinox"
+        +" and"
+        +" the desired phase of the synodic month"
+        +" is the new moon.";
 
-var c4c = "We mean that some point of time identified with that day,"
-    +" e.g. its noon, falls there.";
+    // TODO: Find out whether we need to constrain our claim about the
+    // autumnal equinox to something like "nowadays" or "in modern times".
+    // I.e. find out whether mean RhSh was significantly distant from the
+    // autumnal equinox 1000 or so years ago when the calendar
+    // stabilized/was standardized.
 
-var c4d = "(Later we shall see that for the purposes of choosing"
-    +" Jewish New Year's Days, the point of time identified with"
-    +" a day is the noon of the day before!)";
+    var c4b = "Now, what do we mean when we say that"
+        +" a day \"falls on\" a point in time?";
 
-// var c5 = "It does this by varying the length of the calendar year.";
+    var c4c = "We mean that some point of time identified with that day,"
+        +" e.g. its noon, falls there.";
 
-var lunisolar_goals = se( c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
+    var c4d = "(Later we shall see that for the purposes of choosing"
+        +" Jewish New Year's Days, the point of time identified with"
+        +" a day is the noon of the day before!)";
 
-var b6 = "Really what the SLC tries to reconcile are approximations of the"
-    +" mean lengths of these cycles, not the cycles themselves."
+    // var c5 = "It does this by varying the length of the calendar year.";
 
-var b7 = "I.e. the SLC is an arithmetic calendar.";
+    return se( c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
+}
 
-var b8 = "The values of its constants are motivated by a desire"
-    +" to match observable cycles.";
+function slc_is_arithmetic()
+{
 
-var b9 = "But the SLC is an algorithm divorced from observation.";
+    var b6 = "Really what the SLC tries to reconcile are approximations of the"
+        +" mean lengths of these cycles, not the cycles themselves."
 
-var slc_is_arithmetic = se( b6, b7, b8, b9 );
+    var b7 = "I.e. the SLC is an arithmetic calendar.";
 
-var b10 = "Let m and y be the SLC's approximations for the synodic month and tropical year.";
+    var b8 = "The values of its constants are motivated by a desire"
+        +" to match observable cycles.";
 
-var b11 = "Using only an integral number of days per calendar year, the SLC's goals are to make calendar year n start on ny and on km for some integer k.";
+    var b9 = "But the SLC is an algorithm divorced from observation.";
 
-var b12 = "Let's see how these specific goals of the SLC match up to the generic goals that all lunisolar calendars try to meet."
+    return se( b6, b7, b8, b9 );
+}
 
-var b13 = c2a1( " generic" );
+function slc_goals()
+{
+    var b10 = "Let m and y be the SLC's approximations for"
+        +" the synodic month and tropical year.";
 
-var b14 = "This matches up to the SLC's specific goal that the calendar year start on ny."
+    var b11 = "Using only an integral number of days per calendar year,"
+        +" the SLC's goals are to make calendar year n start on ny"
+        +" and on km for some integer k.";
 
-var b15 = c2b1( " generic" );
+    var b12 = "Let's see how these specific goals of the SLC"
+        +" match up to the generic goals that all lunisolar"
+        +" calendars try to meet."
 
-var b16 = "This matches up to the SLC's specific goal that the calendar year start on km for some integer k."
+    var b13 = c2a1( " generic" );
 
-var slc_goals = se( b10, b11, b12, b13, b14, b15, b16 );
+    var b14 = "This matches up to the SLC's specific goal"
+        +" that the calendar year start on ny."
 
+    var b15 = c2b1( " generic" );
 
-var e = "Before showing how the SLC pursues its goals, i.e. before showing our implementation, we will present the constants used by the SLC.";
+    var b16 = "This matches up to the SLC's specific goal"
+        +" that the calendar year start on km for some integer k."
 
-var e2 = "Their exact values are not important to understanding the SLC, in the sense that even if they were slightly different, the calendar would behave similarly, and our implementation would remain the same.";
+    return se( b10, b11, b12, b13, b14, b15, b16 );
+}
 
-var e3 = "But it may help understand the SLC to have concrete numbers in mind.";
+function constant_values()
+{
+    var e = "Before showing how the SLC pursues its goals,"
+        +" i.e. before showing our implementation,"
+        +" we will present the constants used by the SLC.";
 
-var f = "The first constant";
+    var e2 = "Their exact values are not important to understanding the SLC,"
+        +" in the sense that even if they were slightly different,"
+        +" the calendar would behave similarly, and our implementation"
+        +" would remain the same.";
 
-var constant_m = math("m");
+    var e3 = "But it may help understand the SLC to have concrete numbers in mind.";
 
-var h = "is";
+    var f = "The first constant";
 
-var i = "29 13753/29520 and has units \"days per synodic month\". In decimal, it is about 29.531.";
+    var constant_m = math("m");
 
-var hi = sp( h, i );
+    var h = "is";
 
-var fghi = co( f, constant_m, hi );
+    var i = "29 13753/29520 and has units \"days per synodic month\"."
+        +" In decimal, it is about 29.531.";
 
-var k = "The second constant";
+    var hi = sp( h, i );
 
-var constant_y0 = math("a");
+    var fghi = co( f, constant_m, hi );
 
-var m = "is";
+    var k = "The second constant";
 
-var n =
-    "235/19 and has units \"synodic months per tropical year\"."
-    + " In decimal, it is about 12.37.";
+    var constant_y0 = math("a");
 
-var klmn = sp( co( k, constant_y0, m ), n );
+    var m = "is";
 
-var k1 = "With "+ math("a") +", we come closest to a case where the exact value of a constant gives rise to specific behavior of the calendar."
+    var n =
+        "235/19 and has units \"synodic months per tropical year\"."
+        + " In decimal, it is about 12.37.";
 
-var k1a = "The denominator's value of 19 gives rise to a 19-year cycle of leap and non-leap years."
+    var klmn = sp( co( k, constant_y0, m ), n );
 
-var k2 = "For convenience, the SLC uses a derived constant";
+    var k1 = "With "+ math("a") +", we come closest to a case where"
+        +" the exact value of a constant gives rise to specific behavior"
+        +" of the calendar."
 
-var constant_y = math("y");
+    var k1a = "The denominator's value of 19 gives rise to a 19-year"
+        +" cycle of leap and non-leap years."
 
-var k3 = "which is equal to " + constant_m+"a" + " and as a result has units \"days per tropical year\". In decimal, it is about 365.2468.";
+    var k2 = "For convenience, the SLC uses a derived constant";
 
-var klmn2 = sp( co( k2, constant_y, k3 ) );
+    var constant_y = math("y");
 
-var constant_values = se( e, e2, e3, fghi, klmn, k1, k1a, klmn2 );
+    var k3 = "which is equal to " + constant_m+"a" + " and as a result"
+        +" has units \"days per tropical year\". In decimal, it is"
+        +" about 365.2468.";
 
+    var klmn2 = sp( co( k2, constant_y, k3 ) );
 
-var d1 =
-    "But first let's choose, for any year n, what \"New Year's Month\""
-    +" should be, in terms of whole months elapsed since the SLC"
-    +" origin."
+    return se( e, e2, e3, fghi, klmn, k1, k1a, klmn2 );
+}
 
-var d2 = "Here we use \"month\" to mean m.";
+function what_implement_means()
+{
+    var a = "What will it mean to \"implement\" the SLC?";
 
-var d3 = "We will abbreviate \"SLC New Year's Month for year n\" to σ(n).";
+    var b = "In general, to implement a calendar is to give a day number for"
+        +" each day name.";
 
-var d4 = "In other words σ(n) yields a k such that km is near ny.";
+    var c = "By \"day number\" we mean \"integer day from some absolute origin.\""
+        +" and by \"day name\" we mean \"represention in that calendar\"";
 
-var d5 = "In particular we will choose the k such that km is closest to ny"
-    +" without going over.";
+    var d = "For our purposes, we are only concerned about New Year's Days, though.";
 
-var d6 = "Mathematically this means, σ(n) = floor(ny/m), which reduces to"
-    +" floor(na).";
+    var e = "So, for our purposes, to implement a calendar is to give a day number"
+        +" for each New Year's Day name.";
 
-var d7 = "Now let's choose, for any year n, what New Year's Day should be, in"
-    +" terms of whole days elapsed since the SLC origin.";
+    var f = "And, for our purposes, we will name (represent) New Year's Days by"
+        +" their year only.";
 
-var d8 = "We will abbreviate \"SLC New Year's Day for year n\" to s(n).";
+    var g = "E.g. instead of saying for \"New Year's Day 5773\","
+        +" \"Rosh ha-Shanah 5773,\", or"
+        +" \"Tishri 1, 5773,\""
+        +"we simply say \"5773.\"";
 
-var d9 = "Let's make s(n) be the day that is closest to mσ(n) without going over.";
+    return se( a, b, c, d, e, f, g);
+}
 
-var da = "Mathematically, we can express this as s(n) = floor(mσ(n)).";
+function slc_details()
+{
+    var d1 =
+        "To implement the SLC,"
+        +" first let's choose, for any year n, what \"New Year's Month\""
+        +" should be, in terms of whole months elapsed since the SLC"
+        +" origin."
 
-var db = "Or, \"inlining\" σ(n), s(n) = floor(m*floor(na)).";
+    var d2 = "Here we use \"month\" to mean m.";
 
+    var d3 = "We will abbreviate \"SLC New Year's Month for year n\" to σ(n).";
 
-var dc = "So, how close is s(n) to ny, and how close is it to km for some integer k?";
+    var d4 = "In other words σ(n) yields a k such that km is near ny.";
 
-var dd = "It is within (-1,0] of km for some k.";
+    var d5 = "In particular we will choose the k such that km is closest to ny"
+        +" without going over.";
 
-var de = "I.e. it is less than a day before and not after.";
+    var d6 = "Mathematically this means, σ(n) = floor(ny/m), which reduces to"
+        +" floor(na).";
 
-var df = "It is within (-m-1,0] of ny.";
+    var d7 = "Now let's choose, for any year n, what New Year's Day should be, in"
+        +" terms of whole days elapsed since the SLC origin.";
 
-var dg = "I.e. it is less than m+1 before and not after.";
+    var d8 = "We will abbreviate \"SLC New Year's Day for year n\" to s(n).";
 
-var slc_details = se( d1, d2, d3, d4, d5, d6, d7, d8, d9, da, db );
+    var d9 = "Let's make s(n) be the day that is closest to mσ(n) without going over.";
 
-var slc_bounds = se( dc, dd, de, df, dg );
+    var da = "Mathematically, we can express this as s(n) = floor(mσ(n)).";
 
+    var db = "Or, \"inlining\" σ(n), s(n) = floor(m*floor(na)).";
+
+    return se( d1, d2, d3, d4, d5, d6, d7, d8, d9, da, db );
+}
+
+function slc_bounds()
+{
+    var dc = "So, how close is s(n) to ny, and how close is it to km for some integer k?";
+
+    var dd = "It is within (-1,0] of km for some k.";
+
+    var de = "I.e. it is less than a day before and not after.";
+
+    var df = "It is within (-m-1,0] of ny.";
+
+    var dg = "I.e. it is less than m+1 before and not after.";
+
+    return se( dc, dd, de, df, dg );
+}
 
 var outstr =
-    pa( work_our_way_up,
-        reconcile_cycles,
-        lunisolar_goals,
-        slc_is_arithmetic,
-        slc_goals,
-        constant_values,
-        slc_details,
-        slc_bounds );
+    pa( work_our_way_up(),
+        reconcile_cycles(),
+        lunisolar_goals(),
+        slc_is_arithmetic(),
+        slc_goals(),
+        constant_values(),
+        what_implement_means(),
+        slc_details(),
+        slc_bounds() );
 
 function math( s )
 {
