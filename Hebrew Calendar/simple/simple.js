@@ -30,10 +30,11 @@ function work_our_way_up()
     var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
 
     var a2 = "In the first stage,"
-        +" we will discuss lunisolar calendars in general.";
+        +" we will discuss the general goals of the Jewish calendar.";
 
     var a3 = "In the second stage,"
-        +" we will present the specifics of a simple lunisolar calendar."
+        +" we will present a simple lunisolar calendar"
+        +" that pursues the same general goals as the Jewish calendar.";
 
     var a4 = "We will call this calendar the SLC."
 
@@ -44,9 +45,6 @@ function work_our_way_up()
     return se( a1, a2, a3, a4, a6 );
 }
 
-// TODO: verify that my generalizations about lunisolar calendars are
-// correct.
-
 // TODO: Acknowledge Dershowitz & Reingold.
 
 // TODO: explain why we don't bother with months
@@ -54,27 +52,34 @@ function work_our_way_up()
 function reconcile_cycles()
 {
 
-    var b1 = "Lunisolar calendars try to reconcile"
+    var b1 = "The general goal of the Jewish calendar is to try to reconcile"
         +" three disparate cycles: the solar day, the synodic month, and the"
         +" tropical year.";
 
-
-    var b2 = "These cycles reflect the following underlying behaviors: the"
-        +" rotation of the earth about its axis, the orbit of the moon around"
-        +" the earth, and the orbit of the earth around the sun.";
+    var b2 = "These cycles correspond, roughly,"
+    +" to the following underlying behaviors:"
+    +" the earth spins,"
+    +" the moon orbits the earth,"
+    +" and the earth is tilted and orbits the sun.";
 
     // TODO: Find out whether, to include all relevant behaviors, we need
     // to say something like "orbit (including precession!) of the earth"
     // instead of just "orbit of the earth"?
 
-    var b3 = "There are other cycles reflecting the same underlying behaviors,"
+    var b3 = "There are other cycles"
+        +" reflecting the same underlying behaviors,"
         +" e.g. the sidereal month and sidereal year.";
 
-    var b4 = "But, without getting into details, suffice it to say that the solar"
-        +" day, the synodic month, and the tropical year are defined in a way"
+    var b4 = "But, without getting into details, suffice it to say that"
+        +" the solar day,"
+        +" the synodic month, and"
+        +" the tropical year"
+        +" are defined in a way"
         +" that makes them the cycles most relevant to life on earth.";
 
-    var b5 = "So, it is these cycles that lunisolar calendars try to"
+    // TODO: sidereal year is used by Hindu calendar
+
+    var b5 = "So, it is these cycles that the Jewish calendar tries"
         +" reconcile.";
 
     return se( b1, b2, b3, b4, b5 );
