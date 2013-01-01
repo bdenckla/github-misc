@@ -30,17 +30,21 @@ function work_our_way_up()
     var a1 = "We will work our way up to the Jewish calendar in 3 stages.";
 
     var a2 = "In the first stage,"
-        +" we will discuss the general goals of the Jewish calendar.";
+        +" we will discuss the general goal of the Jewish calendar.";
+
+    var b = "We will call any calendar that pursues this goal a"
+        +" Jewish-like calendar (JLC).";
 
     var a3 = "In the second stage,"
-        +" we will present a simple lunisolar calendar"
-        +" that pursues the same general goals as the Jewish calendar.";
+        +" we will present a simple Jewish-like calendar, i.e."
+        +" a calendar that pursues the same general goal as the"
+        +" Jewish calendar, but has simpler specifics.";
 
-    var a4 = "We will call this calendar the SLC."
+    var a4 = "We will call this calendar the SJLC."
 
     var a6 = "In the third and final stage,"
-        +" we will present the Jewish calendar"
-        +" as a set of complications added to the SLC.";
+        +" we will present the actual Jewish calendar"
+        +" as a set of complications added to the SJLC.";
 
     return se( a1, a2, a3, a4, a6 );
 }
@@ -51,24 +55,19 @@ function work_our_way_up()
 
 function reconcile_cycles()
 {
-
     var b1 = "The general goal of the Jewish calendar is to try to reconcile"
         +" three disparate cycles: the solar day, the synodic month, and the"
         +" tropical year.";
 
     var b2 = "These cycles correspond, roughly,"
-    +" to the following underlying behaviors:"
+    +" to the following underlying facts:"
     +" the earth spins,"
-    +" the moon orbits the earth,"
-    +" and the earth is tilted and orbits the sun.";
-
-    // TODO: Find out whether, to include all relevant behaviors, we need
-    // to say something like "orbit (including precession!) of the earth"
-    // instead of just "orbit of the earth"?
+    +" the moon orbits the earth, and"
+    +" the earth orbits the sun.";
 
     var b3 = "There are other cycles"
-        +" reflecting the same underlying behaviors,"
-        +" e.g. the sidereal month and sidereal year.";
+        +" that correspond to the same underlying facts,"
+        +" e.g. the sidereal year.";
 
     var b4 = "But, without getting into details, suffice it to say that"
         +" the solar day,"
@@ -77,12 +76,44 @@ function reconcile_cycles()
         +" are defined in a way"
         +" that makes them the cycles most relevant to life on earth.";
 
-    // TODO: sidereal year is used by Hindu calendar
+    return se( b1, b2, b3, b4 );
+}
 
-    var b5 = "So, it is these cycles that the Jewish calendar tries"
-        +" reconcile.";
+function relevancy()
+{
+    var a = "Nonetheless, I admit that relevancy is in the eye of"
+        +" the beholder.";
 
-    return se( b1, b2, b3, b4, b5 );
+    var b = "And even if we could agree on what is relevant,"
+        +" is there no room for fanciful flights of irrelevancy"
+        +" in a calendar?";
+
+    var c = "For example, various Hindu calendars align"
+        +" with the sidereal rather than tropical year.";
+
+    var d = "That means their years align with the stars rather"
+        +" than the seasons.";
+
+    var e = "To me, the stars seem less relevant than the seasons.";
+
+    var f = "But that's just my opinion.";
+
+    var g = "And even though a sidereal year seem less relevant to me,"
+        +" I find it delightful.";
+
+    var h = "We shall see, much later, that the Jewish calendar itself"
+    +" has a far less relevant constraint than"
+    +" the Hindu alignment with the sidereal year."
+
+    var i = "Namely, the Jewish calendar is"
+        +" made much more complex by its delightful"
+        +" insistence that the year start on only 4 of the 7 days"
+        +" of the week.";
+
+    var j = "This constraint has no astronomical basis, and is"
+    +" only relevant within the Jewish belief system.";
+
+    return se( a, b, c, d, e, f, g, h, i, j );
 }
 
 function c2a1s( a, c )
@@ -109,11 +140,15 @@ function c2b1( a )
 
 function lunisolar_goals()
 {
-    var c1 = 'But what do we mean when we say that lunisolar calendars'
-        +' "try to reconcile" these cycles?';
+    var a = "Putting questions of relevancy aside, let's get back to the goal"
+        +" of the Jewish calendar."
 
-    var c2 = "We mean that they choose New Year's Days in a way that"
-        +" comes close to achieving the following two goals.";
+    var c1 = "What do we mean when we say that the Jewish calendar"
+        +" \"tries to reconcile\" the solar day, synodic month, and"
+        +" tropical year?";
+
+    var c2 = "We mean that it chooses New Year's Days in a way that"
+        +" comes close to achieving the following two sub-goals.";
 
     var c2a = c2a1( "" );
 
@@ -144,46 +179,46 @@ function lunisolar_goals()
 
     // var c5 = "It does this by varying the length of the calendar year.";
 
-    return se( c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
+    return se( a, c1, c2, c2a, c2b, c3a, c4b, c4c, c4d );
 }
 
 function slc_is_arithmetic()
 {
 
-    var b6 = "Really what the SLC tries to reconcile are approximations of the"
+    var b6 = "Really what the SJLC tries to reconcile are approximations of the"
         +" mean lengths of these cycles, not the cycles themselves."
 
-    var b7 = "I.e. the SLC is an arithmetic calendar.";
+    var b7 = "I.e. the SJLC is an arithmetic calendar.";
 
     var b8 = "The values of its constants are motivated by a desire"
         +" to match observable cycles.";
 
-    var b9 = "But the SLC is an algorithm divorced from observation.";
+    var b9 = "But the SJLC is an algorithm divorced from observation.";
 
     return se( b6, b7, b8, b9 );
 }
 
 function slc_goals()
 {
-    var b10 = "Let m and y be the SLC's approximations for"
+    var b10 = "Let m and y be the SJLC's approximations for"
         +" the synodic month and tropical year.";
 
     var b11 = "Using only an integral number of days per calendar year,"
-        +" the SLC's goals are to make calendar year n start on ny"
+        +" the SJLC's goal is to make calendar year n start on ny"
         +" and on km for some integer k.";
 
-    var b12 = "Let's see how these specific goals of the SLC"
-        +" match up to the generic goals that all lunisolar"
+    var b12 = "Let's see how this specific goal of the SJLC"
+        +" matches up to the generic goal that all Jewish-like"
         +" calendars try to meet."
 
     var b13 = c2a1( " generic" );
 
-    var b14 = "This matches up to the SLC's specific goal"
+    var b14 = "This matches up to the SJLC's specific sub-goal"
         +" that the calendar year start on ny."
 
     var b15 = c2b1( " generic" );
 
-    var b16 = "This matches up to the SLC's specific goal"
+    var b16 = "This matches up to the SJLC's specific sub-goal"
         +" that the calendar year start on km for some integer k."
 
     return se( b10, b11, b12, b13, b14, b15, b16 );
@@ -191,16 +226,16 @@ function slc_goals()
 
 function constant_values()
 {
-    var e = "Before showing how the SLC pursues its goals,"
+    var e = "Before showing how the SJLC pursues its goal,"
         +" i.e. before showing our implementation,"
-        +" we will present the constants used by the SLC.";
+        +" we will present the constants used by the SJLC.";
 
-    var e2 = "Their exact values are not important to understanding the SLC,"
+    var e2 = "Their exact values are not important to understanding the SJLC,"
         +" in the sense that even if they were slightly different,"
         +" the calendar would behave similarly, and our implementation"
         +" would remain the same.";
 
-    var e3 = "But it may help understand the SLC to have concrete numbers in mind.";
+    var e3 = "But it may help understand the SJLC to have concrete numbers in mind.";
 
     var f = "The first constant";
 
@@ -234,7 +269,7 @@ function constant_values()
     var k1a = "The denominator's value of 19 gives rise to a 19-year"
         +" cycle of leap and non-leap years."
 
-    var k2 = "For convenience, the SLC uses a derived constant";
+    var k2 = "For convenience, the SJLC uses a derived constant";
 
     var constant_y = math("y");
 
@@ -249,7 +284,7 @@ function constant_values()
 
 function what_implement_means()
 {
-    var a = "What will it mean to \"implement\" the SLC?";
+    var a = "What will it mean to \"implement\" the SJLC?";
 
     var b = "In general, to implement a calendar is to give a day number for"
         +" each day name.";
@@ -276,14 +311,14 @@ function what_implement_means()
 function slc_details()
 {
     var d1 =
-        "To implement the SLC,"
+        "To implement the SJLC,"
         +" first let's choose, for any year n, what \"New Year's Month\""
-        +" should be, in terms of whole months elapsed since the SLC"
+        +" should be, in terms of whole months elapsed since the SJLC"
         +" origin."
 
     var d2 = "Here we use \"month\" to mean m.";
 
-    var d3 = "We will abbreviate \"SLC New Year's Month for year n\" to σ(n).";
+    var d3 = "We will abbreviate \"SJLC New Year's Month for year n\" to σ(n).";
 
     var d4 = "In other words σ(n) yields a k such that km is near ny.";
 
@@ -294,9 +329,9 @@ function slc_details()
         +" floor(na).";
 
     var d7 = "Now let's choose, for any year n, what New Year's Day should be, in"
-        +" terms of whole days elapsed since the SLC origin.";
+        +" terms of whole days elapsed since the SJLC origin.";
 
-    var d8 = "We will abbreviate \"SLC New Year's Day for year n\" to s(n).";
+    var d8 = "We will abbreviate \"SJLC New Year's Day for year n\" to s(n).";
 
     var d9 = "Let's make s(n) be the day that is closest to mσ(n) without going over.";
 
@@ -325,6 +360,7 @@ function slc_bounds()
 var outstr =
     pa( work_our_way_up(),
         reconcile_cycles(),
+        relevancy(),
         lunisolar_goals(),
         slc_is_arithmetic(),
         slc_goals(),
@@ -369,4 +405,4 @@ function space_join( a )
 process.stdout.write( outstr );
 
 
-//  LocalWords:  TODO synodic SLC's ny na inlining
+//  LocalWords:  TODO synodic SJLC's ny na inlining
