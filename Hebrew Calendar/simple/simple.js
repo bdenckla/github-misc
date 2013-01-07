@@ -119,7 +119,7 @@ function relevancy()
 function c2a1s( a, c )
 {
     return "The " + c + a
-        + " goal is to have New Year's Days fall";
+        + " sub-goal is to have New Year's Days fall";
 }
 
 function c2a1( a )
