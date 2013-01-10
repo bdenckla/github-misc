@@ -1,0 +1,39 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="1000" height="700" version="1.1"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+
+  <rect x="0" y="0" width="1000" height="700" fill="black"/>
+
+  <defs>
+    <g id="set of 7">
+      <circle cx="0" cy="300" r="5"/>
+      <circle cx="50" cy="250" r="5"/>
+      <circle cx="100" cy="200" r="5"/>
+      <circle cx="150" cy="150" r="5"/>
+      <circle cx="200" cy="100" r="5"/>
+      <circle cx="250" cy="50" r="5"/>
+      <circle cx="300" cy="0" r="5"/>
+    </g>
+    <rect id="end-prohibited" x="0" y="0" width="350" height="50" fill="rgb(20%,20%,20%)"/>
+    <rect id="start-prohibited" x="0" y="0" width="50" height="450" fill="rgb(20%,20%,20%)"/>
+  </defs>
+
+  <use x="25" y="375" xlink:href="#end-prohibited"/>
+  <use x="25" y="275" xlink:href="#end-prohibited"/>
+  <use x="25" y="125" xlink:href="#end-prohibited"/>
+  <use x="25" y="25" xlink:href="#end-prohibited"/>
+
+  <use x="25" y="25" xlink:href="#start-prohibited"/>
+  <use x="175" y="25" xlink:href="#start-prohibited"/>
+  <use x="275" y="25" xlink:href="#start-prohibited"/>
+
+  <use x="50" y="50" xlink:href="#set of 7" fill="yellow"/>
+  <use x="50" y="100" xlink:href="#set of 7" fill="orange"/>
+  <use x="50" y="150" xlink:href="#set of 7" fill="red"/>
+
+
+
+</svg>
