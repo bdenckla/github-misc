@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script assumes that the bdenckla_rsa file is already in ~/Downloads.
+# This script assumes that the id_rsa file is already in ~/Downloads.
 
 # Debian:
 #     add self to sudo group, then graphically log out & back in
@@ -11,7 +11,7 @@
 #     sudo apt-get remove virtualbox-ose-guest*
 #     sudo sh /media/cdrom0/VBoxLinuxAdditions.run
 # All:
-#    Download bdenckla_rsa from Google Docs into Downloads.
+#    Download id_rsa from Google Docs into Downloads.
 #    Download this file by downloading github-misc from github as a tarball.
 
 # Notes on Brother MFC-8660DN scanner install:
@@ -40,19 +40,19 @@ sudo apt-get -y install \
     || \
     exit
 
-rsa=bdenckla_rsa
+rsa=id_rsa
 
 [ -f ~/.ssh/$rsa ] || \
     ( mv ~/Downloads/$rsa ~/.ssh && chmod go-rwx ~/.ssh/$rsa ) \
     || \
     exit
 
-idfi_line="IdentityFile ~/.ssh/$rsa"
+# idfi_line="IdentityFile ~/.ssh/$rsa"
 
-grep "$idfi_line" ~/.ssh/config || \
-    ( echo "$idfi_line" >> ~/.ssh/config ) \
-    || \
-    exit
+# grep "$idfi_line" ~/.ssh/config || \
+#     ( echo "$idfi_line" >> ~/.ssh/config ) \
+#     || \
+#     exit
 
 [ -d ~/github-misc ] || \
     git clone git@github.com:bdenckla/github-misc.git ~/github-misc \
