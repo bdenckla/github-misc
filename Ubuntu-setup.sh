@@ -59,6 +59,11 @@ rsa=id_rsa
     || \
     exit
 
+[ -d ~/vsource ] || \
+    git clone vsource4@vs4c.org:private/vsource ~/vsource \
+    || \
+    exit
+
 for f in gitconfig emacs; do
     [ -h ~/.$f ] \
     || \
