@@ -4,3 +4,4 @@
 (setq-default inhibit-startup-screen t)
 (setq-default show-trailing-whitespace t)
 (tool-bar-mode -1)
+(column-number-mode 1)
