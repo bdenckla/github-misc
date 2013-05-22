@@ -32,21 +32,16 @@ function work_our_way_up()
     var a2 = "In the first stage,"
         +" we will discuss the general goal of the Jewish calendar.";
 
-    var b = "We will call any calendar that pursues this goal a"
-        +" Jewish-like calendar (JLC).";
-
     var a3 = "In the second stage,"
-        +" we will present a simple Jewish-like calendar, i.e."
+        +" we will present"
         +" a calendar that pursues the same general goal as the"
-        +" Jewish calendar, but has simpler specifics.";
-
-    var a4 = "We will call this calendar the SJLC."
+        +" Jewish calendar, but with simpler specifics.";
 
     var a6 = "In the third and final stage,"
         +" we will present the actual Jewish calendar"
-        +" as a set of complications added to the SJLC.";
+        +" as a set of complications added to the simple calendar.";
 
-    return se( a1, a2, a3, a4, a6 );
+    return se( a1, a2, a3, a6 );
 }
 
 // TODO: Acknowledge Dershowitz & Reingold.
@@ -73,8 +68,7 @@ function reconcile_cycles()
         +" the solar day,"
         +" the synodic month, and"
         +" the tropical year"
-        +" are defined in a way"
-        +" that makes them the cycles most relevant to life on earth.";
+        +" are usually the cycles most relevant to life on earth.";
 
     return se( b1, b2, b3, b4 );
 }
@@ -98,7 +92,7 @@ function relevancy()
 
     var f = "But that's just my opinion.";
 
-    var g = "And even though a sidereal year seem less relevant to me,"
+    var g = "And even though a sidereal year seems less relevant to me,"
         +" I find it delightful.";
 
     var h = "We shall see, much later, that the Jewish calendar itself"
@@ -107,7 +101,7 @@ function relevancy()
 
     var i = "Namely, the Jewish calendar is"
         +" made much more complex by its delightful"
-        +" insistence that the year start on only 4 of the 7 days"
+        +" insistence that the year can only start on 4 of the 7 days"
         +" of the week.";
 
     var j = "This constraint has no astronomical basis, and is"
@@ -185,40 +179,42 @@ function lunisolar_goals()
 function slc_is_arithmetic()
 {
 
-    var b6 = "Really what the SJLC tries to reconcile are approximations of the"
+    var b6 = "Really what the Jewish calendar tries to reconcile are"
+        +" approximations of the"
         +" mean lengths of these cycles, not the cycles themselves."
 
-    var b7 = "I.e. the SJLC is an arithmetic calendar.";
+    var b7 = "I.e. the Jewish calendar is an arithmetic calendar.";
 
     var b8 = "The values of its constants are motivated by a desire"
         +" to match observable cycles.";
 
-    var b9 = "But the SJLC is an algorithm divorced from observation.";
+    var b9 = "But the Jewish calendar is an algorithm divorced from"
+        +" any ongoing observation.";
 
     return se( b6, b7, b8, b9 );
 }
 
 function slc_goals()
 {
-    var b10 = "Let m and y be the SJLC's approximations for"
+    var b10 = "Let m and y be the simple calendar's approximations for"
         +" the synodic month and tropical year.";
 
     var b11 = "Using only an integral number of days per calendar year,"
-        +" the SJLC's goal is to make calendar year n start on ny"
+        +" the simple calendar's goal is to make calendar year n start on ny"
         +" and on km for some integer k.";
 
-    var b12 = "Let's see how this specific goal of the SJLC"
-        +" matches up to the generic goal that all Jewish-like"
-        +" calendars try to meet."
+    var b12 = "Let's see how this specific goal of the simple calendar"
+        +" matches up to the general goal of the Jewish"
+        +" calendar."
 
     var b13 = c2a1( " generic" );
 
-    var b14 = "This matches up to the SJLC's specific sub-goal"
+    var b14 = "This matches up to the simple calendar's specific sub-goal"
         +" that the calendar year start on ny."
 
     var b15 = c2b1( " generic" );
 
-    var b16 = "This matches up to the SJLC's specific sub-goal"
+    var b16 = "This matches up to the simple calendar's specific sub-goal"
         +" that the calendar year start on km for some integer k."
 
     return se( b10, b11, b12, b13, b14, b15, b16 );
@@ -226,16 +222,16 @@ function slc_goals()
 
 function constant_values()
 {
-    var e = "Before showing how the SJLC pursues its goal,"
+    var e = "Before showing how the simple calendar pursues its goal,"
         +" i.e. before showing our implementation,"
-        +" we will present the constants used by the SJLC.";
+        +" we will present the constants used by the simple calendar.";
 
-    var e2 = "Their exact values are not important to understanding the SJLC,"
+    var e2 = "Their exact values are not important to understanding the simple calendar,"
         +" in the sense that even if they were slightly different,"
         +" the calendar would behave similarly, and our implementation"
         +" would remain the same.";
 
-    var e3 = "But it may help understand the SJLC to have concrete numbers in mind.";
+    var e3 = "But it may help understand the simple calendar to have concrete numbers in mind.";
 
     var f = "The first constant";
 
@@ -269,7 +265,7 @@ function constant_values()
     var k1a = "The denominator's value of 19 gives rise to a 19-year"
         +" cycle of leap and non-leap years."
 
-    var k2 = "For convenience, the SJLC uses a derived constant";
+    var k2 = "For convenience, the simple calendar uses a derived constant";
 
     var constant_y = math("y");
 
@@ -284,7 +280,7 @@ function constant_values()
 
 function what_implement_means()
 {
-    var a = "What will it mean to \"implement\" the SJLC?";
+    var a = "What will it mean to \"implement\" the simple calendar?";
 
     var b = "In general, to implement a calendar is to give a day number for"
         +" each day name.";
@@ -311,14 +307,14 @@ function what_implement_means()
 function slc_details()
 {
     var d1 =
-        "To implement the SJLC,"
+        "To implement the simple calendar,"
         +" first let's choose, for any year n, what \"New Year's Month\""
-        +" should be, in terms of whole months elapsed since the SJLC"
+        +" should be, in terms of whole months elapsed since the simple calendar's"
         +" origin."
 
     var d2 = "Here we use \"month\" to mean m.";
 
-    var d3 = "We will abbreviate \"SJLC New Year's Month for year n\" to σ(n).";
+    var d3 = "We will abbreviate \"simple calendar New Year's Month for year n\" to σ(n).";
 
     var d4 = "In other words σ(n) yields a k such that km is near ny.";
 
@@ -329,9 +325,9 @@ function slc_details()
         +" floor(na).";
 
     var d7 = "Now let's choose, for any year n, what New Year's Day should be, in"
-        +" terms of whole days elapsed since the SJLC origin.";
+        +" terms of whole days elapsed since the simple calendar's origin.";
 
-    var d8 = "We will abbreviate \"SJLC New Year's Day for year n\" to s(n).";
+    var d8 = "We will abbreviate \"simple calendar New Year's Day for year n\" to s(n).";
 
     var d9 = "Let's make s(n) be the day that is closest to mσ(n) without going over.";
 
@@ -405,4 +401,4 @@ function space_join( a )
 process.stdout.write( outstr );
 
 
-//  LocalWords:  TODO synodic SJLC's ny na inlining
+//  LocalWords:  TODO synodic ny na inlining
