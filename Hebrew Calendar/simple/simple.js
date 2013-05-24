@@ -18,6 +18,8 @@ var leaps_per_cycle = 7;
 
 var non_leaps_per_cycle = 12;
 
+// ****************************************
+
 var parts_per_day = parts_per_min * mins_per_hour * hours_per_day;
 
 var parts_per_m = wd_per_m * parts_per_day + pbwd_per_m;
@@ -30,6 +32,43 @@ var months_per_cycle =
 var parts_per_cycle = months_per_cycle * parts_per_m;
 
 var years_per_cycle = leaps_per_cycle + non_leaps_per_cycle;
+
+// ****************************************
+
+var math_m = math("$m");
+var math_a = math("$a");
+var math_n = math("$n");
+var math_k = math("$k");
+
+var constant_m_float = constant_m( add_float, divide_float );
+
+var constant_m_integer_expression = constant_m( add_expression, divide_expression );
+
+var ma_product_symbolic_expression = math_m + math_a;
+
+var ma_product_float = constant_m_float * constant_a_float();
+
+var na_product_symbolic_expression = math_n + math_a;
+
+var nma_product = math_n + math_m + math_a;
+
+var sigma_of_n = 'σ(n)';
+
+var msigma_of_n = math_m+sigma_of_n;
+
+var ess_of_n = 's(n)';
+
+var floor_of_na = floor_of( na_product_symbolic_expression );
+
+var mfloor_of_na = math_m + floor_of_na;
+
+var km_product = product_expression( math_k, math_m );
+
+var km_for_some_k = km_product +" for some integer " + math_k;
+
+var m_plus_1_float = add_float( constant_m_float, 1 );
+
+var m_plus_1_expression = add_expression( math_m, '1' );
 
 // ****************************************
 
@@ -92,21 +131,19 @@ function reconcile_cycles()
 function c2a1s( a, c )
 {
     return "The " + c + a
-        + " goal is to have New Year's Days fall";
+        + " goal is to have New Year's Day fall";
 }
 
 function c2a1( a )
 {
-    return c2a1s( a, "first" ) + " near (and only near!)"
-        +" each of the times that"
+    return c2a1s( a, "first" ) + " near"
         +" a certain phase of the"
-        +" tropical year"
-        +" is reached.";
+        +" tropical year.";
 }
 
 function c2b1( a )
 {
-    return c2a1s( a, "second") +" only near"
+    return c2a1s( a, "second") +" near"
         +" a certain phase of the"
         +" synodic month.";
 }
@@ -137,8 +174,11 @@ function lunisolar_goals()
         +" is the new moon.";
 
     var g =
-        "In other words, New Year's Day should fall both near a new"
-        +" moon and near the autumnal equinox.";
+        "In other words, New Year's Day should fall both"
+        +" near the autumnal equinox"
+        +" and"
+        +" near a new moon"
+        +".";
 
     // TODO: Find out whether we need to constrain our claim about the
     // autumnal equinox to something like "nowadays" or "in modern times".
@@ -164,7 +204,7 @@ function slc_is_arithmetic()
 {
     var a =
         "Really what the Jewish calendar tries to reconcile are"
-        +" approximations of the"
+        +" estimates of the"
         +" mean lengths of these cycles, not the cycles themselves."
 
     var b =
@@ -185,7 +225,8 @@ function slc_is_arithmetic()
         +" one of its estimates of a new moon.";
 
     var g = "These estimates are formed from an estimate of the time of some"
-        +" \"original\" new moon and an estimate of the synodic month."
+        +" \"original\" new moon and an estimate of the length of the"
+        +" synodic month."
 
     var h = "These estimates were fixed in antiquity, i.e. are not updated"
         +" by ongoing observation."
@@ -195,14 +236,62 @@ function slc_is_arithmetic()
 
 function slc_goals()
 {
+    var example_year = 2;
+
     var a =
-        "Let m and y be the simple calendar's approximations for"
-        +" the synodic month and tropical year.";
+        "Let "+math_m+" and "+math_a+" be the Jewish calendar's estimates for"
+        +" days per synodic month and synodic months per tropical year.";
 
     var b =
-        "Using only an integral number of days per calendar year,"
-        +" the simple calendar's goals are to make New Year's Day n fall near nma"
-        +" and km for some integer k.";
+        "Using only a whole number of days per calendar year,"
+        +" the simple calendar's goals are to make New Year's Day "+math_n+" fall near"
+        +" "+nma_product+""
+        +" and "+km_for_some_k+".";
+
+    var b1 =
+        "So, for example, for year "+example_year+
+        ", one of the simple calendar's goals is"
+        +" to make New Year's Day"
+        +" fall near"
+        + " " + nma_product_given_n_symbolic( example_year )
+        + ".";
+
+    var b2 =
+        nma_product_given_n_symbolic( example_year )
+        + " is about"
+        + " "+one_digit_past_decimal( nma_product_given_n_float( example_year ) )
+        + " days.";
+
+    var b3 = "So, New Year's Day "+example_year
+        + " should fall near"
+        + " " + one_digit_past_decimal( nma_product_given_n_float( example_year ) )
+        + " days after the (as yet undefined) origin."
+
+    var b4 =
+        "The simple calendar's other goal is"
+        +" to make all New Year's Days fall near "+km_for_some_k+".";
+
+    var example_k1 = sigma( example_year );
+    var example_k2 = sigma_ceil( example_year );
+    var example_km1 = one_digit_past_decimal( msigma( example_year ) );
+    var example_km2 = one_digit_past_decimal( msigma_ceil( example_year ) );
+
+    var b5 =
+        "For year "+example_year+", this could be satisfied by falling near either"
+        +" " + example_k1+math_m+" or"
+        +" " + example_k2+math_m+","
+        +" since these"
+        +" are the multiples of m (i.e. the values of km)"
+        +" closest to"
+        +" "+nma_product_given_n_symbolic( example_year )+".";
+
+    var b6 =
+        "("
+        + example_k1+math_m+" = "+example_km1+" days"
+        + " and"
+        + " "
+        + example_k2+math_m+" = "+example_km2+" days"
+        + ".)";
 
     var c =
         "Let's see how these specific goals of the simple calendar"
@@ -214,16 +303,16 @@ function slc_goals()
 
     var e =
         "This matches up to the simple calendar's specific goal"
-        +" to make New Year's Day n fall near nma."
+        +" to make New Year's Day "+math_n+" fall near "+nma_product+"."
 
     var f =
         c2b1( " general" );
 
     var g =
         "This matches up to the simple calendar's specific goal"
-        +" to make New Year's Day fall near km for some integer k."
+        +" to make New Year's Day fall near "+km_for_some_k+"."
 
-    return se( a, b, c, d, e, f, g );
+    return se( a, b, b1, b2, b3, b4, b5, b6, c, d, e, f, g );
 }
 
 function constant_values()
@@ -245,26 +334,26 @@ function constant_values()
 
     var d =
         "The first constant,"
-        + " " + math("m") + ","
+        + " " + math_m + ","
         + " is"
-        + " " + constant_m_symbolic()
+        + " " + constant_m_integer_expression
         + " and has units \"days per synodic month\"."
         + " In decimal, it is about"
-        + " " + four_digits_past_decimal( constant_m_literal() )
+        + " " + four_digits_past_decimal( constant_m_float )
         + ".";
 
     var e =
-        "The second constant, " + math("a") + ", is"
-        + " " + constant_a_symbolic()
+        "The second constant, " + math_a + ", is"
+        + " " + constant_a_integer_expression()
         + " and has units \"synodic months per tropical year\"."
         + " In decimal, it is about"
-        + " " + four_digits_past_decimal( constant_a_literal() )
+        + " " + four_digits_past_decimal( constant_a_float() )
         + ".";
 
     var f =
-        "For reference, " + math("m") + math("a")
+        "For reference, " + ma_product_symbolic_expression
         + " is about"
-        + " " + four_digits_past_decimal( ma_product() )
+        + " " + four_digits_past_decimal( ma_product_float )
         + " and has units \"days per tropical year\".";
 
     return se( a, b, c, d, e, f );
@@ -293,7 +382,7 @@ function what_implement_means()
 
     var e =
         "So, for our purposes, to implement a calendar is to give a day number"
-        +" for each New Year's Day name.";
+        +" for each New Year's Day's name.";
 
     var f =
         "So, we can name (represent) New Year's Days by"
@@ -312,29 +401,34 @@ function slc_details_1()
 {
     var a =
         "To implement the simple calendar,"
-        +" first let's choose, for any year n, what its \"New Year's Month\""
+        +" first let's choose, for any year"
+        +" " + math_n + ", what its \"New Year's Month\""
         +" should be, in terms of whole synodic months elapsed since the"
         +" simple calendar's"
         +" origin."
 
     var c =
-        "We'll call this σ(n).";
+        "We'll call this " + sigma_of_n + ".";
 
     var d =
-        "Our estimate of the length of a tropical year, in synodic months, is a.";
+        "Our estimate of the length of a tropical year, in synodic months, is"
+        + " " + math_a + ".";
 
     var e =
-        "So, we would estimate tropical year n to start at time na,"
+        "So, we would estimate tropical year " + math_n
+        +" to start at time " + na_product_symbolic_expression
         +" measured in synodic months.";
 
     var e2 =
         "But, we are constrained to whole synodic months.";
 
     var e3 =
-        "So, we choose the whole synodic month closest to na without going over.";
+        "So, we choose the whole synodic month closest to"
+        +" " + na_product_symbolic_expression
+        +" without going over.";
 
     var f =
-        "I.e., σ(n) = floor(na).";
+        "I.e., " + sigma_of_n + " = " + floor_of_na + ".";
 
     var g =
         "So, for example,"
@@ -346,10 +440,10 @@ function slc_details_1()
 
     var g1 =
         "Some presentations of the Jewish calendar focus a lot on the pattern"
-        +" of leap and non-leap years that σ(n) creates."
+        +" of leap and non-leap years that "+sigma_of_n+" creates."
 
     var g2 =
-        "E.g. if e(n) = σ(n+1) - σ(n),"
+        "E.g. if e(n) = σ(n+1) - "+sigma_of_n+","
         + " e(0) = " + sigma_forward_delta(0) +","
         + " e(1) = " + sigma_forward_delta(1) +","
         + " e(2) = " + sigma_forward_delta(2) +","
@@ -368,34 +462,38 @@ function slc_details_2()
     var a =
         "Now that we've chosen New Year's Month, let finish our job"
         +" by choosing,"
-        +" for any year n, what New Year's Day should be, in"
+        +" for any year "+math_n+", what New Year's Day should be, in"
         +" terms of whole days elapsed since the simple calendar's origin.";
 
     var b =
-        "We'll call this s(n).";
+        "We'll call this "+ess_of_n+".";
 
     var c =
         "Let's make New Year's Day fall near the"
         +" start of New Year's Month.";
 
     var d =
-        "Our estimate of the length of a synodic month, in days, is m.";
+        "Our estimate of the length of a synodic month, in days, is "+math_m+".";
 
     var e =
-        "So, we would estimate synodic month σ(n) to start at time mσ(n),"
+        "So, we would estimate synodic month "+sigma_of_n
+        +" to start at time "+msigma_of_n+","
         +" measured in days.";
 
     var f =
         "But, we are constrained to whole days.";
 
     var g =
-        "So, let's make s(n) be the day that is closest to mσ(n) without going over.";
+        "So, let's make "+ess_of_n
+        +" be the day that is closest to "+msigma_of_n
+        +" without going over.";
 
     var h =
-        "I.e., s(n) = floor(mσ(n)).";
+        "I.e., "+ess_of_n+" = "+floor_of( msigma_of_n )+".";
 
     var i =
-        "Or, \"inlining\" σ(n), s(n) = floor(m*floor(na)).";
+        "Or, \"inlining\" "+sigma_of_n+", "+ess_of_n+" ="
+        + " "+floor_of( mfloor_of_na )+".";
 
     return se( a, b, c, d, e, f, g, h, i );
 }
@@ -403,27 +501,31 @@ function slc_details_2()
 function slc_bounds()
 {
     var a =
-        "So, how close is s(n) to nma, and how close is it to km for"
-        +" some integer k?";
+        "So, how close is "+ess_of_n+" to "+nma_product+", and how close is it to"
+        +" "+""+km_for_some_k+"?";
 
     var b =
-        "It is within (-(m+1),0] of nma.";
+        "It is within (-("+m_plus_1_expression+"),0] of "+nma_product+".";
 
     var c =
-        "I.e. it is less than m+1 before and not after.";
+        "I.e. it is less than"
+        +" "+m_plus_1_expression
+        +" days before "+nma_product+" and not after it.";
 
     var d =
-        "It is within (-1,0] of km for some k.";
+        "It is within (-1,0] of "+km_for_some_k+".";
 
     var e =
-        "I.e. it is less than a day before and not after.";
+        "I.e. it is less than a day before some "+km_product+" and not after.";
 
     var f = "So if the origin (day zero)"
         +" falls exactly on an autumnal equinox and a full moon,"
-        +" and the estimates m and y are perfect,"
+        +" and the estimates "+math_m+" and "+math_a+" are perfect,"
         +" all New Year's Days"
         +" will fall"
-        +" within about 30.531 days of the autumnal equinox"
+        +" within about"
+        + " "+four_digits_past_decimal( m_plus_1_float )
+        +" days of the autumnal equinox"
         +" and"
         +" within a day of a full moon"
         +"."
@@ -486,54 +588,59 @@ function constant_a( divide )
     return divide( months_per_cycle, years_per_cycle );
 }
 
-function constant_m_literal()
+function constant_a_float()
 {
-    return constant_m( add_literal, divide_literal );
+    return constant_a( divide_float );
 }
 
-function constant_m_symbolic()
+function constant_a_integer_expression()
 {
-    return constant_m( add_symbolic, divide_symbolic );
+    return constant_a( divide_expression );
 }
 
-function constant_a_literal()
-{
-    return constant_a( divide_literal );
-}
-
-function constant_a_symbolic()
-{
-    return constant_a( divide_symbolic );
-}
-
-function divide_symbolic( a, b )
+function divide_expression( a, b )
 {
     return a + "/" + b;
 }
 
-function divide_literal( a, b )
+function divide_float( a, b )
 {
     return a / b;
 }
 
-function add_symbolic( a, b )
+function add_expression( a, b )
 {
     return a + "+" + b;
 }
 
-function add_literal( a, b )
+function add_float( a, b )
 {
     return a + b;
 }
 
-function ma_product()
+function product_expression( a, b )
 {
-    return constant_m_literal() * constant_a_literal();
+    return a + b;
 }
 
 function sigma( n )
 {
-    return Math.floor( n * constant_a_literal() );
+    return Math.floor( n * constant_a_float() );
+}
+
+function sigma_ceil( n )
+{
+    return Math.ceil( n * constant_a_float() );
+}
+
+function msigma( n )
+{
+    return constant_m_float * sigma( n );
+}
+
+function msigma_ceil( n )
+{
+    return constant_m_float * sigma_ceil( n );
 }
 
 function sigma_forward_delta( n )
@@ -544,6 +651,26 @@ function sigma_forward_delta( n )
 function four_digits_past_decimal( x )
 {
     return x.toFixed( 4 );
+}
+
+function one_digit_past_decimal( x )
+{
+    return x.toFixed( 1 );
+}
+
+function floor_of( x )
+{
+    return "floor("+x+")";
+}
+
+function nma_product_given_n_symbolic( n )
+{
+    return n + ma_product_symbolic_expression;
+}
+
+function nma_product_given_n_float( n )
+{
+    return n * ma_product_float;
 }
 
 process.stdout.write( outstr );
