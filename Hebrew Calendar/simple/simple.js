@@ -1,76 +1,283 @@
 "use strict";
 
-var parts_per_min = 18; // parts per minute
+// ****************************************
+// Integer constants
+// ****************************************
 
-var mins_per_hour = 60; // minutes per hour
+var parts_per_min       = 18;    // parts per minute
 
-var hours_per_day = 24 // hours per day
+var mins_per_hour       = 60;    // minutes per hour
 
-var wd_per_m = 29; // whole days per m
+var hours_per_day       = 24     // hours per day
 
-var pbwd_per_m = 13753; // parts beyond whole days per m
+var wd_per_m            = 29;    // whole days per m
 
-var months_per_leap = 13;
+var pbwd_per_m          = 13753; // parts beyond whole days per m
 
-var months_per_non_leap = 12;
+var months_per_leap     = 13;    // months in a leap year
 
-var leaps_per_cycle = 7;
+var months_per_non_leap = 12;    // months in a non-leap year
 
-var non_leaps_per_cycle = 12;
+var leaps_per_cycle     = 7;     // leap years in a (19-year) leap/non-leap cycle
 
+var non_leaps_per_cycle = 12;    // non-leap years in a (19-year) leap/non-leap cycle
+
+// ****************************************
+// Derived integer constants
 // ****************************************
 
 var parts_per_day = parts_per_min * mins_per_hour * hours_per_day;
-
-var parts_per_m = wd_per_m * parts_per_day + pbwd_per_m;
 
 var months_per_cycle =
     months_per_leap     * leaps_per_cycle
     +
     months_per_non_leap * non_leaps_per_cycle;
 
-var parts_per_cycle = months_per_cycle * parts_per_m;
-
 var years_per_cycle = leaps_per_cycle + non_leaps_per_cycle;
 
 // ****************************************
+
+var mode_expression_shallow = 'mode:expression:shallow';
+var mode_expression_deep    = 'mode:expression:deep';
+var mode_value              = 'mode:value';
 
 var math_m = math("$m");
 var math_a = math("$a");
 var math_n = math("$n");
 var math_k = math("$k");
 
-var constant_m_float = constant_m( add_float, divide_float );
+var constant_m_symbol = math_m;
+var constant_a_symbol = math_a;
+var n_symbol = math_n;
+var k_symbol = math_k;
 
-var constant_m_integer_expression = constant_m( add_expression, divide_expression );
+var constant_m_value      = constant_m( mode_value );
+var constant_m_expression = constant_m( mode_expression_deep );
 
-var ma_product_symbolic_expression = math_m + math_a;
+var constant_a_value      = constant_a( mode_value );
+var constant_a_expression = constant_a( mode_expression_deep );
 
-var ma_product_float = constant_m_float * constant_a_float();
+var ma_product_value      = ma_product( mode_value );
+var ma_product_expression = ma_product( mode_expression_shallow );
 
-var na_product_symbolic_expression = math_n + math_a;
+var na_product = multiply_expression( n_symbol, constant_a_symbol );
 
-var nma_product = math_n + math_m + math_a;
+var nma_product = nma_product_given_n_expression( n_symbol );
 
-var sigma_of_n = 'σ(n)';
+var sigma_of_n = sigma( mode_expression_shallow, n_symbol );
 
-var msigma_of_n = math_m+sigma_of_n;
+var msigma_of_n = msigma( mode_expression_shallow, n_symbol );
 
 var ess_of_n = 's(n)';
 
-var floor_of_na = floor_of( na_product_symbolic_expression );
+var floor_of_na = sigma( mode_expression_deep, n_symbol );
 
-var mfloor_of_na = math_m + floor_of_na;
+var mfloor_of_na = multiply_expression( constant_m_symbol, floor_of_na );
 
-var km_product = product_expression( math_k, math_m );
+var km_product = km_product_given_k_expression( k_symbol );
 
-var km_for_some_k = km_product +" for some integer " + math_k;
+var km_for_some_k = km_product +" for some integer " + k_symbol;
 
-var m_plus_1_float = add_float( constant_m_float, 1 );
-
-var m_plus_1_expression = add_expression( math_m, '1' );
+var m_plus_1_value      = m_plus_1( mode_value );
+var m_plus_1_expression = m_plus_1( mode_expression_shallow );
 
 // ****************************************
+
+function math( s )
+{
+    return s;
+}
+
+function pa() { return paragraph_join( Array.prototype.slice.call( arguments ) ); }
+
+function paragraph_join( a )
+{
+    return a.join( "\n\n---\n\n" );
+}
+
+function se() { return sentence_join( Array.prototype.slice.call( arguments ) ); }
+
+function sentence_join( a )
+{
+    return a.join( "\n\n" );
+}
+
+function co() { return comma_join( Array.prototype.slice.call( arguments ) ); }
+
+function comma_join( a )
+{
+    return a.join( ", " );
+}
+
+function sp() { return space_join( Array.prototype.slice.call( arguments ) ); }
+
+function space_join( a )
+{
+    return a.join( " " );
+}
+
+function multiply_expression( a, b )
+{
+    return a + "" + b;
+}
+
+function call_expression( a, b )
+{
+    return a+"("+b+")";
+}
+
+function call_value( a, b )
+{
+    return a( b );
+}
+
+function floor_expression( a )
+{
+    return call_expression( 'floor', a );
+}
+
+function add( mode, a, b )
+{
+    return mode == mode_value
+        ? a + b
+        : a + "+" + b;
+}
+
+function multiply( mode, a, b )
+{
+    return mode == mode_value
+        ? a * b
+        : multiply_expression( a, b );
+}
+
+function divide( mode, a, b )
+{
+    return mode == mode_value
+        ? a / b
+        : a + "/" + b;
+}
+
+function floor( mode, a )
+{
+    return mode == mode_value
+        ? Math.floor( a )
+        : floor_expression( a );
+}
+
+function sigma_value( n )
+{
+    return sigma( mode_value, n );
+}
+
+function tau_value( n )
+{
+    return Math.ceil( n * constant_a_value );
+}
+
+function msigma_value( n )
+{
+    return msigma( mode_value, n );
+}
+
+function msigma( mode, n )
+{
+    return multiply( mode, constant_m( mode ), sigma( mode, n ) );
+}
+
+function mtau_value( n )
+{
+    return constant_m_value * tau_value( n );
+}
+
+function sigma_forward_delta( n )
+{
+    return sigma_value( n + 1 ) - sigma_value( n );
+}
+
+function four_digits_past_decimal( x )
+{
+    return x.toFixed( 4 );
+}
+
+function one_digit_past_decimal( x )
+{
+    return x.toFixed( 1 );
+}
+
+function constant_m( mode )
+{
+    return mode == mode_expression_shallow
+        ? constant_m_symbol
+        : add( mode,
+               wd_per_m,
+               divide( mode, pbwd_per_m, parts_per_day ) );
+}
+
+function constant_a( mode )
+{
+    return mode == mode_expression_shallow
+        ? constant_a_symbol
+        : divide( mode, months_per_cycle, years_per_cycle );
+}
+
+function sigma( mode, n )
+{
+    return mode == mode_expression_shallow
+        ? call_expression( 'σ', n )
+        : sigma_deep( make_shallow( mode ), n );
+}
+
+function sigma_deep( mode, n )
+{
+    return floor( mode, multiply( mode, n, constant_a( mode ) ) );
+}
+
+function make_shallow( mode )
+{
+    return mode == mode_expression_deep
+        ? mode_expression_shallow
+        : mode;
+}
+
+function m_plus_1( mode )
+{
+    return add( mode, constant_m( mode ), 1 );
+}
+
+function ma_product( mode )
+{
+    return multiply( mode, constant_m( mode ), constant_a( mode ) );
+}
+
+function nma_product_given_n( mode, n )
+{
+    return multiply( mode, n, ma_product( mode ) );
+}
+
+function nma_product_given_n_value( n )
+{
+    return nma_product_given_n( mode_value, n );
+}
+
+function nma_product_given_n_expression( n )
+{
+    return nma_product_given_n( mode_expression_shallow, n );
+}
+
+function km_product_given_k( mode, k )
+{
+    return multiply( mode, k, constant_m( mode ) );
+}
+
+function km_product_given_k_value( k )
+{
+    return km_product_given_k( mode_value, k );
+}
+
+function km_product_given_k_expression( k )
+{
+    return km_product_given_k( mode_expression_shallow, k );
+}
 
 function work_our_way_up()
 {
@@ -94,6 +301,8 @@ function work_our_way_up()
 
     return se( a, b, c, d );
 }
+
+// ****************************************
 
 // TODO: Acknowledge Dershowitz & Reingold.
 
@@ -260,45 +469,49 @@ function slc_goals()
         ", one of the simple calendar's goals is"
         +" to make New Year's Day"
         +" fall near"
-        + " " + nma_product_given_n_symbolic( example_year )
+        + " " + nma_product_given_n_expression( example_year )
         + ".";
 
     var b2 =
-        nma_product_given_n_symbolic( example_year )
+        nma_product_given_n_expression( example_year )
         + " is about"
-        + " "+one_digit_past_decimal( nma_product_given_n_float( example_year ) )
+        + " "+one_digit_past_decimal( nma_product_given_n_value( example_year ) )
         + " days.";
 
     var b3 = "So, New Year's Day "+example_year
         + " should fall near"
         + " a point in time about"
-        + " " + one_digit_past_decimal( nma_product_given_n_float( example_year ) )
+        + " " + one_digit_past_decimal( nma_product_given_n_value( example_year ) )
         + " days after the (as yet undefined) origin."
 
     var b4 =
         "The simple calendar's other goal is"
         +" to make all New Year's Days fall near "+km_for_some_k+".";
 
-    var example_k1 = sigma( example_year );
-    var example_k2 = sigma_ceil( example_year );
-    var example_km1 = one_digit_past_decimal( msigma( example_year ) );
-    var example_km2 = one_digit_past_decimal( msigma_ceil( example_year ) );
+    var k1 = sigma_value( example_year );
+    var k2 = tau_value( example_year );
+    var k1me = km_product_given_k_expression( k1 );
+    var k2me = km_product_given_k_expression( k2 );
+    var k1mv = km_product_given_k_value( k1 );
+    var k2mv = km_product_given_k_value( k2 );
+    var k1mvr = one_digit_past_decimal( k1mv );
+    var k2mvr = one_digit_past_decimal( k2mv );
 
     var b5 =
         "For year "+example_year+", this could be satisfied by falling near either"
-        +" " + example_k1+math_m+" or"
-        +" " + example_k2+math_m+","
+        +" " + k1me + " or"
+        +" " + k2me + ","
         +" since these"
         +" are the multiples of "+math_m+" (i.e. the values of "+km_product+")"
         +" closest to"
-        +" "+nma_product_given_n_symbolic( example_year )+".";
+        +" "+nma_product_given_n_expression( example_year )+".";
 
     var b6 =
         "("
-        + example_k1+math_m+" is about "+example_km1+" days"
+        + k1me+" is about "+k1mvr+" days"
         + " and"
         + " "
-        + example_k2+math_m+" is about "+example_km2+" days"
+        + k2me+" is about "+k2mvr+" days"
         + ".)";
 
     var c =
@@ -344,24 +557,24 @@ function constant_values()
         "The first constant,"
         + " " + math_m + ","
         + " is"
-        + " " + constant_m_integer_expression
+        + " " + constant_m_expression
         + " and has units \"days per synodic month\"."
         + " In decimal, it is about"
-        + " " + four_digits_past_decimal( constant_m_float )
+        + " " + four_digits_past_decimal( constant_m_value )
         + ".";
 
     var e =
         "The second constant, " + math_a + ", is"
-        + " " + constant_a_integer_expression()
+        + " " + constant_a_expression
         + " and has units \"synodic months per tropical year\"."
         + " In decimal, it is about"
-        + " " + four_digits_past_decimal( constant_a_float() )
+        + " " + four_digits_past_decimal( constant_a_value )
         + ".";
 
     var f =
-        "For reference, " + ma_product_symbolic_expression
+        "For reference, " + ma_product_expression
         + " is about"
-        + " " + four_digits_past_decimal( ma_product_float )
+        + " " + four_digits_past_decimal( ma_product_value )
         + " and has units \"days per tropical year\".";
 
     return se( a, b, c, d, e, f );
@@ -424,7 +637,7 @@ function slc_details_1()
 
     var e =
         "So, we would estimate tropical year " + math_n
-        +" to start at time " + na_product_symbolic_expression
+        +" to start at time " + na_product
         +" measured in synodic months.";
 
     var e2 =
@@ -432,7 +645,7 @@ function slc_details_1()
 
     var e3 =
         "So, we choose the whole synodic month closest to"
-        +" " + na_product_symbolic_expression
+        +" " + na_product
         +" without going over.";
 
     var f =
@@ -440,10 +653,10 @@ function slc_details_1()
 
     var g =
         "So, for example,"
-        + " σ(0) = " + sigma(0) +","
-        + " σ(1) = " + sigma(1) +","
-        + " σ(2) = " + sigma(2) +","
-        + " σ(3) = " + sigma(3) +","
+        + " σ(0) = " + sigma_value(0) +","
+        + " σ(1) = " + sigma_value(1) +","
+        + " σ(2) = " + sigma_value(2) +","
+        + " σ(3) = " + sigma_value(3) +","
         +" etc.";
 
     var g1 =
@@ -498,11 +711,11 @@ function slc_details_2()
         +" without going over.";
 
     var h =
-        "I.e., "+ess_of_n+" = "+floor_of( msigma_of_n )+".";
+        "I.e., "+ess_of_n+" = "+floor_expression( msigma_of_n )+".";
 
     var i =
         "Or, \"inlining\" "+sigma_of_n+", "+ess_of_n+" ="
-        + " "+floor_of( mfloor_of_na )+".";
+        + " "+floor_expression( mfloor_of_na )+".";
 
     return se( a, b, c, d, e, f, g, h, i );
 }
@@ -533,7 +746,7 @@ function slc_bounds()
         +" all New Year's Days"
         +" will fall"
         +" within about"
-        + " "+four_digits_past_decimal( m_plus_1_float )
+        + " "+four_digits_past_decimal( m_plus_1_value )
         +" days of the autumnal equinox"
         +" and"
         +" within a day of a full moon"
@@ -554,135 +767,6 @@ var outstr =
         slc_details_2(),
         slc_bounds() );
 
-function math( s )
-{
-    return s;
-}
-
-function pa() { return paragraph_join( Array.prototype.slice.call( arguments ) ); }
-
-function paragraph_join( a )
-{
-    return a.join( "\n\n---\n\n" );
-}
-
-function se() { return sentence_join( Array.prototype.slice.call( arguments ) ); }
-
-function sentence_join( a )
-{
-    return a.join( "\n\n" );
-}
-
-function co() { return comma_join( Array.prototype.slice.call( arguments ) ); }
-
-function comma_join( a )
-{
-    return a.join( ", " );
-}
-
-function sp() { return space_join( Array.prototype.slice.call( arguments ) ); }
-
-function space_join( a )
-{
-    return a.join( " " );
-}
-
-function constant_m( add, divide )
-{
-    return add( wd_per_m, divide( pbwd_per_m, parts_per_day ) );
-}
-
-function constant_a( divide )
-{
-    return divide( months_per_cycle, years_per_cycle );
-}
-
-function constant_a_float()
-{
-    return constant_a( divide_float );
-}
-
-function constant_a_integer_expression()
-{
-    return constant_a( divide_expression );
-}
-
-function divide_expression( a, b )
-{
-    return a + "/" + b;
-}
-
-function divide_float( a, b )
-{
-    return a / b;
-}
-
-function add_expression( a, b )
-{
-    return a + "+" + b;
-}
-
-function add_float( a, b )
-{
-    return a + b;
-}
-
-function product_expression( a, b )
-{
-    return a + b;
-}
-
-function sigma( n )
-{
-    return Math.floor( n * constant_a_float() );
-}
-
-function sigma_ceil( n )
-{
-    return Math.ceil( n * constant_a_float() );
-}
-
-function msigma( n )
-{
-    return constant_m_float * sigma( n );
-}
-
-function msigma_ceil( n )
-{
-    return constant_m_float * sigma_ceil( n );
-}
-
-function sigma_forward_delta( n )
-{
-    return sigma( n + 1 ) - sigma( n );
-}
-
-function four_digits_past_decimal( x )
-{
-    return x.toFixed( 4 );
-}
-
-function one_digit_past_decimal( x )
-{
-    return x.toFixed( 1 );
-}
-
-function floor_of( x )
-{
-    return "floor("+x+")";
-}
-
-function nma_product_given_n_symbolic( n )
-{
-    return n + ma_product_symbolic_expression;
-}
-
-function nma_product_given_n_float( n )
-{
-    return n * ma_product_float;
-}
-
 process.stdout.write( outstr );
-
 
 //  LocalWords:  TODO synodic nma na inlining
