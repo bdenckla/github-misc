@@ -194,14 +194,19 @@ function sigma_forward_delta( n )
     return sigma_value( n + 1 ) - sigma_value( n );
 }
 
+function float_to_decimal( x, digits_past_decimal )
+{
+    return x.toFixed( digits_past_decimal );
+}
+
 function four_digits_past_decimal( x )
 {
-    return x.toFixed( 4 );
+    return float_to_decimal( x, 4 );
 }
 
 function one_digit_past_decimal( x )
 {
-    return x.toFixed( 1 );
+    return float_to_decimal( x, 1 );
 }
 
 function constant_m( mode )
@@ -450,6 +455,15 @@ function slc_is_arithmetic()
     return se( a, b, c, d, e, f, g, h );
 }
 
+function expression_is_about_value( expression,
+                                    value,
+                                    digits_past_decimal )
+{
+    var value_as_decimal = float_to_decimal( value, digits_past_decimal );
+
+    return expression + " is about " + value_as_decimal;
+}
+
 function slc_goals()
 {
     var example_year = 2;
@@ -472,16 +486,16 @@ function slc_goals()
         + " " + nma_product_given_n_expression( example_year )
         + ".";
 
-    var b2 =
-        nma_product_given_n_expression( example_year )
-        + " is about"
-        + " "+one_digit_past_decimal( nma_product_given_n_value( example_year ) )
-        + " days.";
+    var nmae = nma_product_given_n_expression( example_year )
+    var nmav = nma_product_given_n_value( example_year );
+    var nmaev = expression_is_about_value( nmae, nmav, 1 );
+
+    var b2 = nmaev + " days.";
 
     var b3 = "So, New Year's Day "+example_year
         + " should fall near"
         + " a point in time about"
-        + " " + one_digit_past_decimal( nma_product_given_n_value( example_year ) )
+        + " " + one_digit_past_decimal( nmav )
         + " days after the (as yet undefined) origin."
 
     var b4 =
@@ -494,8 +508,6 @@ function slc_goals()
     var k2me = km_product_given_k_expression( k2 );
     var k1mv = km_product_given_k_value( k1 );
     var k2mv = km_product_given_k_value( k2 );
-    var k1mvr = one_digit_past_decimal( k1mv );
-    var k2mvr = one_digit_past_decimal( k2mv );
 
     var b5 =
         "For year "+example_year+", this could be satisfied by falling near either"
@@ -508,10 +520,10 @@ function slc_goals()
 
     var b6 =
         "("
-        + k1me+" is about "+k1mvr+" days"
+        + expression_is_about_value( k1me, k1mv, 1 ) + " days"
         + " and"
         + " "
-        + k2me+" is about "+k2mvr+" days"
+        + expression_is_about_value( k2me, k2mv, 1 ) + " days"
         + ".)";
 
     var c =
@@ -536,6 +548,20 @@ function slc_goals()
     return se( a, b, b1, b2, b3, b4, b5, b6, c, d, e, f, g );
 }
 
+function introduce_constant( foo, first_or_second, units )
+{
+    var e =
+        "The " + first_or_second + " constant,"
+        + " " + foo( mode_expression_shallow ) + ", is"
+        + " " + foo( mode_expression_deep )
+        + " and has units \""+units+"\"."
+        + " In decimal, it is about"
+        + " " + four_digits_past_decimal( foo( mode_value ) )
+        + ".";
+
+    return e;
+}
+
 function constant_values()
 {
     var a =
@@ -553,28 +579,20 @@ function constant_values()
         "But it may help understand the simple calendar to have concrete"
         +" numbers in mind.";
 
-    var d =
-        "The first constant,"
-        + " " + math_m + ","
-        + " is"
-        + " " + constant_m_expression
-        + " and has units \"days per synodic month\"."
-        + " In decimal, it is about"
-        + " " + four_digits_past_decimal( constant_m_value )
-        + ".";
+    var d = introduce_constant( constant_m,
+                                "first",
+                                "days per synodic month" );
 
-    var e =
-        "The second constant, " + math_a + ", is"
-        + " " + constant_a_expression
-        + " and has units \"synodic months per tropical year\"."
-        + " In decimal, it is about"
-        + " " + four_digits_past_decimal( constant_a_value )
-        + ".";
+    var e = introduce_constant( constant_a,
+                                "second",
+                                "synodic months per tropical year" );
+
+    var mae = ma_product_expression;
+    var mav = ma_product_value;
+    var maev = expression_is_about_value( mae, mav, 4 );
 
     var f =
-        "For reference, " + ma_product_expression
-        + " is about"
-        + " " + four_digits_past_decimal( ma_product_value )
+        "For reference, " + maev
         + " and has units \"days per tropical year\".";
 
     return se( a, b, c, d, e, f );
