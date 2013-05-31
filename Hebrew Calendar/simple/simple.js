@@ -90,7 +90,7 @@ function work_our_way_up()
     var d =
         "Finally,"
         +" we will present the Jewish calendar"
-        +" as a set of complications added to the simple calendar.";
+        +" as a set of complications to the simple calendar.";
 
     return se( a, b, c, d );
 }
@@ -188,16 +188,22 @@ function lunisolar_goals()
 
     var h =
         "Now, what do we mean when we say that"
-        +" a day \"falls near\" a point in time?";
+        +" a day \"falls near\" a point in time like a new moon"
+        +" or an equinox?";
 
     var i =
-        "We mean that some point of time identified with that day,"
+        "We mean that some point in time identified with that day,"
         +" e.g. its noon, falls near there.";
 
-    var j = "For the Jewish calendar, the point of time identified with"
+    var j =
+        "(We often associate a whole day, i.e. a span of time,"
+        +" with events like a new moon or an equinox,"
+        +" but in fact they occur at a point in time.)";
+
+    var k = "For the Jewish calendar, the point in time identified with"
         +" a day is the noon of the day before!";
 
-    return se( b, c, d, e, f, g, h, i, j );
+    return se( b, c, d, e, f, g, h, i, j, k );
 }
 
 function slc_is_arithmetic()
@@ -228,7 +234,8 @@ function slc_is_arithmetic()
         +" \"original\" new moon and an estimate of the length of the"
         +" synodic month."
 
-    var h = "These estimates were fixed in antiquity, i.e. are not updated"
+    var h = "These estimates were fixed more than a thousand years ago,"
+        +" i.e. are not updated"
         +" by ongoing observation."
 
     return se( a, b, c, d, e, f, g, h );
@@ -264,6 +271,7 @@ function slc_goals()
 
     var b3 = "So, New Year's Day "+example_year
         + " should fall near"
+        + " a point in time about"
         + " " + one_digit_past_decimal( nma_product_given_n_float( example_year ) )
         + " days after the (as yet undefined) origin."
 
@@ -281,16 +289,16 @@ function slc_goals()
         +" " + example_k1+math_m+" or"
         +" " + example_k2+math_m+","
         +" since these"
-        +" are the multiples of m (i.e. the values of km)"
+        +" are the multiples of "+math_m+" (i.e. the values of "+km_product+")"
         +" closest to"
         +" "+nma_product_given_n_symbolic( example_year )+".";
 
     var b6 =
         "("
-        + example_k1+math_m+" = "+example_km1+" days"
+        + example_k1+math_m+" is about "+example_km1+" days"
         + " and"
         + " "
-        + example_k2+math_m+" = "+example_km2+" days"
+        + example_k2+math_m+" is about "+example_km2+" days"
         + ".)";
 
     var c =
@@ -440,7 +448,8 @@ function slc_details_1()
 
     var g1 =
         "Some presentations of the Jewish calendar focus a lot on the pattern"
-        +" of leap and non-leap years that "+sigma_of_n+" creates."
+        +" of leap (13-month) and non-leap (12-month) years that"
+        +" "+sigma_of_n+" creates."
 
     var g2 =
         "E.g. if e(n) = σ(n+1) - "+sigma_of_n+","
