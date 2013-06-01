@@ -68,11 +68,11 @@ var sigma_of_n = sigma( mode_expression_shallow, n_symbol );
 
 var msigma_of_n = msigma( mode_expression_shallow, n_symbol );
 
-var ess_of_n = 's(n)';
+var ess_of_n = 's(n)'; // TODO: use call_expression
 
-var floor_of_na = sigma( mode_expression_deep, n_symbol );
+var sigma_deep_of_n = sigma( mode_expression_deep, n_symbol );
 
-var mfloor_of_na = multiply_expression( constant_m_symbol, floor_of_na );
+var msigma_deep_of_n = multiply_expression( constant_m_symbol, sigma_deep_of_n );
 
 var km_product = km_product_given_k_expression( k_symbol );
 
@@ -143,11 +143,6 @@ function call_expression( a, b )
     return a+"("+b+")";
 }
 
-function call_value( a, b )
-{
-    return a( b );
-}
-
 function floor_expression( a )
 {
     return call_expression( 'floor', a );
@@ -189,11 +184,6 @@ function sigma_value( n )
 function tau_value( n )
 {
     return Math.ceil( n * constant_a_value );
-}
-
-function msigma_value( n )
-{
-    return msigma( mode_value, n );
 }
 
 function msigma( mode, n )
@@ -692,7 +682,7 @@ function slc_details_1()
         +" without going over.";
 
     var f =
-        "I.e., " + sigma_of_n + " = " + floor_of_na + ".";
+        "I.e., " + sigma_of_n + " = " + sigma_deep_of_n + ".";
 
     var g =
         "So, for example,"
@@ -758,7 +748,7 @@ function slc_details_2()
 
     var i =
         "Or, \"inlining\" "+sigma_of_n+", "+ess_of_n+" ="
-        + " "+floor_expression( mfloor_of_na )+".";
+        + " "+floor_expression( msigma_deep_of_n )+".";
 
     return se( a, b, c, d, e, f, g, h, i );
 }
