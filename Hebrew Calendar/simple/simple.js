@@ -181,6 +181,11 @@ function sigma_value( n )
     return sigma( mode_value, n );
 }
 
+function sigma_expression( n )
+{
+    return sigma( mode_expression_shallow, n );
+}
+
 function tau_value( n )
 {
     return Math.ceil( n * constant_a_value );
@@ -462,6 +467,14 @@ function slc_is_arithmetic()
     return se( a, b, c, d, e, f, g, h );
 }
 
+function e_eq_v( foo, n )
+{
+    var expression = foo( mode_expression_shallow, n );
+    var value      = foo( mode_value, n );
+
+    return expression + " = " + value;
+}
+
 function eiav( foo, digits_past_decimal )
 {
     var expression = foo( mode_expression_shallow );
@@ -684,12 +697,13 @@ function slc_details_1()
     var f =
         "I.e., " + sigma_of_n + " = " + sigma_deep_of_n + ".";
 
+    // TODO: make the below more systematic
     var g =
         "So, for example,"
-        + " σ(0) = " + sigma_value(0) +","
-        + " σ(1) = " + sigma_value(1) +","
-        + " σ(2) = " + sigma_value(2) +","
-        + " σ(3) = " + sigma_value(3) +","
+        + " " + e_eq_v( sigma, 0 ) +","
+        + " " + e_eq_v( sigma, 1 ) +","
+        + " " + e_eq_v( sigma, 2 ) +","
+        + " " + e_eq_v( sigma, 3 ) +","
         +" etc.";
 
     var g1 =
@@ -697,6 +711,7 @@ function slc_details_1()
         +" of leap (13-month) and non-leap (12-month) years that"
         +" "+sigma_of_n+" creates."
 
+    // TODO: make the below more systematic
     var g2 =
         "E.g. if e(n) = σ(n+1) - "+sigma_of_n+","
         + " e(0) = " + sigma_forward_delta(0) +","
