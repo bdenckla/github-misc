@@ -83,6 +83,23 @@ var m_plus_1_expression = m_plus_1( mode_expression_shallow );
 
 // ****************************************
 
+// The function below is from
+//
+//    http://benalman.com/news/2012/09/partial-application-in-javascript/
+
+function partial(fn /*, args...*/) {
+  // A reference to the Array#slice method.
+  var slice = Array.prototype.slice;
+  // Convert arguments object to an array, removing the first argument.
+  var args = slice.call(arguments, 1);
+
+  return function() {
+    // Invoke the originally-specified function, passing in all originally-
+    // specified arguments, followed by any just-specified arguments.
+    return fn.apply(this, args.concat(slice.call(arguments, 0)));
+  };
+}
+
 function math( s )
 {
     return s;
@@ -455,6 +472,16 @@ function slc_is_arithmetic()
     return se( a, b, c, d, e, f, g, h );
 }
 
+function eiav( foo, digits_past_decimal )
+{
+    var expression = foo( mode_expression_shallow );
+    var value      = foo( mode_value );
+
+    return expression_is_about_value( expression,
+                                      value,
+                                      digits_past_decimal );
+}
+
 function expression_is_about_value( expression,
                                     value,
                                     digits_past_decimal )
@@ -466,8 +493,6 @@ function expression_is_about_value( expression,
 
 function slc_goals()
 {
-    var example_year = 2;
-
     var a =
         "Let "+math_m+" and "+math_a+" be the Jewish calendar's estimates for"
         +" days per synodic month and synodic months per tropical year.";
@@ -478,15 +503,17 @@ function slc_goals()
         +" "+nma_product+""
         +" and "+km_for_some_k+".";
 
+    var example_year = 2;
+    var nmae = nma_product_given_n_expression( example_year )
+
     var b1 =
         "So, for example, for year "+example_year+
         ", one of the simple calendar's goals is"
         +" to make New Year's Day"
         +" fall near"
-        + " " + nma_product_given_n_expression( example_year )
+        + " " + nmae
         + ".";
 
-    var nmae = nma_product_given_n_expression( example_year )
     var nmav = nma_product_given_n_value( example_year );
     var nmaev = expression_is_about_value( nmae, nmav, 1 );
 
@@ -516,7 +543,7 @@ function slc_goals()
         +" since these"
         +" are the multiples of "+math_m+" (i.e. the values of "+km_product+")"
         +" closest to"
-        +" "+nma_product_given_n_expression( example_year )+".";
+        +" "+nmae+".";
 
     var b6 =
         "("
@@ -587,9 +614,7 @@ function constant_values()
                                 "second",
                                 "synodic months per tropical year" );
 
-    var mae = ma_product_expression;
-    var mav = ma_product_value;
-    var maev = expression_is_about_value( mae, mav, 4 );
+    var maev = eiav( ma_product, 4 );
 
     var f =
         "For reference, " + maev
