@@ -47,8 +47,8 @@ var mode_rhs   = 'mode:rhs';
 var mode_sym   = 'mode:sym';
 var mode_value = 'mode:value';
 
-var constant_m_symbol = math("$m");
-var constant_a_symbol = math("$a");
+var constant_m_symbol = math("μ");
+var constant_a_symbol = math("α");
 var n_symbol = math("$n");
 var k_symbol = math("$k");
 
@@ -182,7 +182,7 @@ function sigma_value( n )
     return sigma( mode_value, n );
 }
 
-function tau_value( n )
+function sigma_ceil_value( n )
 {
     return Math.ceil( n * constant_a_value );
 }
@@ -190,11 +190,6 @@ function tau_value( n )
 function msigma( mode, n )
 {
     return multiply( mode, constant_m( mode ), sigma( mode, n ) );
-}
-
-function mtau_value( n )
-{
-    return constant_m_value * tau_value( n );
 }
 
 function float_to_decimal( x, digits_past_decimal )
@@ -247,7 +242,7 @@ function sigma_rhs( mode, n )
 function ess( mode, n )
 {
     return mode == mode_lhs
-        ? call_expression( 's', n )
+        ? call_expression( 'τ', n )
         : ess_rhs( if_rhs_change_to_lhs( mode ), n );
 }
 
@@ -259,7 +254,7 @@ function ess_rhs( mode, n )
 function sfd( mode, n ) // sigma forward delta
 {
     return mode == mode_lhs
-        ? call_expression( 'e', n )
+        ? call_expression( 'φ', n )
         : sfd_rhs( if_rhs_change_to_lhs( mode ), n );
 }
 
@@ -553,7 +548,7 @@ function slc_goals()
         +" and "+km_for_some_k+".";
 
     var example_year = 2;
-    var nmae = nma_product_given_n_expression( example_year )
+    var nmae = nma_product_given_n_expression( example_year );
 
     var b1 =
         "So, for example, for year "+example_year+
@@ -580,7 +575,7 @@ function slc_goals()
         +" to make all New Year's Days fall near "+km_for_some_k+".";
 
     var k1 = sigma_value( example_year );
-    var k2 = tau_value( example_year );
+    var k2 = sigma_ceil_value( example_year );
     var k1me = km_product_given_k_expression( k1 );
     var k2me = km_product_given_k_expression( k2 );
     var k1mv = km_product_given_k_value( k1 );
@@ -770,7 +765,8 @@ function slc_details_1()
 
     var g3 =
         "But our more algorithmic orientation views this pattern as a"
-        +" coincidental artifact of the particular value of the constant a"
+        +" coincidental artifact of the particular value of the constant"
+        +" "+constant_a_symbol
         +" rather than a defining feature of the calendar."
 
     return se( a, c, d, e, e2, e3, f, g, g1, g2, g3 );
@@ -824,11 +820,13 @@ function slc_bounds()
     var m_plus_1_expression = m_plus_1( mode_lhs );
 
     var a =
-        "So, how close is "+ess_of_n+" to "+nma_product+", and how close is it to"
-        +" "+""+km_for_some_k+"?";
+        "So, how close is "+ess_of_n
+        +" to "+nma_product
+        +", and how close is it to "+km_for_some_k+"?";
 
     var b =
-        "It is within (-("+m_plus_1_expression+"),0] of "+nma_product+".";
+        "It is within (-("+m_plus_1_expression+"),0]"
+        +" of "+nma_product+".";
 
     var c =
         "I.e. it is less than"
@@ -839,7 +837,8 @@ function slc_bounds()
         "It is within (-1,0] of "+km_for_some_k+".";
 
     var e =
-        "I.e. it is less than a day before some "+km_product+" and not after.";
+        "I.e. it is less than a day before some"
+        +" "+km_product+" and not after.";
 
     var f =
         "So if the origin (day zero)"
@@ -850,11 +849,10 @@ function slc_bounds()
         +" all New Year's Days"
         +" will fall"
         +" within about"
-        + " "+four_digits_past_decimal( m_plus_1_value )
+        +" "+four_digits_past_decimal( m_plus_1_value )
         +" days of the autumnal equinox"
         +" and"
-        +" within a day of a full moon"
-        +"."
+        +" within a day of a full moon."
 
     return se( a, b, c, d, e, f );
 }
