@@ -37,9 +37,15 @@ var years_per_cycle = leaps_per_cycle + non_leaps_per_cycle;
 
 // ****************************************
 
-var mode_expression_shallow = 'mode:expression:shallow';
-var mode_expression_deep    = 'mode:expression:deep';
-var mode_value              = 'mode:value';
+/*
+ * mode_sym means rhs as long as it is symbolic, and lhs
+ * otherwise. By "symbolic" we mean "contains no integer literals."
+ */
+
+var mode_lhs   = 'mode:lhs';
+var mode_rhs   = 'mode:rhs';
+var mode_sym   = 'mode:sym';
+var mode_value = 'mode:value';
 
 var math_m = math("$m");
 var math_a = math("$a");
@@ -51,35 +57,28 @@ var constant_a_symbol = math_a;
 var n_symbol = math_n;
 var k_symbol = math_k;
 
-var constant_m_value      = constant_m( mode_value );
-var constant_m_expression = constant_m( mode_expression_deep );
-
-var constant_a_value      = constant_a( mode_value );
-var constant_a_expression = constant_a( mode_expression_deep );
+var constant_m_value = constant_m( mode_value );
+var constant_a_value = constant_a( mode_value );
 
 var ma_product_value      = ma_product( mode_value );
-var ma_product_expression = ma_product( mode_expression_shallow );
+var ma_product_expression = ma_product( mode_lhs );
 
 var na_product = multiply_expression( n_symbol, constant_a_symbol );
 
 var nma_product = nma_product_given_n_expression( n_symbol );
 
-var sigma_of_n = sigma( mode_expression_shallow, n_symbol );
+var sigma_of_n  = sigma ( mode_lhs, n_symbol );
+var msigma_of_n = msigma( mode_lhs, n_symbol );
+var ess_of_n    = ess   ( mode_lhs, n_symbol );
 
-var msigma_of_n = msigma( mode_expression_shallow, n_symbol );
-
-var ess_of_n = 's(n)'; // TODO: use call_expression
-
-var sigma_deep_of_n = sigma( mode_expression_deep, n_symbol );
-
-var msigma_deep_of_n = multiply_expression( constant_m_symbol, sigma_deep_of_n );
+var sigma_of_n_rhs  = sigma ( mode_rhs, n_symbol );
+var ess_of_n_rhs    = ess   ( mode_rhs, n_symbol );
+var ess_of_n_sym    = ess   ( mode_sym, n_symbol );
+var msigma_of_n_rhs = msigma( mode_rhs, n_symbol );
 
 var km_product = km_product_given_k_expression( k_symbol );
 
 var km_for_some_k = km_product +" for some integer " + k_symbol;
-
-var m_plus_1_value      = m_plus_1( mode_value );
-var m_plus_1_expression = m_plus_1( mode_expression_shallow );
 
 // ****************************************
 
@@ -155,6 +154,13 @@ function add( mode, a, b )
         : a + "+" + b;
 }
 
+function subtract( mode, a, b )
+{
+    return mode == mode_value
+        ? a - b
+        : a + "-" + b;
+}
+
 function multiply( mode, a, b )
 {
     return mode == mode_value
@@ -181,11 +187,6 @@ function sigma_value( n )
     return sigma( mode_value, n );
 }
 
-function sigma_expression( n )
-{
-    return sigma( mode_expression_shallow, n );
-}
-
 function tau_value( n )
 {
     return Math.ceil( n * constant_a_value );
@@ -199,11 +200,6 @@ function msigma( mode, n )
 function mtau_value( n )
 {
     return constant_m_value * tau_value( n );
-}
-
-function sigma_forward_delta( n )
-{
-    return sigma_value( n + 1 ) - sigma_value( n );
 }
 
 function float_to_decimal( x, digits_past_decimal )
@@ -223,7 +219,9 @@ function one_digit_past_decimal( x )
 
 function constant_m( mode )
 {
-    return mode == mode_expression_shallow
+    return ( mode == mode_lhs
+             ||
+             mode == mode_sym )
         ? constant_m_symbol
         : add( mode,
                wd_per_m,
@@ -232,27 +230,57 @@ function constant_m( mode )
 
 function constant_a( mode )
 {
-    return mode == mode_expression_shallow
+    return ( mode == mode_lhs
+             ||
+             mode == mode_sym )
         ? constant_a_symbol
         : divide( mode, months_per_cycle, years_per_cycle );
 }
 
 function sigma( mode, n )
 {
-    return mode == mode_expression_shallow
+    return mode == mode_lhs
         ? call_expression( 'σ', n )
-        : sigma_deep( make_shallow( mode ), n );
+        : sigma_rhs( if_rhs_change_to_lhs( mode ), n );
 }
 
-function sigma_deep( mode, n )
+function sigma_rhs( mode, n )
 {
     return floor( mode, multiply( mode, n, constant_a( mode ) ) );
 }
 
-function make_shallow( mode )
+function ess( mode, n )
 {
-    return mode == mode_expression_deep
-        ? mode_expression_shallow
+    return mode == mode_lhs
+        ? call_expression( 's', n )
+        : ess_rhs( if_rhs_change_to_lhs( mode ), n );
+}
+
+function ess_rhs( mode, n )
+{
+    return floor( mode, msigma( mode, n ) );
+}
+
+function sfd( mode, n ) // sigma forward delta
+{
+    return mode == mode_lhs
+        ? call_expression( 'e', n )
+        : sfd_rhs( if_rhs_change_to_lhs( mode ), n );
+}
+
+function sfd_rhs( mode, n )
+{
+    var n_plus_1 = add( mode, n, 1 );
+
+    return subtract( mode,
+                     sigma( mode, n_plus_1 ),
+                     sigma( mode, n ) );
+}
+
+function if_rhs_change_to_lhs( mode )
+{
+    return mode == mode_rhs
+        ? mode_lhs
         : mode;
 }
 
@@ -278,7 +306,7 @@ function nma_product_given_n_value( n )
 
 function nma_product_given_n_expression( n )
 {
-    return nma_product_given_n( mode_expression_shallow, n );
+    return nma_product_given_n( mode_lhs, n );
 }
 
 function km_product_given_k( mode, k )
@@ -293,7 +321,7 @@ function km_product_given_k_value( k )
 
 function km_product_given_k_expression( k )
 {
-    return km_product_given_k( mode_expression_shallow, k );
+    return km_product_given_k( mode_lhs, k );
 }
 
 function work_our_way_up()
@@ -426,7 +454,8 @@ function lunisolar_goals()
         +" with events like a new moon or an equinox,"
         +" but in fact they occur at a point in time.)";
 
-    var k = "For the Jewish calendar, the point in time identified with"
+    var k =
+        "For the Jewish calendar, the point in time identified with"
         +" a day is the noon of the day before!";
 
     return se( b, c, d, e, f, g, h, i, j, k );
@@ -450,35 +479,54 @@ function slc_is_arithmetic()
         "But the Jewish calendar is an algorithm divorced from"
         +" any ongoing observation.";
 
-    var e = "So, for example, it does not directly pursue the goal of having"
+    var e =
+        "So, for example, it does not directly pursue the goal of having"
         +" New Year's Day fall near a new moon.";
 
-    var f = "The goal it directly pursues is to have New Year's Day fall near"
+    var f =
+        "The goal it directly pursues is to have New Year's Day fall near"
         +" one of its estimates of a new moon.";
 
-    var g = "These estimates are formed from an estimate of the time of some"
+    var g =
+        "These estimates are formed from an estimate of the time of some"
         +" \"original\" new moon and an estimate of the length of the"
         +" synodic month."
 
-    var h = "These estimates were fixed more than a thousand years ago,"
+    var h =
+        "These estimates were fixed more than a thousand years ago,"
         +" i.e. are not updated"
         +" by ongoing observation."
 
     return se( a, b, c, d, e, f, g, h );
 }
 
-function e_eq_v( foo, n )
+function lhs_eq_value( f, n )
 {
-    var expression = foo( mode_expression_shallow, n );
-    var value      = foo( mode_value, n );
-
-    return expression + " = " + value;
+    return lhs_eq_mode( f, mode_value, n );
 }
 
-function eiav( foo, digits_past_decimal )
+function lhs_eq_rhs( f, n )
 {
-    var expression = foo( mode_expression_shallow );
-    var value      = foo( mode_value );
+    return lhs_eq_mode( f, mode_rhs, n );
+}
+
+function lhs_eq_sym( f, n )
+{
+    return lhs_eq_mode( f, mode_sym, n );
+}
+
+function lhs_eq_mode( f, mode, n )
+{
+    var a = f( mode_lhs, n );
+    var b = f( mode,     n );
+
+    return a + " = " + b;
+}
+
+function eiav( f, digits_past_decimal )
+{
+    var expression = f( mode_lhs );
+    var value      = f( mode_value );
 
     return expression_is_about_value( expression,
                                       value,
@@ -522,7 +570,8 @@ function slc_goals()
 
     var b2 = nmaev + " days.";
 
-    var b3 = "So, New Year's Day "+example_year
+    var b3 =
+        "So, New Year's Day "+example_year
         + " should fall near"
         + " a point in time about"
         + " " + one_digit_past_decimal( nmav )
@@ -578,15 +627,15 @@ function slc_goals()
     return se( a, b, b1, b2, b3, b4, b5, b6, c, d, e, f, g );
 }
 
-function introduce_constant( foo, first_or_second, units )
+function introduce_constant( f, first_or_second, units )
 {
     var e =
         "The " + first_or_second + " constant,"
-        + " " + foo( mode_expression_shallow ) + ", is"
-        + " " + foo( mode_expression_deep )
+        + " " + f( mode_lhs ) + ", is"
+        + " " + f( mode_rhs )
         + " and has units \""+units+"\"."
         + " In decimal, it is about"
-        + " " + four_digits_past_decimal( foo( mode_value ) )
+        + " " + four_digits_past_decimal( f( mode_value ) )
         + ".";
 
     return e;
@@ -695,15 +744,15 @@ function slc_details_1()
         +" without going over.";
 
     var f =
-        "I.e., " + sigma_of_n + " = " + sigma_deep_of_n + ".";
+        "I.e., " + lhs_eq_rhs( sigma, n_symbol ) + ".";
 
     // TODO: make the below more systematic
     var g =
         "So, for example,"
-        + " " + e_eq_v( sigma, 0 ) +","
-        + " " + e_eq_v( sigma, 1 ) +","
-        + " " + e_eq_v( sigma, 2 ) +","
-        + " " + e_eq_v( sigma, 3 ) +","
+        + " " + lhs_eq_value( sigma, 0 ) +","
+        + " " + lhs_eq_value( sigma, 1 ) +","
+        + " " + lhs_eq_value( sigma, 2 ) +","
+        + " " + lhs_eq_value( sigma, 3 ) +","
         +" etc.";
 
     var g1 =
@@ -713,11 +762,11 @@ function slc_details_1()
 
     // TODO: make the below more systematic
     var g2 =
-        "E.g. if e(n) = σ(n+1) - "+sigma_of_n+","
-        + " e(0) = " + sigma_forward_delta(0) +","
-        + " e(1) = " + sigma_forward_delta(1) +","
-        + " e(2) = " + sigma_forward_delta(2) +","
-        +" etc.";
+        "E.g. if "+lhs_eq_rhs( sfd, n_symbol )+","
+        + " " + lhs_eq_value( sfd, 0 ) +","
+        + " " + lhs_eq_value( sfd, 1 ) +","
+        + " " + lhs_eq_value( sfd, 2 ) +","
+        + " etc.";
 
     var g3 =
         "But our more algorithmic orientation views this pattern as a"
@@ -759,17 +808,20 @@ function slc_details_2()
         +" without going over.";
 
     var h =
-        "I.e., "+ess_of_n+" = "+floor_expression( msigma_of_n )+".";
+        "I.e., "+lhs_eq_rhs( ess, n_symbol )+".";
 
     var i =
-        "Or, \"inlining\" "+sigma_of_n+", "+ess_of_n+" ="
-        + " "+floor_expression( msigma_deep_of_n )+".";
+        "Or, \"inlining\" "+sigma_of_n+","
+        +" "+lhs_eq_sym( ess, n_symbol )+".";
 
     return se( a, b, c, d, e, f, g, h, i );
 }
 
 function slc_bounds()
 {
+    var m_plus_1_value      = m_plus_1( mode_value );
+    var m_plus_1_expression = m_plus_1( mode_lhs );
+
     var a =
         "So, how close is "+ess_of_n+" to "+nma_product+", and how close is it to"
         +" "+""+km_for_some_k+"?";
@@ -788,7 +840,8 @@ function slc_bounds()
     var e =
         "I.e. it is less than a day before some "+km_product+" and not after.";
 
-    var f = "So if the origin (day zero)"
+    var f =
+        "So if the origin (day zero)"
         +" falls exactly on an autumnal equinox and a full moon,"
         +" and the estimates "+math_m+" and "+math_a+" are perfect,"
         +" all New Year's Days"
