@@ -47,15 +47,10 @@ var mode_rhs   = 'mode:rhs';
 var mode_sym   = 'mode:sym';
 var mode_value = 'mode:value';
 
-var math_m = math("$m");
-var math_a = math("$a");
-var math_n = math("$n");
-var math_k = math("$k");
-
-var constant_m_symbol = math_m;
-var constant_a_symbol = math_a;
-var n_symbol = math_n;
-var k_symbol = math_k;
+var constant_m_symbol = math("$m");
+var constant_a_symbol = math("$a");
+var n_symbol = math("$n");
+var k_symbol = math("$k");
 
 var constant_m_value = constant_m( mode_value );
 var constant_a_value = constant_a( mode_value );
@@ -545,12 +540,15 @@ function expression_is_about_value( expression,
 function slc_goals()
 {
     var a =
-        "Let "+math_m+" and "+math_a+" be the Jewish calendar's estimates for"
+        "Let "+constant_m_symbol
+        +" and "+constant_a_symbol
+        +" be the Jewish calendar's estimates for"
         +" days per synodic month and synodic months per tropical year.";
 
     var b =
         "Using only a whole number of days per calendar year,"
-        +" the simple calendar's goals are to make New Year's Day "+math_n+" fall near"
+        +" the simple calendar's goals are to make New Year's Day"
+        +" "+n_symbol+" fall near"
         +" "+nma_product+""
         +" and "+km_for_some_k+".";
 
@@ -593,7 +591,8 @@ function slc_goals()
         +" " + k1me + " or"
         +" " + k2me + ","
         +" since these"
-        +" are the multiples of "+math_m+" (i.e. the values of "+km_product+")"
+        +" are the multiples of "+constant_m_symbol
+        +" (i.e. the values of "+km_product+")"
         +" closest to"
         +" "+nmae+".";
 
@@ -615,7 +614,8 @@ function slc_goals()
 
     var e =
         "This matches up to the simple calendar's specific goal"
-        +" to make New Year's Day "+math_n+" fall near "+nma_product+"."
+        +" to make New Year's Day "+n_symbol
+        +" fall near "+nma_product+"."
 
     var f =
         c2b1( " general" );
@@ -718,7 +718,7 @@ function slc_details_1()
     var a =
         "To implement the simple calendar,"
         +" first let's choose, for any year"
-        +" " + math_n + ", what its \"New Year's Month\""
+        +" " + n_symbol + ", what its \"New Year's Month\""
         +" should be, in terms of whole synodic months elapsed since the"
         +" simple calendar's"
         +" origin."
@@ -728,10 +728,10 @@ function slc_details_1()
 
     var d =
         "Our estimate of the length of a tropical year, in synodic months, is"
-        + " " + math_a + ".";
+        + " " + constant_a_symbol + ".";
 
     var e =
-        "So, we would estimate tropical year " + math_n
+        "So, we would estimate tropical year " + n_symbol
         +" to start at time " + na_product
         +" measured in synodic months.";
 
@@ -781,7 +781,7 @@ function slc_details_2()
     var a =
         "Now that we've chosen New Year's Month, let finish our job"
         +" by choosing,"
-        +" for any year "+math_n+", what New Year's Day should be, in"
+        +" for any year "+n_symbol+", what New Year's Day should be, in"
         +" terms of whole days elapsed since the simple calendar's origin.";
 
     var b =
@@ -792,7 +792,8 @@ function slc_details_2()
         +" start of New Year's Month.";
 
     var d =
-        "Our estimate of the length of a synodic month, in days, is "+math_m+".";
+        "Our estimate of the length of a synodic month, in days, is"
+        +" "+constant_m_symbol+".";
 
     var e =
         "So, we would estimate synodic month "+sigma_of_n
@@ -843,7 +844,9 @@ function slc_bounds()
     var f =
         "So if the origin (day zero)"
         +" falls exactly on an autumnal equinox and a full moon,"
-        +" and the estimates "+math_m+" and "+math_a+" are perfect,"
+        +" and the estimates "+constant_m_symbol
+        +" and "+constant_a_symbol
+        +" are perfect,"
         +" all New Year's Days"
         +" will fall"
         +" within about"
