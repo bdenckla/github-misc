@@ -49,8 +49,8 @@ var mode_value = 'mode:value';
 
 var constant_m_symbol = math("μ");
 var constant_a_symbol = math("α");
-var n_symbol = math("$n");
-var k_symbol = math("$k");
+var n_symbol = math("ν");
+var k_symbol = math("κ");
 
 var constant_m_value = constant_m( mode_value );
 var constant_a_value = constant_a( mode_value );
@@ -862,8 +862,8 @@ var outstr =
         reconcile_cycles(),
         lunisolar_goals(),
         slc_is_arithmetic(),
-        slc_goals(),
         constant_values(),
+        slc_goals(),
         what_implement_means(),
         slc_details_1(),
         slc_details_2(),
