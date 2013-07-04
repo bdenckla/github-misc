@@ -532,15 +532,15 @@
       29
     30))
 
-(defconstant years-to-months-phase -234)
-
-(defconstant epoch-phase 12084)
-
 (defconstant parts-per-day 25920)
 
 (defconstant parts-per-lunation
   (+ (* 29 parts-per-day)
      13753))
+
+(defconstant years-to-months-phase 234)
+
+(defconstant epoch-phase -12084)
 
 (defun avoid-certain-days-of-week (days)
   ;; The argument "days" is days since the Hebrew epoch, which was a
@@ -552,10 +552,10 @@
        0)))
 
 (defun months-elapsed (h-year)
-  (quotient (+ (* 235 h-year) years-to-months-phase) 19))
+  (quotient (- (* 235 h-year) years-to-months-phase) 19))
 
 (defun parts-elapsed (h-year)
-  (+ (* (months-elapsed h-year) parts-per-lunation)
+  (- (* (months-elapsed h-year) parts-per-lunation)
      epoch-phase))
 
 (defun days-elapsed (h-year)

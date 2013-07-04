@@ -10,30 +10,22 @@ var mins_per_hour       = 60;    // minutes per hour
 
 var hours_per_day       = 24     // hours per day
 
-var wd_per_m            = 29;    // whole days per m
+var wd_per_m            = 29;    // whole days per month
 
-var pbwd_per_m          = 13753; // parts beyond whole days per m
+var pbwd_per_m          = 13753; // parts beyond whole days per month
 
-var months_per_leap     = 13;    // months in a leap year
+var wm_per_y            = 12;    // whole months per year
 
-var months_per_non_leap = 12;    // months in a non-leap year
+var bbwm_per_y          = 7;     // blahs beyond whole months per year
 
-var leaps_per_cycle     = 7;     // leap years in a (19-year) leap/non-leap cycle
+var blahs_per_month     = 19;
 
-var non_leaps_per_cycle = 12;    // non-leap years in a (19-year) leap/non-leap cycle
 
 // ****************************************
 // Derived integer constants
 // ****************************************
 
 var parts_per_day = parts_per_min * mins_per_hour * hours_per_day;
-
-var months_per_cycle =
-    months_per_leap     * leaps_per_cycle
-    +
-    months_per_non_leap * non_leaps_per_cycle;
-
-var years_per_cycle = leaps_per_cycle + non_leaps_per_cycle;
 
 // ****************************************
 
@@ -64,11 +56,11 @@ var nma_product = nma_product_given_n_expression( n_symbol );
 
 var sigma_of_n  = sigma ( mode_lhs, n_symbol );
 var msigma_of_n = msigma( mode_lhs, n_symbol );
-var ess_of_n    = ess   ( mode_lhs, n_symbol );
+var tau_of_n    = tau   ( mode_lhs, n_symbol );
 
 var sigma_of_n_rhs  = sigma ( mode_rhs, n_symbol );
-var ess_of_n_rhs    = ess   ( mode_rhs, n_symbol );
-var ess_of_n_sym    = ess   ( mode_sym, n_symbol );
+var tau_of_n_rhs    = tau   ( mode_rhs, n_symbol );
+var tau_of_n_sym    = tau   ( mode_sym, n_symbol );
 var msigma_of_n_rhs = msigma( mode_rhs, n_symbol );
 
 var km_product = km_product_given_k_expression( k_symbol );
@@ -224,7 +216,9 @@ function constant_a( mode )
              ||
              mode == mode_sym )
         ? constant_a_symbol
-        : divide( mode, months_per_cycle, years_per_cycle );
+        : add( mode,
+               wm_per_y,
+               divide( mode, bbwm_per_y, blahs_per_month ) );
 }
 
 function sigma( mode, n )
@@ -239,16 +233,38 @@ function sigma_rhs( mode, n )
     return floor( mode, multiply( mode, n, constant_a( mode ) ) );
 }
 
-function ess( mode, n )
+function tau( mode, n )
 {
     return mode == mode_lhs
         ? call_expression( 'τ', n )
-        : ess_rhs( if_rhs_change_to_lhs( mode ), n );
+        : tau_rhs( if_rhs_change_to_lhs( mode ), n );
 }
 
-function ess_rhs( mode, n )
+function tau_rhs( mode, n )
 {
     return floor( mode, msigma( mode, n ) );
+}
+
+function gamma( mode, n )
+{
+    return mode == mode_lhs
+        ? call_expression( 'γ', n )
+        : gamma_rhs( if_rhs_change_to_lhs( mode ), n );
+}
+
+function gamma_rhs( mode, n )
+{
+    var na = multiply( mode, n, constant_a( mode ) );
+
+    var nap = subtract( mode, na, constant_phi( mode ) );
+
+    var fnap = floor( mode, nap );
+
+    var  mfnap = multiply( mode, constant_m( mode ), fnap );
+
+    var fmfnap = floor( mode, mfnap );
+
+    return fmfnap;
 }
 
 function sfd( mode, n ) // sigma forward delta
@@ -781,7 +797,7 @@ function slc_details_2()
         +" terms of whole days elapsed since the simple calendar's origin.";
 
     var b =
-        "We'll call this "+ess_of_n+".";
+        "We'll call this "+tau_of_n+".";
 
     var c =
         "Let's make New Year's Day fall near the"
@@ -800,16 +816,16 @@ function slc_details_2()
         "But, we are constrained to whole days.";
 
     var g =
-        "So, let's make "+ess_of_n
+        "So, let's make "+tau_of_n
         +" be the day that is closest to "+msigma_of_n
         +" without going over.";
 
     var h =
-        "I.e., "+lhs_eq_rhs( ess, n_symbol )+".";
+        "I.e., "+lhs_eq_rhs( tau, n_symbol )+".";
 
     var i =
         "Or, \"inlining\" "+sigma_of_n+","
-        +" "+lhs_eq_sym( ess, n_symbol )+".";
+        +" "+lhs_eq_sym( tau, n_symbol )+".";
 
     return se( a, b, c, d, e, f, g, h, i );
 }
@@ -820,7 +836,7 @@ function slc_bounds()
     var m_plus_1_expression = m_plus_1( mode_lhs );
 
     var a =
-        "So, how close is "+ess_of_n
+        "So, how close is "+tau_of_n
         +" to "+nma_product
         +", and how close is it to "+km_for_some_k+"?";
 
@@ -841,8 +857,8 @@ function slc_bounds()
         +" "+km_product+" and not after.";
 
     var f =
-        "So if the origin (day zero)"
-        +" falls exactly on an autumnal equinox and a full moon,"
+        "So if the origin "
+        +" is an autumnal equinox and a full moon,"
         +" and the estimates "+constant_m_symbol
         +" and "+constant_a_symbol
         +" are perfect,"
@@ -857,17 +873,40 @@ function slc_bounds()
     return se( a, b, c, d, e, f );
 }
 
+function phases()
+{
+    var a =
+        "Now, what if the desired phases"
+        +" of the tropical year and moon"
+        +" are not zero?";
+
+    var b =
+        "For example, what if the origin (time zero) is not a new moon, "
+        +" or it is a new moon but a new moon is not the desired phase?";
+
+    var c =
+        "To handle such cases we need to sprinkle a couple of phase "
+        +" constants into our previous functions."
+
+    var d =
+        lhs_eq_sym( gamma, n_symbol )+".";
+
+    return se( a, b, c, d );
+}
+
 var outstr =
-    pa( work_our_way_up(),
-        reconcile_cycles(),
-        lunisolar_goals(),
-        slc_is_arithmetic(),
-        constant_values(),
-        slc_goals(),
-        what_implement_means(),
-        slc_details_1(),
-        slc_details_2(),
-        slc_bounds() );
+    pa(
+        // work_our_way_up(),
+        // reconcile_cycles(),
+        // lunisolar_goals(),
+        // slc_is_arithmetic(),
+        // constant_values(),
+        // slc_goals(),
+        // what_implement_means(),
+        // slc_details_1(),
+        // slc_details_2(),
+        // slc_bounds(),
+        phases() );
 
 process.stdout.write( outstr );
 
