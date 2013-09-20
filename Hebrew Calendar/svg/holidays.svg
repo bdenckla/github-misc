@@ -1,0 +1,63 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="1000" height="700" version="1.1"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g transform="translate(325,325)">
+    <circle cx="0" cy="0" r="300" stroke="black" stroke-width="2" fill="none" />
+
+    <circle cx="0" cy="0" r="276.5625" stroke="black" stroke-width="2" fill="none" />
+
+    <g transform="translate(72.5641785369223,266.873109172715)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Pesach</text>
+    </g>
+    <g transform="translate(252.486229236525,112.860624011083)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Shavuot</text>
+    </g>
+    <g transform="translate(-2.4474235992422,-276.551670622283)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Rosh Hashanah</text>
+    </g>
+    <g transform="translate(-275.369412131204,-25.6613185313088)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Chanukkah</text>
+    </g>
+    <g transform="translate(-197.710475727589,193.384032934006)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Tu B'Shevat</text>
+    </g>
+    <g transform="translate(-77.2759840121031,265.547055531051)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Purim</text>
+    </g>
+
+    <g transform="translate(72.7085211279637,291.055786672219)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Pesach</text>
+    </g>
+    <g transform="translate(261.823526953457,146.452861814484)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Shavuot</text>
+    </g>
+    <g transform="translate(70.3311171737209,-291.639390270067)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Rosh Hashanah</text>
+    </g>
+    <g transform="translate(-269.757339719741,-131.266818607476)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Chanukkah</text>
+    </g>
+    <g transform="translate(-282.139635004143,101.966790474785)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Tu B'Shevat</text>
+    </g>
+    <g transform="translate(-77.4486471865597,289.830479848086)">
+      <circle cx="0" cy="0" r="10" stroke="black" stroke-width="2" fill="none" />
+      <text x="0" y="0">Purim</text>
+    </g>
+  </g>
+</svg>
+
