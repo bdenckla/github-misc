@@ -11,6 +11,20 @@ function pa() // Partially Apply
     };
 }
 
+function holidays()
+{
+  // month, day, name
+  return array
+    (
+     array( mn_ad(), 14, 'Purim' ),
+     array( mn_ni(), 15, 'Pesach' ),
+     array( mn_si(),  6, 'Shavuot' ),
+     array( mn_ti(),  1, 'Rosh Hashanah' ),
+     array( mn_ki(), 25, 'Chanukkah' ),
+     array( mn_sh(), 15, 'Tu B\'Shevat' ),
+     );
+}
+
 function month_name_array()
 {
   return array
@@ -48,7 +62,7 @@ function mn_ar() { return 12; }
 function mn_min() { return  0; }
 function mn_max() { return 12; }
 
-function mn_start() { return 0; }
+function mn_start() { return mn_ad(); }
 
 function month_name( $month_number )
 {
@@ -111,20 +125,6 @@ function days_per_month( $month_number, array $species )
   return 29 + $month_number % 2;
 }
 
-function holidays()
-{
-  // month, day, name
-  return array
-    (
-     array( mn_ni(), 15, 'Pesach' ),
-     array( mn_si(),  6, 'Shavuot' ),
-     array( mn_ti(),  1, 'Rosh Hashanah' ),
-     array( mn_ki(), 25, 'Chanukkah' ),
-     array( mn_sh(), 15, 'Tu B\'Shevat' ),
-     array( mn_ad(), 14, 'Purim' ),
-     );
-}
-
 function accumulate_days( $species, $acc, $month_number )
 {
   return $acc + days_per_month( $month_number, $species );
@@ -170,7 +170,7 @@ function day_of_year_of_holiday( $species, array $holiday )
 
   $doy = $doyom + $day_of_month;
 
-  return array( $name, $doy );
+  return $doy;
 }
 
 function day_of_year_of_holidays( $species )
@@ -178,8 +178,6 @@ function day_of_year_of_holidays( $species )
   $pa = pa( 'day_of_year_of_holiday', $species );
 
   $a = array_map( $pa, holidays() );
-
-  usort( $a, 'doyoh_sort' );
 
   return $a;
 }
@@ -199,6 +197,9 @@ function main()
      array( -1, 0 ),
      array(  0, 0 ),
      array(  1, 0 ),
+     array( -1, 1 ),
+     array(  0, 1 ),
+     array(  1, 1 ),
      );
 
   return array_map( 'day_of_year_of_holidays', $species );
