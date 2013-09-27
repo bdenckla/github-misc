@@ -1,6 +1,8 @@
 #!/usr/bin/php -q
 <?php
 
+require_once 'svg.php';
+
 function holidays()
 {
   // month, day, name
@@ -231,6 +233,17 @@ function main()
 {
   return array_map( 'holidays_and_length', year_species() );
 }
+
+$xml_decl_attr = array( 'version' => '1.0', 'standalone' => 'no' );
+
+$xml_decl = xml_tag( 'xml', $xml_decl_attr, '?', '?' );
+
+$doctype_decl_attr = 
+
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+echo $xml_decl->s;
 
 var_export( main() );
 
