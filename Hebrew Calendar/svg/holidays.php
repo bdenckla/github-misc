@@ -11,7 +11,7 @@ function holidays()
      array( mn_ad(), 14, 'Purim' ),
      array( mn_ni(), 15, 'Pesach' ),
      array( mn_si(),  6, 'Shavuot' ),
-     array( mn_ti(),  1, 'Rosh Hashanah' ),
+     array( mn_ti(), 15, 'Sukkot' ),
      array( mn_ki(), 25, 'Chanukkah' ),
      array( mn_sh(), 15, 'Tu B\'Shevat' ),
      );
@@ -166,7 +166,7 @@ function days_per_year( Species $species )
   return array_reduce( $mns, $pa, 0 );
 }
 
-function day_of_year_of_holiday( Species $species, array $holiday )
+function hol_dwy( Species $species, array $holiday )
 {
   list ( $month, $day_of_month, $name ) = $holiday;
 
@@ -175,26 +175,26 @@ function day_of_year_of_holiday( Species $species, array $holiday )
   return $doyom + $day_of_month;
 }
 
-function day_of_year_of_holidays( Species $species )
+function all_hol_dwy( Species $species )
 {
-  $pa = pa( 'day_of_year_of_holiday', $species );
+  $pa = pa( 'hol_dwy', $species );
 
   return array_map( $pa, holidays() );
 }
 
-function holidays_and_length( Species $species )
+function all_hol_dwy_and_dpy( Species $species )
 {
   return array
     (
-     'length' => days_per_year( $species ),
-     'holidays' => day_of_year_of_holidays( $species ),
+     'all_hol_dwy' => all_hol_dwy( $species ),
+     'dpy' => days_per_year( $species ),
      );
 }
 
 /* day_adj: -1, 0, or 1 (short Kislev, normal, long Cheshvan)
  * month_adj: 0 or 1 (non-leap or leap)
  *
- * I.e. the 6 possible year lengths have the following correspondences
+ * I.e. the 6 possible year dpys have the following correspondences
  * to day_adj/month_adj pairs:
  *
  * 353, 354, 355 correspond to (-1,0), (0,0), (1,0)
@@ -229,22 +229,101 @@ class Species
   public $month_adj;
 }
 
-function main()
+function ad_to_points( $radius, $ad )
 {
-  return array_map( 'holidays_and_length', year_species() );
+  $pa = pa( 'holiday_to_point', $radius, $ad['dpy'] );
+
+  return array_map( $pa, $ad['all_hol_dwy'], holidays() );
 }
 
-$xml_decl_attr = array( 'version' => '1.0', 'standalone' => 'no' );
+// dwy: day within year
+//
+function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
+{
+  $r = 2 * M_PI * $hol_dwy / $dpy;
 
-$xml_decl = xml_tag( 'xml', $xml_decl_attr, '?', '?' );
+  $s = M_PI_2 - $r;
 
-$doctype_decl_attr = 
+  $c_attr = array
+    (
+     'r' => 0.04,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'fill' => 'none',
+     );
 
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+  $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
 
-echo $xml_decl->s;
+  list ( $month, $day_of_month, $name ) = $holiday;
 
-var_export( main() );
+  $label = xml_wrap( 'text', $text_attr, $name );
+
+  $c = xml_sc_tag( 'circle', $c_attr );
+
+  $clabel = xml_seqa( $c, $label );
+
+  $x = $radius * cos( $s );
+
+  $y = $radius * -sin( $s );
+
+  return svg_gtt( $x, $y, $clabel );
+}
+
+function main()
+{
+  $all_ad = array_map( 'all_hol_dwy_and_dpy', year_species() );
+
+  $ad_nonleap = $all_ad[1];
+  $ad_yesleap = $all_ad[4];
+
+  $ad1 = $ad_yesleap;
+  $ad2 = $ad_nonleap;
+
+  $dpy1 = $ad1['dpy'];
+  $dpy2 = $ad2['dpy'];
+
+  $dpy_yesleap = $ad_yesleap['dpy'];
+
+  $radius1 = $dpy1 / $dpy_yesleap;
+  $radius2 = $dpy2 / $dpy_yesleap;
+
+  $points = ad_to_points( $radius1, $ad1 );
+
+  $c_attr1 = array
+    (
+     'r' => $radius1,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'fill' => 'none',
+     );
+
+  $c_attr2 = $c_attr1;
+  $c_attr2['r'] = $radius2;
+
+  $c1 = svg_circle( $c_attr1 );
+
+  $c2 = svg_circle( $c_attr2 );
+
+  $sp = xml_seq( $points );
+
+  $cp = xml_seqa( $c1, $c2, $sp );
+
+  $width = 1000;
+
+  $height = 700;
+
+  $scale = 0.475 * min( $width, $height );
+
+  $gts = svg_gts( $scale, $cp );
+
+  $gttc = svg_gtt( $width / 2, $height / 2, $gts );
+
+  $svg = svg_wrap( $width, $height, $gttc );
+
+  return $svg->s;
+}
+
+
+echo main();
 
 ?>
