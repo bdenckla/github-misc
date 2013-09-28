@@ -90,17 +90,7 @@ function days_per_month( $month_number, Species $species )
 {
   list( $day_adj, $month_adj ) = array( $species->day_adj, $species->month_adj );
 
-  $e = NULL;
-
-  if ( ! array_key_exists( $month_number, month_name_array() ) )
-    {
-      $e = array( 'unexpected month number', $month_number );
-    }
-
-  if ( $e )
-    {
-      throw new ErrorException( var_export( $e, 1 ) );
-    }
+  tiu( 'month_number', $month_number, array_keys( month_name_array() ) );
 
   if ( $month_number == mn_ch() ) // Cheshvan
     {
@@ -201,26 +191,32 @@ function all_hol_dwy_and_dpy( Species $species )
  * 383, 384, 385 correspond to (-1,1), (0,1), (1,1)
 */
 
+// tiu: throw if unexpected
+//
+function tiu( $what, $val, $possible_vals )
+{
+    if ( ! in_array( $val, $possible_vals ) )
+      {
+        $e = array
+          (
+           'Unexpected',
+           $what,
+           $val,
+           '.',
+           'Expected one of the following:',
+           $possible_vals
+           );
+        throw new ErrorException( var_export( $e, 1 ) );
+      }
+}
+
 class Species
 {
   function __construct( $day_adj, $month_adj )
   {
-    $e = NULL;
+    tiu( 'day_adj', $day_adj, array( -1, 0, 1 ) );
 
-    if ( ! in_array( $day_adj, array( -1, 0, 1 ) ) )
-      {
-        $e = array( 'unexpected day_adj', $day_adj );
-      }
-
-    if ( ! in_array( $month_adj, array( 0, 1 ) ) )
-      {
-        $e = array( 'unexpected month_adj', $month_adj );
-      }
-
-    if ( $e )
-      {
-        throw new ErrorException( var_export( $e, 1 ) );
-      }
+    tiu( 'month_adj', $month_adj, array( 0, 1 ) );
 
     $this->day_adj = $day_adj;
     $this->month_adj = $month_adj;
@@ -269,15 +265,31 @@ function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
   return svg_gtt( $x, $y, $clabel );
 }
 
-function main()
+function maybe_array_reverse( array $a, $reverse )
 {
+  return $reverse ? array_reverse( $a ) : $a;
+}
+
+function main( $leapness )
+{
+  tiu( 'leapness', $leapness, array( 'nonleap', 'yesleap' ) );
+
+  $leapness_bool = $leapness == 'yesleap';
+
   $all_ad = array_map( 'all_hol_dwy_and_dpy', year_species() );
 
   $ad_nonleap = $all_ad[1];
   $ad_yesleap = $all_ad[4];
 
-  $ad1 = $ad_yesleap;
-  $ad2 = $ad_nonleap;
+  // ny: nonleap and yesleap
+  //
+  $ny_ad = array( $ad_nonleap, $ad_yesleap );
+
+  // ps: primary and secondary
+  //
+  $ps_ad = maybe_array_reverse( $ny_ad, $leapness_bool );
+
+  list( $ad1, $ad2 ) = $ps_ad;
 
   $dpy1 = $ad1['dpy'];
   $dpy2 = $ad2['dpy'];
@@ -323,7 +335,6 @@ function main()
   return $svg->s;
 }
 
-
-echo main();
+echo main( $argv[1] );
 
 ?>
