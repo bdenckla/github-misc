@@ -232,6 +232,27 @@ function ad_to_points( $radius, $ad )
   return array_map( $pa, $ad['all_hol_dwy'], holidays() );
 }
 
+function ad_to_arcs( $radius, $ad )
+{
+  $dpy = $ad['dpy'];
+
+  $pa = pa( 'two_hol_to_arc', $radius, $dpy );
+
+  $ahd = $ad['all_hol_dwy'];
+
+  $adhr = rotate( $dpy, $ahd );
+
+  return array_map( $pa, $ahd, $adhr, holidays() );
+}
+
+function rotate( $dpy, array $a )
+{
+  $old_first = array_shift( $a );
+  $new_last = $old_first + $dpy;
+  array_push( $a, $new_last );
+  return $a;
+}
+
 // dwy: day within year
 //
 function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
@@ -261,6 +282,59 @@ function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
   $x = $radius * cos( $s );
 
   $y = $radius * -sin( $s );
+
+  $path_attr = array
+    (
+     'd' => 'M 0 0 a 1 1 30 0 1 ' . $x . ' ' . $y,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'fill' => 'none',
+     );
+
+  return xml_sc_tag( 'path', $path_attr );
+
+  return svg_gtt( $x, $y, $clabel );
+}
+
+function two_hol_to_arc( $radius, $dpy, $hol1_dwy, $hol2_dwy, $holiday )
+{
+  $hol_dwy = $hol2_dwy - $hol1_dwy;
+
+  $r = 2 * M_PI * $hol_dwy / $dpy;
+
+  $s = M_PI_2 - $r;
+
+  $c_attr = array
+    (
+     'r' => 0.04,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'fill' => 'none',
+     );
+
+  $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
+
+  list ( $month, $day_of_month, $name ) = $holiday;
+
+  $label = xml_wrap( 'text', $text_attr, $name );
+
+  $c = xml_sc_tag( 'circle', $c_attr );
+
+  $clabel = xml_seqa( $c, $label );
+
+  $x = $radius * cos( $s );
+
+  $y = $radius * -sin( $s );
+
+  $path_attr = array
+    (
+     'd' => 'M 0 0 a 1 1 30 0 1 ' . $x . ' ' . $y,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'fill' => 'none',
+     );
+
+  //return xml_sc_tag( 'path', $path_attr );
 
   return svg_gtt( $x, $y, $clabel );
 }
@@ -299,7 +373,7 @@ function main( $leapness )
   $radius1 = $dpy1 / $dpy_yesleap;
   $radius2 = $dpy2 / $dpy_yesleap;
 
-  $points = ad_to_points( $radius1, $ad1 );
+  $points = ad_to_arcs( $radius1, $ad1 );
 
   $c_attr1 = array
     (
