@@ -240,16 +240,14 @@ function ad_to_arcs( $radius, $ad )
 
   $ahd = $ad['all_hol_dwy'];
 
-  $adhr = rotate( $dpy, $ahd );
+  $adhr = rotate_to_the_left( $ahd );
 
   return array_map( $pa, $ahd, $adhr, holidays() );
 }
 
-function rotate( $dpy, array $a )
+function rotate_to_the_left( array $a )
 {
-  $old_first = array_shift( $a );
-  $new_last = $old_first + $dpy;
-  array_push( $a, $new_last );
+  array_push( $a, array_shift( $a ) );
   return $a;
 }
 
@@ -257,10 +255,6 @@ function rotate( $dpy, array $a )
 //
 function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
 {
-  $r = 2 * M_PI * $hol_dwy / $dpy;
-
-  $s = M_PI_2 - $r;
-
   $c_attr = array
     (
      'r' => 0.04,
@@ -279,64 +273,67 @@ function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
 
   $clabel = xml_seqa( $c, $label );
 
-  $x = $radius * cos( $s );
-
-  $y = $radius * -sin( $s );
-
-  $path_attr = array
-    (
-     'd' => 'M 0 0 a 1 1 30 0 1 ' . $x . ' ' . $y,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     'fill' => 'none',
-     );
-
-  return xml_sc_tag( 'path', $path_attr );
+  list( $x, $y ) = holiday_to_xy( $radius, $dpy, $hol_dwy );
 
   return svg_gtt( $x, $y, $clabel );
 }
 
-function two_hol_to_arc( $radius, $dpy, $hol1_dwy, $hol2_dwy, $holiday )
+function holiday_to_xy( $radius, $dpy, $hol_dwy )
 {
-  $hol_dwy = $hol2_dwy - $hol1_dwy;
+  /* Below, r is the angle, using mathematical conventions, i.e. zero
+     at "3 o'clock" and proceeding counter-clockwise. But we'd like to
+     use clock conventions, i.e zero at "12 o'clock" and proceeding
+     clockwise. So we make s by adding M_PI_2 and negating r.
+  */
+  /*
+    Below, we negate the sine since SVG puts greater y values further
+    down. (This is the convention in most computer graphics systems,
+    but is not the mathematical convention.) Instead of negating the
+    sine, I suppose we could adapt to the SVG convention with a
+    scaling transform of -1 on the y axis.
+   */
 
   $r = 2 * M_PI * $hol_dwy / $dpy;
 
   $s = M_PI_2 - $r;
 
-  $c_attr = array
-    (
-     'r' => 0.04,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     'fill' => 'none',
-     );
-
-  $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
-
-  list ( $month, $day_of_month, $name ) = $holiday;
-
-  $label = xml_wrap( 'text', $text_attr, $name );
-
-  $c = xml_sc_tag( 'circle', $c_attr );
-
-  $clabel = xml_seqa( $c, $label );
-
   $x = $radius * cos( $s );
 
   $y = $radius * -sin( $s );
 
-  $path_attr = array
+  return array( $x, $y );
+}
+
+function two_hol_to_arc( $radius, $dpy, $hol1_dwy, $hol2_dwy, $holiday )
+{
+  $day_diff = $hol2_dwy - $hol1_dwy;
+
+  $pos_day_diff = $day_diff < 0 ? $dpy + $day_diff : $day_diff;
+
+  list( $x1, $y1 ) = holiday_to_xy( $radius, $dpy, $hol1_dwy );
+
+  list( $x2, $y2 ) = holiday_to_xy( $radius, $dpy, $hol2_dwy );
+
+  $line_attr = array
     (
-     'd' => 'M 0 0 a 1 1 30 0 1 ' . $x . ' ' . $y,
+     'x1' => $x1,
+     'y1' => $y1,
+     'x2' => $x2,
+     'y2' => $y2,
      'stroke' => 'black',
      'stroke-width' => 0.01,
-     'fill' => 'none',
      );
 
-  //return xml_sc_tag( 'path', $path_attr );
+  $cx = $x1 + ($x2 - $x1) / 2;
+  $cy = $y1 + ($y2 - $y1) / 2;
 
-  return svg_gtt( $x, $y, $clabel );
+  $text_attr = array( 'x' => $cx, 'y' => $cy, 'font-size' => 0.05 );
+
+  $label = xml_wrap( 'text', $text_attr, $pos_day_diff );
+
+  $line = xml_sc_tag( 'line', $line_attr );
+
+  return xml_seqa( $label, $line );
 }
 
 function maybe_array_reverse( array $a, $reverse )
@@ -373,7 +370,8 @@ function main( $leapness )
   $radius1 = $dpy1 / $dpy_yesleap;
   $radius2 = $dpy2 / $dpy_yesleap;
 
-  $points = ad_to_arcs( $radius1, $ad1 );
+  $points = ad_to_points( $radius1, $ad1 );
+  $arcs   = ad_to_arcs( $radius1, $ad1 );
 
   $c_attr1 = array
     (
@@ -392,7 +390,9 @@ function main( $leapness )
 
   $sp = xml_seq( $points );
 
-  $cp = xml_seqa( $c1, $c2, $sp );
+  $sa = xml_seq( $arcs );
+
+  $cp = xml_seqa( $c1, $c2, $sp, $sa );
 
   $width = 1000;
 
