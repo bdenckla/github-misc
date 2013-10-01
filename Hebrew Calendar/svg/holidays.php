@@ -5,7 +5,7 @@ require_once 'svg.php';
 
 function holidays()
 {
-  // month, day, name
+  // month, day, name, [add year]
   return array
     (
      new Holiday( mn_ad(), 14, 'Purim' ),
@@ -14,6 +14,7 @@ function holidays()
      new Holiday( mn_ti(), 15, 'Sukkot' ),
      new Holiday( mn_ki(), 25, 'Chanukkah' ),
      new Holiday( mn_sh(), 15, 'Tu B\'Shevat' ),
+     new Holiday( mn_ad(), 14, 'Purim2', true ),
      );
 }
 
@@ -56,16 +57,16 @@ function mn_max() { return 12; }
 
 function mn_start() { return mn_ad(); }
 
-function year_species()
+function all_yearlen()
 {
   return array
     (
-     new Species( -1, 0 ),
-     new Species(  0, 0 ),
-     new Species(  1, 0 ),
-     new Species( -1, 1 ),
-     new Species(  0, 1 ),
-     new Species(  1, 1 ),
+     new YearLen( -1, 0 ),
+     new YearLen(  0, 0 ),
+     new YearLen(  1, 0 ),
+     new YearLen( -1, 1 ),
+     new YearLen(  0, 1 ),
+     new YearLen(  1, 1 ),
      );
 }
 
@@ -86,33 +87,35 @@ function month_name( $month_number )
   return $a[ $month_number ];
 }
 
-function days_per_month( $month_number, Species $species )
+function days_per_month( $month_number, YearLen $yl )
 {
-  list( $day_adj, $month_adj ) = array( $species->day_adj, $species->month_adj );
+  list( $day_adj, $month_adj ) = array( $yl->day_adj, $yl->month_adj );
 
   tiu( 'month_number', $month_number, array_keys( month_name_array() ) );
 
+  $da = 0;
+
   if ( $month_number == mn_ch() ) // Cheshvan
     {
-      return $day_adj == 1 ? 30 : 29;
+      $da = $day_adj == 1 ? 1 : 0;
     }
 
   if ( $month_number == mn_ki() ) // Kislev
     {
-      return $day_adj == -1 ? 29 : 30;
+      $da = $day_adj == -1 ? -1 : 0;
     }
 
   if ( $month_number == mn_ar() ) // Adar Rishon
     {
-      return $month_adj ? 30 : 0;
+      $da = $month_adj ? 1 : -29;
     }
 
-  return 29 + $month_number % 2;
+  return 29 + $month_number % 2 + $da;
 }
 
-function accumulate_days( Species $species, $acc, $month_number )
+function accumulate_days( YearLen $yl, $acc, $month_number )
 {
-  return $acc + days_per_month( $month_number, $species );
+  return $acc + days_per_month( $month_number, $yl );
 }
 
 function previous_month( $month_number )
@@ -122,7 +125,7 @@ function previous_month( $month_number )
     : $month_number - 1;
 }
 
-function day_of_year_of_month( Species $species, $month_number )
+function day_of_year_of_month( YearLen $yl, $month_number )
 {
   if ( $month_number == mn_start() )
     {
@@ -142,40 +145,39 @@ function day_of_year_of_month( Species $species, $month_number )
     $mns = range( mn_start(), $p );
   }
 
-  $pa = pa( 'accumulate_days', $species );
+  $pa = pa( 'accumulate_days', $yl );
 
   return array_reduce( $mns, $pa, 0 );
 }
 
-function days_per_year( Species $species )
+function days_per_year( YearLen $yl )
 {
   $mns = range( mn_min(), mn_max() );
 
-  $pa = pa( 'accumulate_days', $species );
+  $pa = pa( 'accumulate_days', $yl );
 
   return array_reduce( $mns, $pa, 0 );
 }
 
-function hol_dwy( Species $species, Holiday $holiday )
+function hol_dwy( YearLen $yl, Holiday $holiday )
 {
-  $doyom = day_of_year_of_month( $species, $holiday->month_number );
+  $doyom = day_of_year_of_month( $yl, $holiday->month_number );
 
-  return $doyom + $holiday->day_within_month;
+  // mdpy: maybe_days_per_year
+  //
+  $mdpy = $holiday->add_year ? days_per_year( $yl ) : 0;
+
+  return $mdpy + $doyom + $holiday->day_within_month;
 }
 
-function all_hol_dwy( Species $species )
+function all_hol_dwy_and_dpy( $holidays, YearLen $yl )
 {
-  $pa = pa( 'hol_dwy', $species );
+  $hol_dwy_yl = pa( 'hol_dwy', $yl );
 
-  return array_map( $pa, holidays() );
-}
-
-function all_hol_dwy_and_dpy( Species $species )
-{
   return array
     (
-     'all_hol_dwy' => all_hol_dwy( $species ),
-     'dpy' => days_per_year( $species ),
+     'all_hol_dwy' => array_map( $hol_dwy_yl, $holidays ),
+     'dpy' => days_per_year( $yl ),
      );
 }
 
@@ -208,7 +210,7 @@ function tiu( $what, $val, $possible_vals )
       }
 }
 
-class Species
+class YearLen
 {
   function __construct( $day_adj, $month_adj )
   {
@@ -225,15 +227,20 @@ class Species
 
 class Holiday
 {
-  function __construct( $month_number, $day_within_month, $name )
+  function __construct( $month_number,
+                        $day_within_month,
+                        $name,
+                        $add_year = false )
   {
-    $this->month_number = $month_number;
+    $this->month_number     = $month_number;
     $this->day_within_month = $day_within_month;
-    $this->name = $name;
+    $this->name             = $name;
+    $this->add_year         = $add_year;
   }
   public $month_number;
   public $day_within_month;
   public $name;
+  public $add_year;
 }
 
 function ad_to_points( $dpc, $ad, $holidays )
@@ -253,21 +260,40 @@ function ad_to_arcs( $radius, $dpc, $ad )
 
   $adh_rotl = rotate_to_the_left( $ahd );
 
-  return array_map( $pa, abl( $ahd ), abl( $adh_rotl ) );
+  return array_map_wn( $pa, $ahd );
 }
 
-// abl: all_but_last
+// shr: shift right (retain all but the last)
 //
-function abl( array $a )
+function shr( array $a )
 {
-  array_pop( $a );
-  return $a;
+  array_pop( $a ); return $a;
 }
 
-function rotate_to_the_left( array $a )
+// shl: shift_left (retain all but the first)
+//
+function shl( array $a )
 {
-  array_push( $a, array_shift( $a ) );
-  return $a;
+  array_shift( $a ); return $a;
+}
+
+// rtl: rotate [to the] left
+//
+function rtl( array $a )
+{
+  array_push( $a, array_shift( $a ) ); return $a;
+}
+
+// wn: with next, i.e. f( a[i], a[i+1] ) where i in (0..n-2)
+//
+function array_map_wn( $f, array $a )
+{
+  // f( a[  0], a[  1] )
+  // f( a[  1], a[  2] )
+  // ...
+  // f( a[n-2], a[n-1] )
+  //
+  return array_map( $f, shr( $a ), shl( $a ) );
 }
 
 // dwy: day within year
@@ -373,56 +399,59 @@ function maybe_array_reverse( array $a, $reverse )
   return $reverse ? array_reverse( $a ) : $a;
 }
 
-function plus_final( $ad, $holidays )
-{
-  $ahd = $ad['all_hol_dwy'];
-  $dpy = $ad['dpy'];
-
-  $new_ad = array
-    (
-     'all_hol_dwy' => append( $ahd, $ahd[0] + $dpy ),
-     'dpy' => $dpy
-     );
-
-  $end_holiday = new Holiday( $holidays[0]->month_number,
-                              $holidays[0]->day_within_month,
-                              $holidays[0]->name . '2' );
-
-  $new_holidays = append( $holidays, $end_holiday );
-
-  return array( $new_ad, $new_holidays );
-}
-
 function append( array $a, $i )
 {
   return array_merge( $a, array( $i ) );
 }
 
-function main2_inner( $dpc, $ad )
+function main2_inner( $dpc, $holidays, $ad )
 {
-  list ( $a, $h ) = plus_final( $ad, holidays() );
-
-  $points = ad_to_points( $dpc, $a, $h );
+  $points = ad_to_points( $dpc, $ad, $holidays );
 
   $arcs   = array();//ad_to_arcs( $radius, $dpc, $a );
 
   return array_merge( $points, $arcs );
 }
 
-function radius( Species $species )
+function radius( YearLen $yl )
 {
-  list( $day_adj, $month_adj ) = array( $species->day_adj, $species->month_adj );
+  list( $day_adj, $month_adj ) = array( $yl->day_adj, $yl->month_adj );
 
-  // ss: species scalar (0..5)
+  // yls: year len scalar (0..5)
   //
-  $ss = 2 + 2*$day_adj + $month_adj;
+  $yls = 2 + 2*$day_adj + $month_adj;
 
-  return 1 - 0.1 * $ss;
+  return 1 - 0.1 * $yls;
+}
+
+function find_edges( $all_hd )
+{
+  $r = array_reduce( $all_hd, 'edger', array() );
+
+  //var_export( $r );
+}
+
+function edger( array $acc, array $hd )
+{
+  $r = array_map_wn( 'make_pair', $hd['all_hol_dwy'] );
+
+  return array_merge( $acc, $r );
+}
+
+function make_pair( $a, $b )
+{
+  return array( $a, $b );
 }
 
 function main2( $dummy_arg )
 {
-  $all_ad = array_map( 'all_hol_dwy_and_dpy', year_species() );
+  $holidays = holidays();
+
+  $pa2 = pa( 'all_hol_dwy_and_dpy', $holidays );
+
+  $all_ad = array_map( $pa2, all_yearlen() );
+
+  find_edges( $all_ad );
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
@@ -438,9 +467,9 @@ function main2( $dummy_arg )
 
   $c = svg_circle( $c_attr );
 
-  // $radii = array_map( 'radius', year_species() );
+  // $radii = array_map( 'radius', all_yearlen() );
 
-  $pa = pa( 'main2_inner', $dpc );
+  $pa = pa( 'main2_inner', $dpc, $holidays );
 
   $points_and_arcs_aa = array_map( $pa, $all_ad );
 
@@ -476,7 +505,7 @@ function main( $leapness )
 
   $leapness_bool = $leapness == 'yesleap';
 
-  $all_ad = array_map( 'all_hol_dwy_and_dpy', year_species() );
+  $all_ad = array_map( 'all_hol_dwy_and_dpy', all_yearlen() );
 
   $ad_nonleap = $all_ad[1];
   $ad_yesleap = $all_ad[4];
