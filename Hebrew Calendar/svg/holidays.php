@@ -324,10 +324,10 @@ function holiday_to_point( $dpc, $hol_dwy, Holiday $holiday )
 
 function svg_for_edge( $dpc, $edge )
 {
-  list ( $node1, $node2 ) = $edge;
+  list ( $node1_dwy, $node2_dwy ) = $edge;
 
-  list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1 );
-  list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2 );
+  list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1_dwy );
+  list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2_dwy );
 
   $line_attr = array
     (
@@ -339,10 +339,50 @@ function svg_for_edge( $dpc, $edge )
      'stroke-width' => 0.01,
      );
 
-  return xml_sc_tag( 'line', $line_attr );
+  // (rx ry x-axis-rotation large-arc-flag sweep-flag x y)
+
+  $rx = 1;
+
+  $ry = 1;
+
+  $x_axis_rotation = 0;
+
+  $large_arc_flag = 0;
+
+  $sweep_flag = 1;
+
+  $path_attr = array
+    (
+     'd' => ss( 'M',
+                $x1, $y1,
+                'A',
+                $rx, $ry,
+                $x_axis_rotation,
+                $large_arc_flag,
+                $sweep_flag,
+                $x2, $y2 ),
+     'fill' => 'none',
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     );
+
+  $line = xml_sc_tag( 'line', $line_attr );
+  $path = xml_sc_tag( 'path', $path_attr );
+
+  return $path;
 }
 
-function dwy_to_xy( $dpc, $hol_dwy )
+function ss()
+{
+  return implode( ' ', func_get_args() );
+}
+
+function svg_path_a($rx, $ry, $x_axis_rotation, $large_arc_flag, $sweep_flag, $x, $y)
+{
+   { return implode( ' ', array( 'a', $x, $y ) ); }
+}
+
+function dwy_to_xy( $dpc, $dwy )
 {
   /* Below, r is the angle, using mathematical conventions, i.e. zero
      at "3 o'clock" and proceeding counter-clockwise. But we'd like to
@@ -359,19 +399,19 @@ function dwy_to_xy( $dpc, $hol_dwy )
 
   $radius = 1;
 
-  if ( $hol_dwy == 291 ) { $radius = 0.9; }
+  if ( $dwy == 291 ) { $radius = 0.9; }
 
-  if ( $hol_dwy == 339 ) { $radius = 0.9; }
-  if ( $hol_dwy == 340 ) { $radius = 0.8; }
+  if ( $dwy == 339 ) { $radius = 0.9; }
+  if ( $dwy == 340 ) { $radius = 0.8; }
 
-  if ( $hol_dwy == 367 ) { $radius = 0.9; }
-  if ( $hol_dwy == 368 ) { $radius = 0.7; }
-  if ( $hol_dwy == 369 ) { $radius = 0.5; }
-  if ( $hol_dwy == 397 ) { $radius = 0.8; }
-  if ( $hol_dwy == 398 ) { $radius = 0.6; }
-  if ( $hol_dwy == 399 ) { $radius = 0.4; }
+  if ( $dwy == 367 ) { $radius = 0.9; }
+  if ( $dwy == 368 ) { $radius = 0.7; }
+  if ( $dwy == 369 ) { $radius = 0.5; }
+  if ( $dwy == 397 ) { $radius = 0.8; }
+  if ( $dwy == 398 ) { $radius = 0.6; }
+  if ( $dwy == 399 ) { $radius = 0.4; }
 
-  $r = 2 * M_PI * $hol_dwy / $dpc;
+  $r = 2 * M_PI * $dwy / $dpc;
 
   $s = M_PI_2 - $r;
 
