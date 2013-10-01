@@ -317,12 +317,32 @@ function holiday_to_point( $dpc, $hol_dwy, Holiday $holiday )
 
   $clabel = xml_seqa( $c, $label );
 
-  list( $x, $y ) = holiday_to_xy( $dpc, $hol_dwy, $holiday );
+  list( $x, $y ) = dwy_to_xy( $dpc, $hol_dwy, $holiday );
 
   return svg_gtt( $x, $y, $clabel );
 }
 
-function holiday_to_xy( $dpc, $hol_dwy )
+function svg_for_edge( $dpc, $edge )
+{
+  list ( $node1, $node2 ) = $edge;
+
+  list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1 );
+  list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2 );
+
+  $line_attr = array
+    (
+     'x1' => $x1,
+     'y1' => $y1,
+     'x2' => $x2,
+     'y2' => $y2,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     );
+
+  return xml_sc_tag( 'line', $line_attr );
+}
+
+function dwy_to_xy( $dpc, $hol_dwy )
 {
   /* Below, r is the angle, using mathematical conventions, i.e. zero
      at "3 o'clock" and proceeding counter-clockwise. But we'd like to
@@ -368,9 +388,9 @@ function two_hol_to_arc( $radius, $dpc, $dpy, $hol1_dwy, $hol2_dwy )
 
   $pos_day_diff = $day_diff < 0 ? $dpy + $day_diff : $day_diff;
 
-  list( $x1, $y1 ) = holiday_to_xy( $radius, $dpc, $hol1_dwy );
+  list( $x1, $y1 ) = dwy_to_xy( $radius, $dpc, $hol1_dwy );
 
-  list( $x2, $y2 ) = holiday_to_xy( $radius, $dpc, $hol2_dwy );
+  list( $x2, $y2 ) = dwy_to_xy( $radius, $dpc, $hol2_dwy );
 
   $line_attr = array
     (
@@ -426,9 +446,7 @@ function radius( YearLen $yl )
 
 function find_edges( $all_hd )
 {
-  $r = array_reduce( $all_hd, 'edger', array() );
-
-  //var_export( $r );
+  return array_reduce( $all_hd, 'edger', array() );
 }
 
 function edger( array $acc, array $hd )
@@ -443,6 +461,15 @@ function make_pair( $a, $b )
   return array( $a, $b );
 }
 
+function the_drawing( $dpc, $edges )
+{
+  $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc );
+
+  $svg_for_edges = array_map( $svg_for_edge_dpc, $edges );
+
+  return xml_seq( $svg_for_edges );
+}
+
 function main2( $dummy_arg )
 {
   $holidays = holidays();
@@ -451,33 +478,11 @@ function main2( $dummy_arg )
 
   $all_ad = array_map( $pa2, all_yearlen() );
 
-  find_edges( $all_ad );
-
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $radius = 1;
+  $edges = find_edges( $all_ad );
 
-  $c_attr = array
-    (
-     'r' => $radius,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     'fill' => 'none',
-     );
-
-  $c = svg_circle( $c_attr );
-
-  // $radii = array_map( 'radius', all_yearlen() );
-
-  $pa = pa( 'main2_inner', $dpc, $holidays );
-
-  $points_and_arcs_aa = array_map( $pa, $all_ad );
-
-  $points_and_arcs = flatten( $points_and_arcs_aa );
-
-  $spa = xml_seq( $points_and_arcs );
-
-  $cp = xml_seqa( $c, $spa );
+  $drawing = the_drawing( $dpc, $edges );
 
   $width = 1000;
 
@@ -485,7 +490,7 @@ function main2( $dummy_arg )
 
   $scale = 0.475 * min( $width, $height );
 
-  $gts = svg_gts( $scale, $cp );
+  $gts = svg_gts( $scale, $drawing );
 
   $gttc = svg_gtt( $width / 2, $height / 2, $gts );
 
