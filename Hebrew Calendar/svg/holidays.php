@@ -8,12 +8,12 @@ function holidays()
   // month, day, name
   return array
     (
-     array( mn_ad(), 14, 'Purim' ),
-     array( mn_ni(), 15, 'Pesach' ),
-     array( mn_si(),  6, 'Shavuot' ),
-     array( mn_ti(), 15, 'Sukkot' ),
-     array( mn_ki(), 25, 'Chanukkah' ),
-     array( mn_sh(), 15, 'Tu B\'Shevat' ),
+     new Holiday( mn_ad(), 14, 'Purim' ),
+     new Holiday( mn_ni(), 15, 'Pesach' ),
+     new Holiday( mn_si(),  6, 'Shavuot' ),
+     new Holiday( mn_ti(), 15, 'Sukkot' ),
+     new Holiday( mn_ki(), 25, 'Chanukkah' ),
+     new Holiday( mn_sh(), 15, 'Tu B\'Shevat' ),
      );
 }
 
@@ -156,13 +156,11 @@ function days_per_year( Species $species )
   return array_reduce( $mns, $pa, 0 );
 }
 
-function hol_dwy( Species $species, array $holiday )
+function hol_dwy( Species $species, Holiday $holiday )
 {
-  list ( $month, $day_of_month, $name ) = $holiday;
+  $doyom = day_of_year_of_month( $species, $holiday->month_number );
 
-  $doyom = day_of_year_of_month( $species, $month );
-
-  return $doyom + $day_of_month;
+  return $doyom + $holiday->day_within_month;
 }
 
 function all_hol_dwy( Species $species )
@@ -225,24 +223,45 @@ class Species
   public $month_adj;
 }
 
-function ad_to_points( $radius, $ad )
+class Holiday
 {
-  $pa = pa( 'holiday_to_point', $radius, $ad['dpy'] );
-
-  return array_map( $pa, $ad['all_hol_dwy'], holidays() );
+  function __construct( $month_number, $day_within_month, $name )
+  {
+    $this->month_number = $month_number;
+    $this->day_within_month = $day_within_month;
+    $this->name = $name;
+  }
+  public $month_number;
+  public $day_within_month;
+  public $name;
 }
 
-function ad_to_arcs( $radius, $ad )
+function ad_to_points( $dpc, $ad, $holidays )
+{
+  $pa = pa( 'holiday_to_point', $dpc );
+
+  return array_map( $pa, $ad['all_hol_dwy'], $holidays );
+}
+
+function ad_to_arcs( $radius, $dpc, $ad )
 {
   $dpy = $ad['dpy'];
 
-  $pa = pa( 'two_hol_to_arc', $radius, $dpy );
+  $pa = pa( 'two_hol_to_arc', $radius, $dpc, $dpy );
 
   $ahd = $ad['all_hol_dwy'];
 
-  $adhr = rotate_to_the_left( $ahd );
+  $adh_rotl = rotate_to_the_left( $ahd );
 
-  return array_map( $pa, $ahd, $adhr, holidays() );
+  return array_map( $pa, abl( $ahd ), abl( $adh_rotl ) );
+}
+
+// abl: all_but_last
+//
+function abl( array $a )
+{
+  array_pop( $a );
+  return $a;
 }
 
 function rotate_to_the_left( array $a )
@@ -252,8 +271,9 @@ function rotate_to_the_left( array $a )
 }
 
 // dwy: day within year
+// dpc: days per circumference
 //
-function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
+function holiday_to_point( $dpc, $hol_dwy, Holiday $holiday )
 {
   $c_attr = array
     (
@@ -265,20 +285,18 @@ function holiday_to_point( $radius, $dpy, $hol_dwy, $holiday )
 
   $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
 
-  list ( $month, $day_of_month, $name ) = $holiday;
-
-  $label = xml_wrap( 'text', $text_attr, $name );
+  $label = xml_wrap( 'text', $text_attr, $holiday->name );
 
   $c = xml_sc_tag( 'circle', $c_attr );
 
   $clabel = xml_seqa( $c, $label );
 
-  list( $x, $y ) = holiday_to_xy( $radius, $dpy, $hol_dwy );
+  list( $x, $y ) = holiday_to_xy( $dpc, $hol_dwy, $holiday );
 
   return svg_gtt( $x, $y, $clabel );
 }
 
-function holiday_to_xy( $radius, $dpy, $hol_dwy )
+function holiday_to_xy( $dpc, $hol_dwy )
 {
   /* Below, r is the angle, using mathematical conventions, i.e. zero
      at "3 o'clock" and proceeding counter-clockwise. But we'd like to
@@ -293,7 +311,21 @@ function holiday_to_xy( $radius, $dpy, $hol_dwy )
     scaling transform of -1 on the y axis.
    */
 
-  $r = 2 * M_PI * $hol_dwy / $dpy;
+  $radius = 1;
+
+  if ( $hol_dwy == 291 ) { $radius = 0.9; }
+
+  if ( $hol_dwy == 339 ) { $radius = 0.9; }
+  if ( $hol_dwy == 340 ) { $radius = 0.8; }
+
+  if ( $hol_dwy == 367 ) { $radius = 0.9; }
+  if ( $hol_dwy == 368 ) { $radius = 0.7; }
+  if ( $hol_dwy == 369 ) { $radius = 0.5; }
+  if ( $hol_dwy == 397 ) { $radius = 0.8; }
+  if ( $hol_dwy == 398 ) { $radius = 0.6; }
+  if ( $hol_dwy == 399 ) { $radius = 0.4; }
+
+  $r = 2 * M_PI * $hol_dwy / $dpc;
 
   $s = M_PI_2 - $r;
 
@@ -304,15 +336,15 @@ function holiday_to_xy( $radius, $dpy, $hol_dwy )
   return array( $x, $y );
 }
 
-function two_hol_to_arc( $radius, $dpy, $hol1_dwy, $hol2_dwy, $holiday )
+function two_hol_to_arc( $radius, $dpc, $dpy, $hol1_dwy, $hol2_dwy )
 {
   $day_diff = $hol2_dwy - $hol1_dwy;
 
   $pos_day_diff = $day_diff < 0 ? $dpy + $day_diff : $day_diff;
 
-  list( $x1, $y1 ) = holiday_to_xy( $radius, $dpy, $hol1_dwy );
+  list( $x1, $y1 ) = holiday_to_xy( $radius, $dpc, $hol1_dwy );
 
-  list( $x2, $y2 ) = holiday_to_xy( $radius, $dpy, $hol2_dwy );
+  list( $x2, $y2 ) = holiday_to_xy( $radius, $dpc, $hol2_dwy );
 
   $line_attr = array
     (
@@ -341,6 +373,103 @@ function maybe_array_reverse( array $a, $reverse )
   return $reverse ? array_reverse( $a ) : $a;
 }
 
+function plus_final( $ad, $holidays )
+{
+  $ahd = $ad['all_hol_dwy'];
+  $dpy = $ad['dpy'];
+
+  $new_ad = array
+    (
+     'all_hol_dwy' => append( $ahd, $ahd[0] + $dpy ),
+     'dpy' => $dpy
+     );
+
+  $end_holiday = new Holiday( $holidays[0]->month_number,
+                              $holidays[0]->day_within_month,
+                              $holidays[0]->name . '2' );
+
+  $new_holidays = append( $holidays, $end_holiday );
+
+  return array( $new_ad, $new_holidays );
+}
+
+function append( array $a, $i )
+{
+  return array_merge( $a, array( $i ) );
+}
+
+function main2_inner( $dpc, $ad )
+{
+  list ( $a, $h ) = plus_final( $ad, holidays() );
+
+  $points = ad_to_points( $dpc, $a, $h );
+
+  $arcs   = array();//ad_to_arcs( $radius, $dpc, $a );
+
+  return array_merge( $points, $arcs );
+}
+
+function radius( Species $species )
+{
+  list( $day_adj, $month_adj ) = array( $species->day_adj, $species->month_adj );
+
+  // ss: species scalar (0..5)
+  //
+  $ss = 2 + 2*$day_adj + $month_adj;
+
+  return 1 - 0.1 * $ss;
+}
+
+function main2( $dummy_arg )
+{
+  $all_ad = array_map( 'all_hol_dwy_and_dpy', year_species() );
+
+  $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
+
+  $radius = 1;
+
+  $c_attr = array
+    (
+     'r' => $radius,
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'fill' => 'none',
+     );
+
+  $c = svg_circle( $c_attr );
+
+  // $radii = array_map( 'radius', year_species() );
+
+  $pa = pa( 'main2_inner', $dpc );
+
+  $points_and_arcs_aa = array_map( $pa, $all_ad );
+
+  $points_and_arcs = flatten( $points_and_arcs_aa );
+
+  $spa = xml_seq( $points_and_arcs );
+
+  $cp = xml_seqa( $c, $spa );
+
+  $width = 1000;
+
+  $height = 700;
+
+  $scale = 0.475 * min( $width, $height );
+
+  $gts = svg_gts( $scale, $cp );
+
+  $gttc = svg_gtt( $width / 2, $height / 2, $gts );
+
+  $svg = svg_wrap( $width, $height, $gttc );
+
+  return $svg->s;
+}
+
+function flatten( array $a ) // $a should be an array of arrays
+{
+  return array_reduce( $a, 'array_merge', array() );
+}
+
 function main( $leapness )
 {
   tiu( 'leapness', $leapness, array( 'nonleap', 'yesleap' ) );
@@ -365,13 +494,15 @@ function main( $leapness )
   $dpy1 = $ad1['dpy'];
   $dpy2 = $ad2['dpy'];
 
+  $dpc = $dpy1;
+
   $dpy_yesleap = $ad_yesleap['dpy'];
 
   $radius1 = $dpy1 / $dpy_yesleap;
   $radius2 = $dpy2 / $dpy_yesleap;
 
-  $points = ad_to_points( $radius1, $ad1 );
-  $arcs   = ad_to_arcs( $radius1, $ad1 );
+  $points = ad_to_points( $radius1, $dpc, $ad1, holidays() );
+  $arcs   = ad_to_arcs( $radius1, $dpc, $ad1, holidays() );
 
   $c_attr1 = array
     (
@@ -409,6 +540,6 @@ function main( $leapness )
   return $svg->s;
 }
 
-echo main( $argv[1] );
+echo main2( $argv[1] );
 
 ?>
