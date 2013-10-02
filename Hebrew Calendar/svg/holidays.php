@@ -159,7 +159,7 @@ function days_per_year( YearLen $yl )
   return array_reduce( $mns, $pa, 0 );
 }
 
-function hol_dwy( YearLen $yl, Holiday $holiday )
+function dwy_for_yl_hol( YearLen $yl, Holiday $holiday )
 {
   $doyom = day_of_year_of_month( $yl, $holiday->month_number );
 
@@ -170,16 +170,47 @@ function hol_dwy( YearLen $yl, Holiday $holiday )
   return $mdpy + $doyom + $holiday->day_within_month;
 }
 
-function all_hol_dwy_and_dpy( $holidays, YearLen $yl )
+function dwy_for_hol_yl( Holiday $holiday, YearLen $yl )
 {
-  $hol_dwy_yl = pa( 'hol_dwy', $yl );
+  return dwy_for_yl_hol( $yl, $holiday );
+}
+
+function dwpy_for_hols_yl( array $hols, YearLen $yl )
+{
+  $dwy_given_yl_for_hol = pa( 'dwy_for_yl_hol', $yl );
 
   return array
     (
-     'all_hol_dwy' => array_map( $hol_dwy_yl, $holidays ),
-     'dpy' => days_per_year( $yl ),
+     'dwy_given_yl_for_hols' => array_map( $dwy_given_yl_for_hol, $hols ),
+     'dpy_given_yl'          => days_per_year( $yl ),
      );
 }
+
+function dwpy_for_yls_hol( array $yls, Holiday $holiday )
+{
+  $dwy_given_hol_for_yl = pa( 'dwy_for_hol_yl', $holiday );
+
+  return array
+    (
+     'dwy_given_hol_for_yls' => array_map( $dwy_given_hol_for_yl, $yls ),
+     'dpy_for_yls'           => array_map( 'days_per_year', $yls ),
+     );
+}
+
+function dwpy_for_hols_yls( array $hols, array $yls )
+{
+  $dwpy_given_hols_for_yl = pa( 'dwpy_for_hols_yl', $hols );
+
+  return array_map( $dwpy_given_hols_for_yl, $yls );
+}
+
+function dwpy_for_yls_hols( array $yls, array $hols )
+{
+  $dwpy_given_yls_for_hol = pa( 'dwpy_for_yls_hol', $yls );
+
+  return array_map( $dwpy_given_yls_for_hol, $hols );
+}
+
 
 /* day_adj: -1, 0, or 1 (short Kislev, normal, long Cheshvan)
  * month_adj: 0 or 1 (non-leap or leap)
@@ -247,7 +278,7 @@ function ad_to_points( $dpc, $ad, $holidays )
 {
   $pa = pa( 'holiday_to_point', $dpc );
 
-  return array_map( $pa, $ad['all_hol_dwy'], $holidays );
+  return array_map( $pa, $ad['hols_dwy'], $holidays );
 }
 
 function ad_to_arcs( $radius, $dpc, $ad )
@@ -256,7 +287,7 @@ function ad_to_arcs( $radius, $dpc, $ad )
 
   $pa = pa( 'two_hol_to_arc', $radius, $dpc, $dpy );
 
-  $ahd = $ad['all_hol_dwy'];
+  $ahd = $ad['hols_dwy'];
 
   $adh_rotl = rotate_to_the_left( $ahd );
 
@@ -503,7 +534,7 @@ function nodes_for_all_hd( $all_hd )
 
 function nodes_for_one_hd( array $hd )
 {
-  return $hd['all_hol_dwy'];
+  return $hd['dwy_given_yl_for_hols'];
 }
 
 function edges_for_all_hd( $all_hd )
@@ -517,7 +548,7 @@ function edges_for_all_hd( $all_hd )
 
 function edges_for_one_hd( array $hd )
 {
-  return array_map_wn( 'make_pair', $hd['all_hol_dwy'] );
+  return array_map_wn( 'make_pair', $hd['dwy_given_yl_for_hols'] );
 }
 
 function make_pair( $a, $b )
@@ -544,7 +575,7 @@ function main2( $dummy_arg )
 {
   $holidays = holidays();
 
-  $pa2 = pa( 'all_hol_dwy_and_dpy', $holidays );
+  $pa2 = pa( 'dwpy_for_hols_yl', $holidays );
 
   $all_ad = array_map( $pa2, all_yearlen() );
 
@@ -598,7 +629,7 @@ function main( $leapness )
 
   $leapness_bool = $leapness == 'yesleap';
 
-  $all_ad = array_map( 'all_hol_dwy_and_dpy', all_yearlen() );
+  $all_ad = array_map( 'hols_dwy_and_dpy', all_yearlen() );
 
   $ad_nonleap = $all_ad[1];
   $ad_yesleap = $all_ad[4];
