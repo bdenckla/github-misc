@@ -329,18 +329,6 @@ function svg_for_edge( $dpc, $edge )
   list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1_dwy );
   list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2_dwy );
 
-  $line_attr = array
-    (
-     'x1' => $x1,
-     'y1' => $y1,
-     'x2' => $x2,
-     'y2' => $y2,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     );
-
-  // (rx ry x-axis-rotation large-arc-flag sweep-flag x y)
-
   $rx = 1;
 
   $ry = 1;
@@ -366,10 +354,33 @@ function svg_for_edge( $dpc, $edge )
      'stroke-width' => 0.01,
      );
 
-  $line = xml_sc_tag( 'line', $line_attr );
+  $sn1 = svg_for_node( $dpc, $node1_dwy );
+  $sn2 = svg_for_node( $dpc, $node2_dwy );
+
   $path = xml_sc_tag( 'path', $path_attr );
 
-  return $path;
+  return xml_seqa( $path, $sn1, $sn2 );
+}
+
+function falloff()
+{
+  return 0.05;
+}
+
+function svg_for_node( $dpc, $dwy )
+{
+  $radius = radius( $dwy );
+
+  $line_attr = array
+    (
+     'y1' => -$radius,
+     'y2' => -$radius + falloff(),
+     'stroke' => 'black',
+     'stroke-width' => 0.01,
+     'transform' => svg_tr1( 360 * $dwy / $dpc ),
+     );
+
+  return xml_sc_tag( 'line', $line_attr );
 }
 
 function ss()
@@ -377,9 +388,23 @@ function ss()
   return implode( ' ', func_get_args() );
 }
 
-function svg_path_a($rx, $ry, $x_axis_rotation, $large_arc_flag, $sweep_flag, $x, $y)
+function radius( $dwy )
 {
-   { return implode( ' ', array( 'a', $x, $y ) ); }
+  $f = 0;
+
+  if ( $dwy == 291 ) { $f = 1; }
+
+  if ( $dwy == 339 ) { $f = 1; }
+  if ( $dwy == 340 ) { $f = 2; }
+
+  if ( $dwy == 367 ) { $f = 1; }
+  if ( $dwy == 368 ) { $f = 3; }
+  if ( $dwy == 369 ) { $f = 5; }
+  if ( $dwy == 397 ) { $f = 1; }
+  if ( $dwy == 398 ) { $f = 3; }
+  if ( $dwy == 399 ) { $f = 5; }
+
+  return 1 - $f * falloff();
 }
 
 function dwy_to_xy( $dpc, $dwy )
@@ -389,31 +414,12 @@ function dwy_to_xy( $dpc, $dwy )
      use clock conventions, i.e zero at "12 o'clock" and proceeding
      clockwise. So we make s by adding M_PI_2 and negating r.
   */
-  /*
-    Below, we negate the sine since SVG puts greater y values further
-    down. (This is the convention in most computer graphics systems,
-    but is not the mathematical convention.) Instead of negating the
-    sine, I suppose we could adapt to the SVG convention with a
-    scaling transform of -1 on the y axis.
-   */
-
-  $radius = 1;
-
-  if ( $dwy == 291 ) { $radius = 0.9; }
-
-  if ( $dwy == 339 ) { $radius = 0.9; }
-  if ( $dwy == 340 ) { $radius = 0.8; }
-
-  if ( $dwy == 367 ) { $radius = 0.9; }
-  if ( $dwy == 368 ) { $radius = 0.7; }
-  if ( $dwy == 369 ) { $radius = 0.5; }
-  if ( $dwy == 397 ) { $radius = 0.8; }
-  if ( $dwy == 398 ) { $radius = 0.6; }
-  if ( $dwy == 399 ) { $radius = 0.4; }
 
   $r = 2 * M_PI * $dwy / $dpc;
 
   $s = M_PI_2 - $r;
+
+  $radius = radius( $dwy );
 
   $x = $radius * cos( $s );
 
@@ -473,7 +479,7 @@ function main2_inner( $dpc, $holidays, $ad )
   return array_merge( $points, $arcs );
 }
 
-function radius( YearLen $yl )
+function radius2( YearLen $yl )
 {
   list( $day_adj, $month_adj ) = array( $yl->day_adj, $yl->month_adj );
 
@@ -530,11 +536,23 @@ function main2( $dummy_arg )
 
   $scale = 0.475 * min( $width, $height );
 
-  $gts = svg_gts( $scale, $drawing );
+  /*
+    Below, we negate the y since SVG puts greater y values further
+    down. (This is the convention in most computer graphics systems,
+    but is not the mathematical convention.)
+   */
 
-  $gttc = svg_gtt( $width / 2, $height / 2, $gts );
+  $transforms = array
+    (
+     svg_tt1( $width / 2, $height / 2 ),
+     svg_ts1( $scale ),
+     );
 
-  $svg = svg_wrap( $width, $height, $gttc );
+  $g_attr = svg_transf2( implode( ' ', $transforms ) );
+
+  $g = svg_g( $g_attr, $drawing );
+
+  $svg = svg_wrap( $width, $height, $g );
 
   return $svg->s;
 }

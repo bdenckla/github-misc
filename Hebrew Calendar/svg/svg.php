@@ -149,34 +149,85 @@ function svg_wrap( $width, $height, $i )
   return xml_seqa( $xml_decl, $doctype_decl, $svg );
 }
 
-// gt: group transform
+// g: group
 //
-function svg_gt( $fn, $args, $i )
+function svg_g( $attr, $i )
 {
-  $cs_args = implode( ',', $args );
+  return xml_wrap( 'g', $attr, $i );
+}
 
-  $fncall = $fn . '(' . $cs_args . ')';
+function svg_circle( $attr )
+{
+  return xml_sc_tag( 'circle', $attr );
+}
 
-  return xml_wrap( 'g', array( 'transform' => $fncall ), $i );
+// trans: transform
+//
+function svg_transf1( $fn, array $args )
+{
+  $cs_args = implode( ',', $args ); // cs: comma-separated
+
+  return $fn . '(' . $cs_args . ')';
+}
+
+// trans: transform
+//
+function svg_transf2( $transform )
+{
+  return array( 'transform' => $transform );
+}
+
+// tt: transform translate
+//
+function svg_tt1( $x, $y )
+{
+  return svg_transf1( 'translate', array( $x, $y ) );
+}
+
+// ts: transform scale
+//
+function svg_ts1( $sx_or_sxy, $in_sy = NULL )
+{
+  $sx = $sx_or_sxy;
+
+  $sy = is_null( $in_sy ) ? $sx_or_sxy : $in_sy;
+
+  return svg_transf1( 'scale', array( $sx, $sy ) );
+}
+
+// tr: transform rotate
+//
+function svg_tr1( $d )
+{
+  return svg_transf1( 'rotate', array( $d ) );
+}
+
+// tt: transform translate
+//
+function svg_tt2( $x, $y )
+{
+  return svg_transf2( svg_tt1( $x, $y ) );
+}
+
+// ts: transform scale
+//
+function svg_ts2( $s )
+{
+  return svg_transf2( svg_ts1( $s ) );
 }
 
 // gtt: group transform translate
 //
 function svg_gtt( $x, $y, $i )
 {
-  return svg_gt( 'translate', array( $x, $y ), $i );
+  return svg_g( svg_tt2( $x, $y ), $i );
 }
 
-// gtt: group transform scale
+// gts: group transform scale
 //
 function svg_gts( $s, $i )
 {
-  return svg_gt( 'scale', array( $s ), $i );
-}
-
-function svg_circle( $attr )
-{
-  return xml_sc_tag( 'circle', $attr );
+  return svg_g( svg_ts2( $s ), $i );
 }
 
 ?>
