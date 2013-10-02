@@ -397,12 +397,12 @@ function radius( $dwy )
   if ( $dwy == 339 ) { $f = 1; }
   if ( $dwy == 340 ) { $f = 2; }
 
-  if ( $dwy == 367 ) { $f = 1; }
-  if ( $dwy == 368 ) { $f = 3; }
-  if ( $dwy == 369 ) { $f = 5; }
-  if ( $dwy == 397 ) { $f = 1; }
-  if ( $dwy == 398 ) { $f = 3; }
-  if ( $dwy == 399 ) { $f = 5; }
+  if ( $dwy == 367 ) { $f = 0; }
+  if ( $dwy == 368 ) { $f = 1; }
+  if ( $dwy == 369 ) { $f = 2; }
+  if ( $dwy == 397 ) { $f = -3; }
+  if ( $dwy == 398 ) { $f = -2; }
+  if ( $dwy == 399 ) { $f = -1; }
 
   return 1 - $f * falloff();
 }
@@ -534,7 +534,7 @@ function main2( $dummy_arg )
 
   $height = 700;
 
-  $scale = 0.475 * min( $width, $height );
+  $scale = 0.425 * min( $width, $height );
 
   /*
     Below, we negate the y since SVG puts greater y values further
