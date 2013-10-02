@@ -161,6 +161,11 @@ function svg_circle( $attr )
   return xml_sc_tag( 'circle', $attr );
 }
 
+function svg_rect( $attr )
+{
+  return xml_sc_tag( 'rect', $attr );
+}
+
 // trans: transform
 //
 function svg_transf1( $fn, array $args )

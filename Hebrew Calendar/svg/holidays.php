@@ -354,12 +354,9 @@ function svg_for_edge( $dpc, $edge )
      'stroke-width' => 0.01,
      );
 
-  $sn1 = svg_for_node( $dpc, $node1_dwy );
-  $sn2 = svg_for_node( $dpc, $node2_dwy );
-
   $path = xml_sc_tag( 'path', $path_attr );
 
-  return xml_seqa( $path, $sn1, $sn2 );
+  return $path;
 }
 
 function falloff()
@@ -414,6 +411,11 @@ function dwy_to_xy( $dpc, $dwy )
      use clock conventions, i.e zero at "12 o'clock" and proceeding
      clockwise. So we make s by adding M_PI_2 and negating r.
   */
+  /*
+    Below, we negate the sin() since SVG puts greater y values further
+    down. (This is the convention in most computer graphics systems,
+    but is not the mathematical convention.)
+   */
 
   $r = 2 * M_PI * $dwy / $dpc;
 
@@ -490,16 +492,32 @@ function radius2( YearLen $yl )
   return 1 - 0.1 * $yls;
 }
 
-function find_edges( $all_hd )
+function nodes_for_all_hd( $all_hd )
 {
-  return array_reduce( $all_hd, 'edger', array() );
+  $aa = array_map( 'nodes_for_one_hd', $all_hd );
+
+  $a = flatten( $aa );
+
+  return array_unique( $a, SORT_REGULAR );
 }
 
-function edger( array $acc, array $hd )
+function nodes_for_one_hd( array $hd )
 {
-  $r = array_map_wn( 'make_pair', $hd['all_hol_dwy'] );
+  return $hd['all_hol_dwy'];
+}
 
-  return array_merge( $acc, $r );
+function edges_for_all_hd( $all_hd )
+{
+  $aa = array_map( 'edges_for_one_hd', $all_hd );
+
+  $a = flatten( $aa );
+
+  return array_unique( $a, SORT_REGULAR );
+}
+
+function edges_for_one_hd( array $hd )
+{
+  return array_map_wn( 'make_pair', $hd['all_hol_dwy'] );
 }
 
 function make_pair( $a, $b )
@@ -507,13 +525,19 @@ function make_pair( $a, $b )
   return array( $a, $b );
 }
 
-function the_drawing( $dpc, $edges )
+function the_drawing( $dpc, $edges, $nodes )
 {
+  $svg_for_node_dpc = pa( 'svg_for_node', $dpc );
+
+  $svg_for_nodes = array_map( $svg_for_node_dpc, $nodes );
+
   $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc );
 
   $svg_for_edges = array_map( $svg_for_edge_dpc, $edges );
 
-  return xml_seq( $svg_for_edges );
+  $ne = array_merge( $svg_for_edges, $svg_for_nodes );
+
+  return xml_seq( $ne );
 }
 
 function main2( $dummy_arg )
@@ -526,21 +550,25 @@ function main2( $dummy_arg )
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $edges = find_edges( $all_ad );
+  $edges = edges_for_all_hd( $all_ad );
 
-  $drawing = the_drawing( $dpc, $edges );
+  $nodes = nodes_for_all_hd( $all_ad );
 
-  $width = 1000;
+  $drawing = the_drawing( $dpc, $edges, $nodes );
+
+  $width = 700;
 
   $height = 700;
 
-  $scale = 0.425 * min( $width, $height );
+  $bounding_box = svg_rect( array(
+                                  'width' => $width,
+                                  'height' => $height,
+                                  'stroke' => 'black',
+                                  'stroke-width' => 3,
+                                  'fill' => 'none',
+                                  ) );
 
-  /*
-    Below, we negate the y since SVG puts greater y values further
-    down. (This is the convention in most computer graphics systems,
-    but is not the mathematical convention.)
-   */
+  $scale = 0.425 * min( $width, $height );
 
   $transforms = array
     (
@@ -552,7 +580,9 @@ function main2( $dummy_arg )
 
   $g = svg_g( $g_attr, $drawing );
 
-  $svg = svg_wrap( $width, $height, $g );
+  $bg = xml_seqa( $bounding_box, $g );
+
+  $svg = svg_wrap( $width, $height, $bg );
 
   return $svg->s;
 }
