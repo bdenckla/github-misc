@@ -18,6 +18,28 @@ function holidays()
      );
 }
 
+function all_rosh_chodesh()
+{
+  // month, day, name, [add year]
+  return array
+    (
+     new Holiday( mn_ad(), 1, 'RChAd' ),
+     new Holiday( mn_ni(), 1, 'RChNi' ),
+     new Holiday( mn_iy(), 1, 'RChIy' ),
+     new Holiday( mn_si(), 1, 'RChSi' ),
+     new Holiday( mn_ta(), 1, 'RChTa' ),
+     new Holiday( mn_av(), 1, 'RChAv' ),
+     new Holiday( mn_el(), 1, 'RChEl' ),
+     new Holiday( mn_ti(), 1, 'RChTi' ),
+     new Holiday( mn_ch(), 1, 'RChCh' ),
+     new Holiday( mn_ki(), 1, 'RChKi' ),
+     new Holiday( mn_te(), 1, 'RChTe' ),
+     new Holiday( mn_sh(), 1, 'RChSh' ),
+     new Holiday( mn_ar(), 1, 'RChAr' ),
+     new Holiday( mn_ad(), 1, 'RChAd2', true ),
+     );
+}
+
 function month_name_array()
 {
   return array
@@ -603,6 +625,7 @@ function the_drawing( $dpc, $edges, $nodes )
 function main2( $dummy_arg )
 {
   $holidays = holidays();
+  //$holidays = all_rosh_chodesh();
 
   $all_da = dwpy_for_yls_hols( all_yearlen(), $holidays );
 
