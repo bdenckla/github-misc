@@ -208,15 +208,11 @@ function dwpy_for_hols_yl( array $hols, YearLen $yl )
      );
 }
 
-function dwpy_for_yls_hol( array $yls, Holiday $holiday )
+function dwy_for_yls_hol( array $yls, Holiday $holiday )
 {
   $dwy_given_hol_for_yl = pa( 'dwy_for_hol_yl', $holiday );
 
-  return array
-    (
-     'dwy_given_hol_for_yls' => array_map( $dwy_given_hol_for_yl, $yls ),
-     'dpy_for_yls'           => array_map( 'days_per_year', $yls ),
-     );
+  return array_map( $dwy_given_hol_for_yl, $yls );
 }
 
 function dwpy_for_hols_yls( array $hols, array $yls )
@@ -228,9 +224,13 @@ function dwpy_for_hols_yls( array $hols, array $yls )
 
 function dwpy_for_yls_hols( array $yls, array $hols )
 {
-  $dwpy_given_yls_for_hol = pa( 'dwpy_for_yls_hol', $yls );
+  $dwy_given_yls_for_hol = pa( 'dwy_for_yls_hol', $yls );
 
-  return array_map( $dwpy_given_yls_for_hol, $hols );
+  return array
+    (
+     'dwy_given_yls_for_hols' => array_map( $dwy_given_yls_for_hol, $hols ),
+     'dpy_for_yls'            => array_map( 'days_per_year', $yls ),
+     );
 }
 
 
@@ -296,26 +296,6 @@ class Holiday
   public $add_year;
 }
 
-function ad_to_points( $dpc, $ad, $holidays )
-{
-  $pa = pa( 'holiday_to_point', $dpc );
-
-  return array_map( $pa, $ad['hols_dwy'], $holidays );
-}
-
-function ad_to_arcs( $radius, $dpc, $ad )
-{
-  $dpy = $ad['dpy'];
-
-  $pa = pa( 'two_hol_to_arc', $radius, $dpc, $dpy );
-
-  $ahd = $ad['hols_dwy'];
-
-  $adh_rotl = rotate_to_the_left( $ahd );
-
-  return array_map_wn( $pa, $ahd );
-}
-
 // shr: shift right (retain all but the last)
 //
 function shr( array $a )
@@ -328,13 +308,6 @@ function shr( array $a )
 function shl( array $a )
 {
   array_shift( $a ); return $a;
-}
-
-// rtl: rotate [to the] left
-//
-function rtl( array $a )
-{
-  array_push( $a, array_shift( $a ) ); return $a;
 }
 
 // wn: with next, i.e. f( a[i], a[i+1] ) where i in (0..n-2)
@@ -351,28 +324,26 @@ function array_map_wn( $f, array $a )
 
 // dwy: day within year
 // dpc: days per circumference
-//
-function holiday_to_point( $dpc, $hol_dwy, Holiday $holiday )
-{
-  $c_attr = array
-    (
-     'r' => 0.04,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     'fill' => 'none',
-     );
 
+function holiday_label( $x, $y, Holiday $holiday )
+{
   $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
 
   $label = xml_wrap( 'text', $text_attr, $holiday->name );
 
-  $c = xml_sc_tag( 'circle', $c_attr );
+  return $label;
+}
 
-  $clabel = xml_seqa( $c, $label );
+function svg_for_diff( $x1, $y1, $x2, $y2, $diff )
+{
+  $cx = $x1 + ($x2 - $x1) / 2;
+  $cy = $y1 + ($y2 - $y1) / 2;
 
-  list( $x, $y ) = dwy_to_xy( $dpc, $hol_dwy, $holiday );
+  $text_attr = array( 'x' => $cx, 'y' => $cy, 'font-size' => 0.05 );
 
-  return svg_gtt( $x, $y, $clabel );
+  $label = xml_wrap( 'text', $text_attr, $diff );
+
+  return $label;
 }
 
 function svg_for_edge( $dpc, $rf, $edge )
@@ -381,6 +352,8 @@ function svg_for_edge( $dpc, $rf, $edge )
 
   list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1_dwy, $rf );
   list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2_dwy, $rf );
+
+  $sfd = svg_for_diff( $x1, $y1, $x2, $y2, $node2_dwy - $node1_dwy );
 
   $rx = 1;
 
@@ -409,7 +382,7 @@ function svg_for_edge( $dpc, $rf, $edge )
 
   $path = xml_sc_tag( 'path', $path_attr );
 
-  return $path;
+  return xml_seqa( $path, $sfd );
 }
 
 function falloff()
@@ -475,80 +448,29 @@ function dwy_to_xy( $dpc, $dwy, $rf )
   return array( $x, $y );
 }
 
-function two_hol_to_arc( $radius, $dpc, $dpy, $hol1_dwy, $hol2_dwy )
-{
-  $day_diff = $hol2_dwy - $hol1_dwy;
-
-  $pos_day_diff = $day_diff < 0 ? $dpy + $day_diff : $day_diff;
-
-  list( $x1, $y1 ) = dwy_to_xy( $radius, $dpc, $hol1_dwy );
-
-  list( $x2, $y2 ) = dwy_to_xy( $radius, $dpc, $hol2_dwy );
-
-  $line_attr = array
-    (
-     'x1' => $x1,
-     'y1' => $y1,
-     'x2' => $x2,
-     'y2' => $y2,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     );
-
-  $cx = $x1 + ($x2 - $x1) / 2;
-  $cy = $y1 + ($y2 - $y1) / 2;
-
-  $text_attr = array( 'x' => $cx, 'y' => $cy, 'font-size' => 0.05 );
-
-  $label = xml_wrap( 'text', $text_attr, $pos_day_diff );
-
-  $line = xml_sc_tag( 'line', $line_attr );
-
-  return xml_seqa( $label, $line );
-}
-
-function maybe_array_reverse( array $a, $reverse )
-{
-  return $reverse ? array_reverse( $a ) : $a;
-}
-
 function append( array $a, $i )
 {
   return array_merge( $a, array( $i ) );
 }
 
-function main2_inner( $dpc, $holidays, $ad )
-{
-  $points = ad_to_points( $dpc, $ad, $holidays );
-
-  $arcs   = array();//ad_to_arcs( $radius, $dpc, $a );
-
-  return array_merge( $points, $arcs );
-}
-
-function radius2( YearLen $yl )
-{
-  list( $day_adj, $month_adj ) = array( $yl->day_adj, $yl->month_adj );
-
-  // yls: year len scalar (0..5)
-  //
-  $yls = 2 + 2*$day_adj + $month_adj;
-
-  return 1 - 0.1 * $yls;
-}
-
 function nodes_for_all_da( $all_da )
 {
-  $aa = array_map( 'nodes_for_one_da', $all_da );
+  // $first_da = $all_da[0];
+
+  // $min_of
+
+  $dags = $all_da['dwy_given_yls_for_hols'];
+
+  $aa = array_map( 'nodes_for_one_dag', $dags );
 
   $f = flatten( $aa );
 
   return $f;
 }
 
-function nodes_for_one_da( array $da )
+function nodes_for_one_dag( array $dag )
 {
-  $dwys = $da['dwy_given_hol_for_yls'];
+  $dwys = $dag;
 
   $udwys = array_values( array_unique( $dwys, SORT_REGULAR ) );
 
@@ -630,6 +552,179 @@ function the_drawing( $dpc, $edges, $nodes )
 
   return xml_seq( $ne );
 }
+/*
+ * var_export( array( $all_da, $all_ad ) );
+ *
+ *
+ * array (
+ *   0 =>
+ *   array (
+ *     'dwy_given_yls_for_hols' =>
+ *     array (
+ *       0 =>
+ *       array (
+ *         0 => 14,
+ *         1 => 14,
+ *         2 => 14,
+ *         3 => 14,
+ *         4 => 14,
+ *         5 => 14,
+ *       ),
+ *       1 =>
+ *       array (
+ *         0 => 44,
+ *         1 => 44,
+ *         2 => 44,
+ *         3 => 44,
+ *         4 => 44,
+ *         5 => 44,
+ *       ),
+ *       2 =>
+ *       array (
+ *         0 => 94,
+ *         1 => 94,
+ *         2 => 94,
+ *         3 => 94,
+
+ *         4 => 94,
+ *         5 => 94,
+ *       ),
+ *       3 =>
+ *       array (
+ *         0 => 221,
+ *         1 => 221,
+ *         2 => 221,
+ *         3 => 221,
+ *         4 => 221,
+ *         5 => 221,
+ *       ),
+ *       4 =>
+ *       array (
+ *         0 => 290,
+ *         1 => 290,
+ *         2 => 291,
+ *         3 => 290,
+ *         4 => 290,
+ *         5 => 291,
+ *       ),
+ *       5 =>
+ *       array (
+ *         0 => 338,
+ *         1 => 339,
+ *         2 => 340,
+ *         3 => 338,
+ *         4 => 339,
+ *         5 => 340,
+ *       ),
+ *       6 =>
+ *       array (
+ *         0 => 367,
+ *         1 => 368,
+ *         2 => 369,
+ *         3 => 397,
+ *         4 => 398,
+ *         5 => 399,
+ *       ),
+ *     ),
+ *     'dpy_for_yls' =>
+ *     array (
+ *       0 => 353,
+ *       1 => 354,
+ *       2 => 355,
+ *       3 => 383,
+ *       4 => 384,
+ *       5 => 385,
+ *     ),
+ *   ),
+ *   1 =>
+ *   array (
+ *     0 =>
+ *     array (
+ *       'dwy_given_yl_for_hols' =>
+ *       array (
+ *         0 => 14,
+ *         1 => 44,
+ *         2 => 94,
+ *         3 => 221,
+ *         4 => 290,
+ *         5 => 338,
+ *         6 => 367,
+ *       ),
+ *       'dpy_given_yl' => 353,
+ *     ),
+ *     1 =>
+ *     array (
+ *       'dwy_given_yl_for_hols' =>
+ *       array (
+ *         0 => 14,
+ *         1 => 44,
+ *         2 => 94,
+ *         3 => 221,
+ *         4 => 290,
+ *         5 => 339,
+ *         6 => 368,
+ *       ),
+ *       'dpy_given_yl' => 354,
+ *     ),
+ *     2 =>
+ *     array (
+ *       'dwy_given_yl_for_hols' =>
+ *       array (
+ *         0 => 14,
+ *         1 => 44,
+ *         2 => 94,
+ *         3 => 221,
+ *         4 => 291,
+ *         5 => 340,
+ *         6 => 369,
+ *       ),
+ *       'dpy_given_yl' => 355,
+ *     ),
+ *     3 =>
+ *     array (
+ *       'dwy_given_yl_for_hols' =>
+ *       array (
+ *         0 => 14,
+ *         1 => 44,
+ *         2 => 94,
+ *         3 => 221,
+ *         4 => 290,
+ *         5 => 338,
+ *         6 => 397,
+ *       ),
+ *       'dpy_given_yl' => 383,
+ *     ),
+ *     4 =>
+ *     array (
+ *       'dwy_given_yl_for_hols' =>
+ *       array (
+ *         0 => 14,
+ *         1 => 44,
+ *         2 => 94,
+ *         3 => 221,
+ *         4 => 290,
+ *         5 => 339,
+ *         6 => 398,
+ *       ),
+ *       'dpy_given_yl' => 384,
+ *     ),
+ *     5 =>
+ *     array (
+ *       'dwy_given_yl_for_hols' =>
+ *       array (
+ *         0 => 14,
+ *         1 => 44,
+ *         2 => 94,
+ *         3 => 221,
+ *         4 => 291,
+ *         5 => 340,
+ *         6 => 399,
+ *       ),
+ *       'dpy_given_yl' => 385,
+ *     ),
+ *   ),
+ * )
+ */
 
 function main2( $dummy_arg )
 {
@@ -686,76 +781,6 @@ function main2( $dummy_arg )
 function flatten( array $a ) // $a should be an array of arrays
 {
   return array_reduce( $a, 'array_merge', array() );
-}
-
-function main( $leapness )
-{
-  tiu( 'leapness', $leapness, array( 'nonleap', 'yesleap' ) );
-
-  $leapness_bool = $leapness == 'yesleap';
-
-  $all_ad = array_map( 'hols_dwy_and_dpy', all_yearlen() );
-
-  $ad_nonleap = $all_ad[1];
-  $ad_yesleap = $all_ad[4];
-
-  // ny: nonleap and yesleap
-  //
-  $ny_ad = array( $ad_nonleap, $ad_yesleap );
-
-  // ps: primary and secondary
-  //
-  $ps_ad = maybe_array_reverse( $ny_ad, $leapness_bool );
-
-  list( $ad1, $ad2 ) = $ps_ad;
-
-  $dpy1 = $ad1['dpy'];
-  $dpy2 = $ad2['dpy'];
-
-  $dpc = $dpy1;
-
-  $dpy_yesleap = $ad_yesleap['dpy'];
-
-  $radius1 = $dpy1 / $dpy_yesleap;
-  $radius2 = $dpy2 / $dpy_yesleap;
-
-  $points = ad_to_points( $radius1, $dpc, $ad1, holidays() );
-  $arcs   = ad_to_arcs( $radius1, $dpc, $ad1, holidays() );
-
-  $c_attr1 = array
-    (
-     'r' => $radius1,
-     'stroke' => 'black',
-     'stroke-width' => 0.01,
-     'fill' => 'none',
-     );
-
-  $c_attr2 = $c_attr1;
-  $c_attr2['r'] = $radius2;
-
-  $c1 = svg_circle( $c_attr1 );
-
-  $c2 = svg_circle( $c_attr2 );
-
-  $sp = xml_seq( $points );
-
-  $sa = xml_seq( $arcs );
-
-  $cp = xml_seqa( $c1, $c2, $sp, $sa );
-
-  $width = 1000;
-
-  $height = 700;
-
-  $scale = 0.475 * min( $width, $height );
-
-  $gts = svg_gts( $scale, $cp );
-
-  $gttc = svg_gtt( $width / 2, $height / 2, $gts );
-
-  $svg = svg_wrap( $width, $height, $gttc );
-
-  return $svg->s;
 }
 
 echo main2( $argv[1] );
