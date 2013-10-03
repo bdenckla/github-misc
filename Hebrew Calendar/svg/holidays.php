@@ -445,9 +445,9 @@ function radii()
      1 - 0 * falloff(),
      1 - 1 * falloff(),
      1 - 2 * falloff(),
-     1 + 3 * falloff(),
-     1 + 2 * falloff(),
-     1 + 1 * falloff(),
+     1 - 0 * falloff(),
+     1 - 1 * falloff(),
+     1 - 2 * falloff(),
      );
 }
 
@@ -550,15 +550,24 @@ function nodes_for_one_da( array $da )
 {
   $dwys = $da['dwy_given_hol_for_yls'];
 
-  $udwys = array_unique( $dwys, SORT_REGULAR );
+  $udwys = array_values( array_unique( $dwys, SORT_REGULAR ) );
 
-  $radii = radii();
-
-  $rlim = array_slice( $radii, 0, count( $udwys ) );
-
-  $udwys_to_radii = array_map( 'make_pair', $udwys, $rlim );
+  $udwys_to_radii = array_map( 'radii2', array_keys( $udwys ), $udwys );
 
   return $udwys_to_radii;
+}
+
+function radii2( $index_within_da, $dwy )
+{
+  $radii = radii();
+
+  $r = $radii[ $index_within_da ];
+
+  $ofs = 3*falloff();
+
+  $r2 = $dwy > 365 ? $r + $ofs : $r;
+
+  return array( $dwy, $r2 );
 }
 
 function edges_for_all_hd( $all_hd )
@@ -627,9 +636,13 @@ function main2( $dummy_arg )
   $holidays = holidays();
   //$holidays = all_rosh_chodesh();
 
-  $all_da = dwpy_for_yls_hols( all_yearlen(), $holidays );
+  $all_yearlen = all_yearlen();
 
-  $all_ad = dwpy_for_hols_yls( $holidays, all_yearlen() );
+  $yearlens = $all_yearlen; // array( $all_yearlen[3] );
+
+  $all_da = dwpy_for_yls_hols( $yearlens, $holidays );
+
+  $all_ad = dwpy_for_hols_yls( $holidays, $yearlens );
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
