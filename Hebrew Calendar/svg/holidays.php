@@ -453,33 +453,37 @@ function append( array $a, $i )
   return array_merge( $a, array( $i ) );
 }
 
-function nodes_for_all_da( $all_da )
+function nodes_for_all_da( $dpc, $all_da )
 {
-  // $first_da = $all_da[0];
+  $dwy_given_yls_for_hols = $all_da['dwy_given_yls_for_hols'];
 
-  // $min_of
+  $dwy_given_yls_for_first_hol = $dwy_given_yls_for_hols[0];
 
-  $dags = $all_da['dwy_given_yls_for_hols'];
+  $min_dwy_of_first_hol = min( $dwy_given_yls_for_first_hol );
 
-  $aa = array_map( 'nodes_for_one_dag', $dags );
+  $pa = pa( 'nodes_for_one_hol', $dpc, $min_dwy_of_first_hol );
+
+  $aa = array_map( $pa, $dwy_given_yls_for_hols );
 
   $f = flatten( $aa );
 
   return $f;
 }
 
-function nodes_for_one_dag( array $dag )
+// mdofh: min dwy of first holiday
+//
+function nodes_for_one_hol( $dpc, $mdofh, array $dwys )
 {
-  $dwys = $dag;
-
   $udwys = array_values( array_unique( $dwys, SORT_REGULAR ) );
 
-  $udwys_to_radii = array_map( 'radii2', array_keys( $udwys ), $udwys );
+  $pa = pa( 'radii2', $dpc, $mdofh );
+
+  $udwys_to_radii = array_map( $pa, array_keys( $udwys ), $udwys );
 
   return $udwys_to_radii;
 }
 
-function radii2( $index_within_da, $dwy )
+function radii2( $dpc, $mdofh, $index_within_da, $dwy )
 {
   $radii = radii();
 
@@ -487,7 +491,9 @@ function radii2( $index_within_da, $dwy )
 
   $ofs = 3*falloff();
 
-  $r2 = $dwy > 365 ? $r + $ofs : $r;
+  $max = $mdofh + $dpc;
+
+  $r2 = $dwy > $max ? $r + $ofs : $r;
 
   return array( $dwy, $r2 );
 }
@@ -728,8 +734,8 @@ function the_drawing( $dpc, $edges, $nodes )
 
 function main2( $dummy_arg )
 {
-  $holidays = holidays();
-  //$holidays = all_rosh_chodesh();
+  //$holidays = holidays();
+  $holidays = all_rosh_chodesh();
 
   $all_yearlen = all_yearlen();
 
@@ -741,7 +747,7 @@ function main2( $dummy_arg )
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $nodes = nodes_for_all_da( $all_da );
+  $nodes = nodes_for_all_da( $dpc, $all_da );
 
   $edges = edges_for_all_hd( $all_ad );
 
