@@ -5,59 +5,69 @@ require_once 'svg.php';
 
 function holidays()
 {
-  // month, day, name, [add year]
-  return array
+  // month, day, name in Latin characters, name in Hebrew characters, [whether to add year]
+  $r = array
     (
-     new Holiday( mn_ad(), 14, 'Purim' ),
-     new Holiday( mn_ni(), 15, 'Pesach' ),
-     new Holiday( mn_si(),  6, 'Shavuot' ),
-     new Holiday( mn_ti(), 15, 'Sukkot' ),
-     new Holiday( mn_ki(), 25, 'Chanukkah' ),
-     new Holiday( mn_sh(), 15, 'Tu B\'Shevat' ),
-     new Holiday( mn_ad(), 14, 'Purim2', true ),
+     new Holiday( mn_ad(), 14, 'Purim',        'פורים' ),
+     new Holiday( mn_ni(), 15, 'Pesach',       'פסח' ),
+     new Holiday( mn_si(),  6, 'Shavuot',      'שבועות' ),
+     new Holiday( mn_ti(), 15, 'Sukkot',       'סוכות' ),
+     new Holiday( mn_ki(), 25, 'Chanukkah',    'חנוכה' ),
+     new Holiday( mn_sh(), 15, 'Tu B\'Shevat', 'טו בשבט' ),
      );
-}
 
-function all_rosh_chodesh()
-{
-  // month, day, name, [add year]
-  return array
-    (
-     new Holiday( mn_ad(), 1, 'RChAd' ),
-     new Holiday( mn_ni(), 1, 'RChNi' ),
-     new Holiday( mn_iy(), 1, 'RChIy' ),
-     new Holiday( mn_si(), 1, 'RChSi' ),
-     new Holiday( mn_ta(), 1, 'RChTa' ),
-     new Holiday( mn_av(), 1, 'RChAv' ),
-     new Holiday( mn_el(), 1, 'RChEl' ),
-     new Holiday( mn_ti(), 1, 'RChTi' ),
-     new Holiday( mn_ch(), 1, 'RChCh' ),
-     new Holiday( mn_ki(), 1, 'RChKi' ),
-     new Holiday( mn_te(), 1, 'RChTe' ),
-     new Holiday( mn_sh(), 1, 'RChSh' ),
-     new Holiday( mn_ar(), 1, 'RChAr' ),
-     new Holiday( mn_ad(), 1, 'RChAd2', true ),
-     );
+  return add_final_holiday( $r );
 }
 
 function month_name_array()
 {
   return array
     (
-     mn_ad() => array( 'Adar/Adar Sheni' ),
-     mn_ni() => array( 'Nisan' ),
-     mn_iy() => array( 'Iyyar' ),
-     mn_si() => array( 'Sivan' ),
-     mn_ta() => array( 'Tammuz' ),
-     mn_av() => array( 'Av' ),
-     mn_el() => array( 'Elul' ),
-     mn_ti() => array( 'Tishrei' ),
-     mn_ch() => array( 'Cheshvan' ),
-     mn_ki() => array( 'Kislev' ),
-     mn_te() => array( 'Tevet' ),
-     mn_sh() => array( 'Shevat' ),
-     mn_ar() => array( 'Adar Rishon' ),
+     mn_ad() => array( 'Adar'     , 'אדר' ), // and Adar Sheni
+     mn_ni() => array( 'Nisan'    , 'ניסן' ),
+     mn_iy() => array( 'Iyyar'    , 'אייר' ),
+     mn_si() => array( 'Sivan'    , 'סיון' ),
+     mn_ta() => array( 'Tammuz'   , 'תמוז' ),
+     mn_av() => array( 'Av'       , 'אב' ),
+     mn_el() => array( 'Elul'     , 'אלול' ),
+     mn_ti() => array( 'Tishrei'  , 'תשרי' ),
+     mn_ch() => array( 'Cheshvan' , 'חשון' ),
+     mn_ki() => array( 'Kislev'   , 'כסלו' ),
+     mn_te() => array( 'Tevet'    , 'טבת' ),
+     mn_sh() => array( 'Shevat'   , 'שבט' ),
+     mn_ar() => array( 'Adar R'   , 'אדר א׳' ), // R for Rishon
      );
+}
+
+function all_rosh_chodesh()
+{
+  $r = array_map_wk( 'rosh_chodesh', month_name_array() );
+
+  return add_final_holiday( $r );
+}
+
+function rosh_chodesh( $month_number, $month_names )
+{
+  list ( $lc_name, $hc_name ) = $month_names;
+
+  $day_within_month = 1;
+
+  return new Holiday( $month_number, $day_within_month, $lc_name, $hc_name );
+}
+
+function add_final_holiday( array $r )
+{
+  $first = $r[0];
+
+  $add_year = true;
+
+  $final = new Holiday( $first->month_number,
+                        $first->day_within_month,
+                        $first->name_using_latin_chars,
+                        $first->name_using_hebrew_chars,
+                        $add_year );
+
+  return append( $r, $final );
 }
 
 function mn_ad() { return  0; }
@@ -282,17 +292,20 @@ class Holiday
 {
   function __construct( $month_number,
                         $day_within_month,
-                        $name,
+                        $name_using_latin_chars,
+                        $name_using_hebrew_chars,
                         $add_year = false )
   {
-    $this->month_number     = $month_number;
-    $this->day_within_month = $day_within_month;
-    $this->name             = $name;
-    $this->add_year         = $add_year;
+    $this->month_number            = $month_number;
+    $this->day_within_month        = $day_within_month;
+    $this->name_using_latin_chars  = $name_using_latin_chars;
+    $this->name_using_hebrew_chars = $name_using_hebrew_chars;
+    $this->add_year                = $add_year;
   }
   public $month_number;
   public $day_within_month;
-  public $name;
+  public $name_using_latin_chars;
+  public $name_using_hebrew_chars;
   public $add_year;
 }
 
@@ -322,6 +335,13 @@ function array_map_wn( $f, array $a )
   return array_map( $f, shr( $a ), shl( $a ) );
 }
 
+// wk: with keys, i.e. f( k, v ) for array( k => v );
+//
+function array_map_wk( $f, array $a )
+{
+  return array_map( $f, array_keys( $a ), $a );
+}
+
 // dwy: day within year
 // dpc: days per circumference
 
@@ -329,7 +349,7 @@ function holiday_label( $x, $y, Holiday $holiday )
 {
   $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
 
-  $label = xml_wrap( 'text', $text_attr, $holiday->name );
+  $label = xml_wrap( 'text', $text_attr, $holiday->name_using_hebrew_chars );
 
   return $label;
 }
@@ -478,7 +498,7 @@ function nodes_for_one_hol( $dpc, $mdofh, array $dwys )
 
   $pa = pa( 'radii2', $dpc, $mdofh );
 
-  $udwys_to_radii = array_map( $pa, array_keys( $udwys ), $udwys );
+  $udwys_to_radii = array_map_wk( $pa, $udwys );
 
   return $udwys_to_radii;
 }
@@ -739,7 +759,8 @@ function main2( $dummy_arg )
 
   $all_yearlen = all_yearlen();
 
-  $yearlens = $all_yearlen; // array( $all_yearlen[3] );
+  // $yearlens = $all_yearlen;
+  $yearlens = array( $all_yearlen[3] );
 
   $all_da = dwpy_for_yls_hols( $yearlens, $holidays );
 
