@@ -353,12 +353,12 @@ function holiday_to_point( $dpc, $hol_dwy, Holiday $holiday )
   return svg_gtt( $x, $y, $clabel );
 }
 
-function svg_for_edge( $dpc, $edge )
+function svg_for_edge( $dpc, $rf, $edge )
 {
   list ( $node1_dwy, $node2_dwy ) = $edge;
 
-  list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1_dwy );
-  list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2_dwy );
+  list( $x1, $y1 ) = dwy_to_xy( $dpc, $node1_dwy, $rf );
+  list( $x2, $y2 ) = dwy_to_xy( $dpc, $node2_dwy, $rf );
 
   $rx = 1;
 
@@ -395,9 +395,9 @@ function falloff()
   return 0.05;
 }
 
-function svg_for_node( $dpc, $dwy )
+function svg_for_node( $dpc, $rf, $dwy )
 {
-  $radius = radius( $dwy );
+  $radius = $rf( $dwy );
 
   $line_attr = array
     (
@@ -416,43 +416,35 @@ function ss()
   return implode( ' ', func_get_args() );
 }
 
-function radius( $dwy )
+function radii()
 {
-  $f = 0;
-
-  if ( $dwy == 291 ) { $f = 1; }
-
-  if ( $dwy == 339 ) { $f = 1; }
-  if ( $dwy == 340 ) { $f = 2; }
-
-  if ( $dwy == 367 ) { $f = 0; }
-  if ( $dwy == 368 ) { $f = 1; }
-  if ( $dwy == 369 ) { $f = 2; }
-  if ( $dwy == 397 ) { $f = -3; }
-  if ( $dwy == 398 ) { $f = -2; }
-  if ( $dwy == 399 ) { $f = -1; }
-
-  return 1 - $f * falloff();
+  return array
+    (
+     1 - 0 * falloff(),
+     1 - 1 * falloff(),
+     1 - 2 * falloff(),
+     1 + 3 * falloff(),
+     1 + 2 * falloff(),
+     1 + 1 * falloff(),
+     );
 }
 
-function dwy_to_xy( $dpc, $dwy )
+/* Below, r is the angle, using mathematical conventions, i.e. zero at
+ * "3 o'clock" and proceeding counter-clockwise. But we'd like to use
+ * clock conventions, i.e zero at "12 o'clock" and proceeding
+ * clockwise. So we make s by adding M_PI_2 and negating r.
+ *
+ * Below, we negate the sin() since SVG puts greater y values further
+ * down. (This is the convention in most computer graphics systems,
+ * but is not the mathematical convention.)
+ */
+function dwy_to_xy( $dpc, $dwy, $rf )
 {
-  /* Below, r is the angle, using mathematical conventions, i.e. zero
-     at "3 o'clock" and proceeding counter-clockwise. But we'd like to
-     use clock conventions, i.e zero at "12 o'clock" and proceeding
-     clockwise. So we make s by adding M_PI_2 and negating r.
-  */
-  /*
-    Below, we negate the sin() since SVG puts greater y values further
-    down. (This is the convention in most computer graphics systems,
-    but is not the mathematical convention.)
-   */
-
   $r = 2 * M_PI * $dwy / $dpc;
 
   $s = M_PI_2 - $r;
 
-  $radius = radius( $dwy );
+  $radius = $rf( $dwy );
 
   $x = $radius * cos( $s );
 
@@ -523,18 +515,28 @@ function radius2( YearLen $yl )
   return 1 - 0.1 * $yls;
 }
 
-function nodes_for_all_hd( $all_hd )
+function nodes_for_all_da( $all_da )
 {
-  $aa = array_map( 'nodes_for_one_hd', $all_hd );
+  $aa = array_map( 'nodes_for_one_da', $all_da );
 
-  $a = flatten( $aa );
+  $f = flatten( $aa );
 
-  return array_unique( $a, SORT_REGULAR );
+  return $f;
 }
 
-function nodes_for_one_hd( array $hd )
+function nodes_for_one_da( array $da )
 {
-  return $hd['dwy_given_yl_for_hols'];
+  $dwys = $da['dwy_given_hol_for_yls'];
+
+  $udwys = array_unique( $dwys, SORT_REGULAR );
+
+  $radii = radii();
+
+  $rlim = array_slice( $radii, 0, count( $udwys ) );
+
+  $udwys_to_radii = array_map( 'make_pair', $udwys, $rlim );
+
+  return $udwys_to_radii;
 }
 
 function edges_for_all_hd( $all_hd )
@@ -556,15 +558,42 @@ function make_pair( $a, $b )
   return array( $a, $b );
 }
 
+function deref( array $a, $i )
+{
+  return $a[ $i ];
+}
+
+function pairs_to_kvs( array $a )
+{
+  return array_combine( firsts( $a ), seconds( $a ) );
+}
+
+function firsts( array $pairs )
+{
+  return array_map( 'first', $pairs );
+}
+
+function seconds( array $pairs )
+{
+  return array_map( 'second', $pairs );
+}
+
+function first( array $a ) { return $a[0]; }
+function second( array $a ) { return $a[1]; }
+
 function the_drawing( $dpc, $edges, $nodes )
 {
-  $svg_for_node_dpc = pa( 'svg_for_node', $dpc );
+  $nodes2 = pairs_to_kvs( $nodes );
 
-  $svg_for_nodes = array_map( $svg_for_node_dpc, $nodes );
+  $rf = pa( 'deref', $nodes2 );
 
-  $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc );
+  $svg_for_node_dpc_rf = pa( 'svg_for_node', $dpc, $rf );
 
-  $svg_for_edges = array_map( $svg_for_edge_dpc, $edges );
+  $svg_for_nodes = array_map( $svg_for_node_dpc_rf, firsts( $nodes ) );
+
+  $svg_for_edge_dpc_rf = pa( 'svg_for_edge', $dpc, $rf );
+
+  $svg_for_edges = array_map( $svg_for_edge_dpc_rf, $edges );
 
   $ne = array_merge( $svg_for_edges, $svg_for_nodes );
 
@@ -575,15 +604,15 @@ function main2( $dummy_arg )
 {
   $holidays = holidays();
 
-  $pa2 = pa( 'dwpy_for_hols_yl', $holidays );
+  $all_da = dwpy_for_yls_hols( all_yearlen(), $holidays );
 
-  $all_ad = array_map( $pa2, all_yearlen() );
+  $all_ad = dwpy_for_hols_yls( $holidays, all_yearlen() );
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $edges = edges_for_all_hd( $all_ad );
+  $nodes = nodes_for_all_da( $all_da );
 
-  $nodes = nodes_for_all_hd( $all_ad );
+  $edges = edges_for_all_hd( $all_ad );
 
   $drawing = the_drawing( $dpc, $edges, $nodes );
 
