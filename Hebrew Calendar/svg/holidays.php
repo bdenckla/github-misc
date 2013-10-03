@@ -347,7 +347,7 @@ function array_map_wk( $f, array $a )
 
 function holiday_label( $x, $y, Holiday $holiday )
 {
-  $text_attr = array( 'x' => 0.05, 'y' => -0.05, 'font-size' => 0.05 );
+  $text_attr = array( 'x' => $x, 'y' => $y, 'font-size' => 0.05 );
 
   $label = xml_wrap( 'text', $text_attr, $holiday->name_using_hebrew_chars );
 
@@ -426,6 +426,19 @@ function svg_for_node( $dpc, $rf, $dwy )
   return xml_sc_tag( 'line', $line_attr );
 }
 
+function one() { return 1; }
+
+function svg_for_node_label( $dpc, $dl_pair )
+{
+  list ( $dwy, $holiday ) = $dl_pair;
+
+  $rf = 'one';
+
+  list( $x, $y ) = dwy_to_xy( $dpc, $dwy, $rf );
+
+  return holiday_label( $x, $y, $holiday );
+}
+
 function ss()
 {
   return implode( ' ', func_get_args() );
@@ -473,7 +486,7 @@ function append( array $a, $i )
   return array_merge( $a, array( $i ) );
 }
 
-function nodes_for_all_da( $dpc, $all_da )
+function nodes_for_all_da( $dpc, $all_da, $holidays )
 {
   $dwy_given_yls_for_hols = $all_da['dwy_given_yls_for_hols'];
 
@@ -487,7 +500,11 @@ function nodes_for_all_da( $dpc, $all_da )
 
   $f = flatten( $aa );
 
-  return $f;
+  $laa = array_map( 'node_labels_for_one_hol', $dwy_given_yls_for_hols, $holidays );
+
+  $fl = flatten( $laa );
+
+  return array( 'dr_pairs' => $f, 'dl_pairs' => $fl );
 }
 
 // mdofh: min dwy of first holiday
@@ -498,9 +515,26 @@ function nodes_for_one_hol( $dpc, $mdofh, array $dwys )
 
   $pa = pa( 'radii2', $dpc, $mdofh );
 
-  $udwys_to_radii = array_map_wk( $pa, $udwys );
+  // dr_pairs: (days within week, radius) pairs
+  //
+  $dr_pairs = array_map_wk( $pa, $udwys );
 
-  return $udwys_to_radii;
+  return $dr_pairs;
+}
+
+function node_labels_for_one_hol( array $dwys, Holiday $holiday )
+{
+  $min = min( $dwys );
+  $max = max( $dwys );
+
+  $min_label = array( $min, $holiday );
+  $max_label = array( $max, $holiday );
+
+  $big_diff = $max - $min > 3;
+
+  return $big_diff
+    ? array( $min_label, $max_label )
+    : array( $min_label );
 }
 
 function radii2( $dpc, $mdofh, $index_within_da, $dwy )
@@ -562,19 +596,26 @@ function second( array $a ) { return $a[1]; }
 
 function the_drawing( $dpc, $edges, $nodes )
 {
-  $nodes2 = pairs_to_kvs( $nodes );
+  $dr_pairs = $nodes['dr_pairs'];
+  $dl_pairs = $nodes['dl_pairs'];
 
-  $rf = pa( 'deref', $nodes2 );
+  $dr_pairs2 = pairs_to_kvs( $dr_pairs );
+
+  $rf = pa( 'deref', $dr_pairs2 );
 
   $svg_for_node_dpc_rf = pa( 'svg_for_node', $dpc, $rf );
 
-  $svg_for_nodes = array_map( $svg_for_node_dpc_rf, firsts( $nodes ) );
+  $svg_for_nodes = array_map( $svg_for_node_dpc_rf, firsts( $dr_pairs ) );
+
+  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc );
+
+  $svg_for_node_labels = array_map( $svg_for_node_label_dpc, $dl_pairs );
 
   $svg_for_edge_dpc_rf = pa( 'svg_for_edge', $dpc, $rf );
 
   $svg_for_edges = array_map( $svg_for_edge_dpc_rf, $edges );
 
-  $ne = array_merge( $svg_for_edges, $svg_for_nodes );
+  $ne = array_merge( $svg_for_edges, $svg_for_nodes, $svg_for_node_labels );
 
   return xml_seq( $ne );
 }
@@ -754,13 +795,13 @@ function the_drawing( $dpc, $edges, $nodes )
 
 function main2( $dummy_arg )
 {
-  //$holidays = holidays();
-  $holidays = all_rosh_chodesh();
+  $holidays = holidays();
+  //$holidays = all_rosh_chodesh();
 
   $all_yearlen = all_yearlen();
 
-  // $yearlens = $all_yearlen;
-  $yearlens = array( $all_yearlen[3] );
+  $yearlens = $all_yearlen;
+  //$yearlens = array( $all_yearlen[3] );
 
   $all_da = dwpy_for_yls_hols( $yearlens, $holidays );
 
@@ -768,7 +809,7 @@ function main2( $dummy_arg )
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $nodes = nodes_for_all_da( $dpc, $all_da );
+  $nodes = nodes_for_all_da( $dpc, $all_da, $holidays );
 
   $edges = edges_for_all_hd( $all_ad );
 
