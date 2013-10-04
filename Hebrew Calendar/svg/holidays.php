@@ -131,24 +131,6 @@ function make_pair( $a, $b )
   return array( $a, $b );
 }
 
-function pairs_to_kvs( array $a )
-{
-  return array_combine( firsts( $a ), seconds( $a ) );
-}
-
-function firsts( array $pairs )
-{
-  return array_map( 'first', $pairs );
-}
-
-function seconds( array $pairs )
-{
-  return array_map( 'second', $pairs );
-}
-
-function first( array $a ) { return $a[0]; }
-function second( array $a ) { return $a[1]; }
-
 function pa() // Partially Apply
 {
   $origArgs = func_get_args();
@@ -269,7 +251,7 @@ function days_per_year( YearLen $yl )
 
 function sum_of_days_per_month( YearLen $yl, array $mns )
 {
-  return sum( array_map_pa( 'days_per_month', $yl, $mns ) );
+  return array_sum( array_map_pa( 'days_per_month', $yl, $mns ) );
 }
 
 function dwy_for_yl_hol( YearLen $yl, Holiday $hol )
@@ -361,6 +343,31 @@ class Holiday
   public $add_year;
 }
 
+class DrPair
+{
+  function __construct( array $dwys, $dwy )
+  {
+    $this->dwys = $dwys;
+    $this->dwy  = $dwy;
+  }
+  public $dwys;
+  public $dwy;
+}
+
+function make_dr_pair( $a, $b ) { return new DrPair( $a, $b ); }
+
+function dr_pair_dwy( DrPair $d ) { return $d->dwy; }
+
+function dr_pair_dwys( DrPair $d ) { return $d->dwys; }
+
+function dr_pairs_to_kvs( array $a )
+{
+  $keys   = array_map( 'dr_pair_dwy',  $a );
+  $values = array_map( 'dr_pair_dwys', $a );
+
+  return array_combine( $keys, $values );
+}
+
 // dwy: day within year
 // dpc: days per circumference
 
@@ -428,9 +435,10 @@ function falloff()
   return 0.05;
 }
 
-function svg_for_node( $dpc, $wrap, $dr_pair )
+function svg_for_node( $dpc, $wrap, DrPair $dr_pair )
 {
-  list ( $dwys, $dwy ) = $dr_pair;
+  $dwys = $dr_pair->dwys;
+  $dwy  = $dr_pair->dwy;
 
   $radius = radius( $wrap, $dwys, $dwy );
 
@@ -511,9 +519,7 @@ function nodes_for_one_hol( array $dwys )
 {
   $udwys = array_values( array_unique( $dwys, SORT_REGULAR ) );
 
-  // dr_pairs: (udwys, udwy) pairs
-  //
-  return array_map_pa( 'make_pair', $udwys, $udwys );
+  return array_map_pa( 'make_dr_pair', $udwys, $udwys );
 }
 
 function radius( $wrap, $dwys, $dwy )
@@ -587,7 +593,7 @@ function the_drawing( $dpc, $edges, $nodes )
 
   $svg_for_node_labels = array_map( $svg_for_node_label_dpc, $dl_pairs );
 
-  $dr_kvs = pairs_to_kvs( $dr_pairs );
+  $dr_kvs = dr_pairs_to_kvs( $dr_pairs );
 
   $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc, $wrap, $dr_kvs );
 
