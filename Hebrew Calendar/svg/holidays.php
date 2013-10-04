@@ -102,6 +102,53 @@ function all_yearlen()
      );
 }
 
+// tiu: throw if unexpected
+//
+function tiu( $what, $val, $possible_vals )
+{
+    if ( ! in_array( $val, $possible_vals ) )
+      {
+        $e = array
+          (
+           'Unexpected',
+           $what,
+           $val,
+           '.',
+           'Expected one of the following:',
+           $possible_vals
+           );
+        throw new ErrorException( var_export( $e, 1 ) );
+      }
+}
+
+function append( array $a, $i )
+{
+  return array_merge( $a, array( $i ) );
+}
+
+function make_pair( $a, $b )
+{
+  return array( $a, $b );
+}
+
+function pairs_to_kvs( array $a )
+{
+  return array_combine( firsts( $a ), seconds( $a ) );
+}
+
+function firsts( array $pairs )
+{
+  return array_map( 'first', $pairs );
+}
+
+function seconds( array $pairs )
+{
+  return array_map( 'second', $pairs );
+}
+
+function first( array $a ) { return $a[0]; }
+function second( array $a ) { return $a[1]; }
+
 function pa() // Partially Apply
 {
   $origArgs = func_get_args();
@@ -112,14 +159,50 @@ function pa() // Partially Apply
     };
 }
 
-function month_name( $month_number )
+// shr: shift right (retain all but the last)
+//
+function shr( array $a )
 {
-  $a = month_name_array();
-
-  return $a[ $month_number ];
+  array_pop( $a ); return $a;
 }
 
-function days_per_month( $month_number, YearLen $yl )
+// shl: shift_left (retain all but the first)
+//
+function shl( array $a )
+{
+  array_shift( $a ); return $a;
+}
+
+function flatten( array $a ) // $a should be an array of arrays
+{
+  return array_reduce( $a, 'array_merge', array() );
+}
+
+// wn: with next, i.e. f( a[i], a[i+1] ) where i in (0..n-2)
+//
+function array_map_wn( $f, array $a )
+{
+  // f( a[  0], a[  1] )
+  // f( a[  1], a[  2] )
+  // ...
+  // f( a[n-2], a[n-1] )
+  //
+  return array_map( $f, shr( $a ), shl( $a ) );
+}
+
+// wk: with keys, i.e. f( k, v ) for array( k => v );
+//
+function array_map_wk( $f, array $a )
+{
+  return array_map( $f, array_keys( $a ), $a );
+}
+
+function array_map_pa( $f, $a, array $b )
+{
+  return array_map( pa( $f, $a ), $b );
+}
+
+function days_per_month( YearLen $yl, $month_number )
 {
   list( $day_adj, $month_adj ) = array( $yl->day_adj, $yl->month_adj );
 
@@ -143,11 +226,6 @@ function days_per_month( $month_number, YearLen $yl )
     }
 
   return 29 + $month_number % 2 + $da;
-}
-
-function accumulate_days( YearLen $yl, $acc, $month_number )
-{
-  return $acc + days_per_month( $month_number, $yl );
 }
 
 function previous_month( $month_number )
@@ -177,18 +255,19 @@ function day_of_year_of_month( YearLen $yl, $month_number )
     $mns = range( mn_start(), $p );
   }
 
-  $pa = pa( 'accumulate_days', $yl );
-
-  return array_reduce( $mns, $pa, 0 );
+  return sum_of_days_per_month( $yl, $mns );
 }
 
 function days_per_year( YearLen $yl )
 {
   $mns = range( mn_min(), mn_max() );
 
-  $pa = pa( 'accumulate_days', $yl );
+  return sum_of_days_per_month( $yl, $mns );
+}
 
-  return array_reduce( $mns, $pa, 0 );
+function sum_of_days_per_month( YearLen $yl, array $mns )
+{
+  return sum( array_map_pa( 'days_per_month', $yl, $mns ) );
 }
 
 function dwy_for_yl_hol( YearLen $yl, Holiday $holiday )
@@ -209,36 +288,28 @@ function dwy_for_hol_yl( Holiday $holiday, YearLen $yl )
 
 function dwpy_for_hols_yl( array $hols, YearLen $yl )
 {
-  $dwy_given_yl_for_hol = pa( 'dwy_for_yl_hol', $yl );
-
   return array
     (
-     'dwy_given_yl_for_hols' => array_map( $dwy_given_yl_for_hol, $hols ),
+     'dwy_given_yl_for_hols' => array_map_pa( 'dwy_for_yl_hol', $yl, $hols ),
      'dpy_given_yl'          => days_per_year( $yl ),
      );
 }
 
 function dwy_for_yls_hol( array $yls, Holiday $holiday )
 {
-  $dwy_given_hol_for_yl = pa( 'dwy_for_hol_yl', $holiday );
-
-  return array_map( $dwy_given_hol_for_yl, $yls );
+  return array_map_pa( 'dwy_for_hol_yl', $holiday, $yls );
 }
 
 function dwpy_for_hols_yls( array $hols, array $yls )
 {
-  $dwpy_given_hols_for_yl = pa( 'dwpy_for_hols_yl', $hols );
-
-  return array_map( $dwpy_given_hols_for_yl, $yls );
+  return array_map_pa( 'dwpy_for_hols_yl', $hols, $yls );
 }
 
 function dwpy_for_yls_hols( array $yls, array $hols )
 {
-  $dwy_given_yls_for_hol = pa( 'dwy_for_yls_hol', $yls );
-
   return array
     (
-     'dwy_given_yls_for_hols' => array_map( $dwy_given_yls_for_hol, $hols ),
+     'dwy_given_yls_for_hols' => array_map_pa( 'dwy_for_yls_hol', $yls, $hols ),
      'dpy_for_yls'            => array_map( 'days_per_year', $yls ),
      );
 }
@@ -253,25 +324,6 @@ function dwpy_for_yls_hols( array $yls, array $hols )
  * 353, 354, 355 correspond to (-1,0), (0,0), (1,0)
  * 383, 384, 385 correspond to (-1,1), (0,1), (1,1)
 */
-
-// tiu: throw if unexpected
-//
-function tiu( $what, $val, $possible_vals )
-{
-    if ( ! in_array( $val, $possible_vals ) )
-      {
-        $e = array
-          (
-           'Unexpected',
-           $what,
-           $val,
-           '.',
-           'Expected one of the following:',
-           $possible_vals
-           );
-        throw new ErrorException( var_export( $e, 1 ) );
-      }
-}
 
 class YearLen
 {
@@ -307,39 +359,6 @@ class Holiday
   public $name_using_latin_chars;
   public $name_using_hebrew_chars;
   public $add_year;
-}
-
-// shr: shift right (retain all but the last)
-//
-function shr( array $a )
-{
-  array_pop( $a ); return $a;
-}
-
-// shl: shift_left (retain all but the first)
-//
-function shl( array $a )
-{
-  array_shift( $a ); return $a;
-}
-
-// wn: with next, i.e. f( a[i], a[i+1] ) where i in (0..n-2)
-//
-function array_map_wn( $f, array $a )
-{
-  // f( a[  0], a[  1] )
-  // f( a[  1], a[  2] )
-  // ...
-  // f( a[n-2], a[n-1] )
-  //
-  return array_map( $f, shr( $a ), shl( $a ) );
-}
-
-// wk: with keys, i.e. f( k, v ) for array( k => v );
-//
-function array_map_wk( $f, array $a )
-{
-  return array_map( $f, array_keys( $a ), $a );
 }
 
 // dwy: day within year
@@ -431,8 +450,6 @@ function svg_for_node( $dpc, $wrap, $dr_pair )
   return xml_sc_tag( 'line', $line_attr );
 }
 
-function one() { return 1; }
-
 function svg_for_node_label( $dpc, $wrap, $dl_pair )
 {
   list ( $dwy, $holiday ) = $dl_pair;
@@ -473,11 +490,6 @@ function dwy_to_xy( $dpc, $wrap, $dwy, $dr_kvs = NULL, $dwy_for_rf = NULL )
   return array( $x, $y );
 }
 
-function append( array $a, $i )
-{
-  return array_merge( $a, array( $i ) );
-}
-
 function nodes_for_all_da( $dpc, $all_da, $holidays )
 {
   $dwy_given_yls_for_hols = $all_da['dwy_given_yls_for_hols'];
@@ -503,11 +515,9 @@ function nodes_for_one_hol( array $dwys )
 {
   $udwys = array_values( array_unique( $dwys, SORT_REGULAR ) );
 
-  $pa = pa( 'make_pair', $udwys );
-
   // dr_pairs: (udwys, udwy) pairs
   //
-  $dr_pairs = array_map( $pa, $udwys );
+  $dr_pairs = array_map_pa( 'make_pair', $udwys, $udwys );
 
   return $dr_pairs;
 }
@@ -570,34 +580,6 @@ function edges_for_one_hd( array $hd )
 {
   return array_map_wn( 'make_pair', $hd['dwy_given_yl_for_hols'] );
 }
-
-function make_pair( $a, $b )
-{
-  return array( $a, $b );
-}
-
-function deref( array $a, $i )
-{
-  return $a[ $i ];
-}
-
-function pairs_to_kvs( array $a )
-{
-  return array_combine( firsts( $a ), seconds( $a ) );
-}
-
-function firsts( array $pairs )
-{
-  return array_map( 'first', $pairs );
-}
-
-function seconds( array $pairs )
-{
-  return array_map( 'second', $pairs );
-}
-
-function first( array $a ) { return $a[0]; }
-function second( array $a ) { return $a[1]; }
 
 function the_drawing( $dpc, $edges, $nodes )
 {
@@ -797,7 +779,7 @@ function the_drawing( $dpc, $edges, $nodes )
  * )
  */
 
-function main2( $dummy_arg )
+function main( $dummy_arg )
 {
   $holidays = holidays();
   //$holidays = all_rosh_chodesh();
@@ -850,11 +832,6 @@ function main2( $dummy_arg )
   return $svg->s;
 }
 
-function flatten( array $a ) // $a should be an array of arrays
-{
-  return array_reduce( $a, 'array_merge', array() );
-}
-
-echo main2( $argv[1] );
+echo main( $argv[1] );
 
 ?>
