@@ -63,8 +63,8 @@ function add_final_holiday( array $r )
 
   $final = new Holiday( $first->month_number,
                         $first->day_within_month,
-                        $first->name_using_latin_chars,
-                        $first->name_using_hebrew_chars,
+                        '',
+                        '',
                         $add_year );
 
   return append( $r, $final );
@@ -387,23 +387,11 @@ function dr_pairs_to_kvs( array $a )
 // dwy: day within year
 // dpc: days per circumference
 
-function holiday_label( $x, $y, Holiday $hol )
-{
-  $a = $x > 0 ? 'end' : 'start';
-
-  $text_attr = array( 'x' => $x,
-                      'y' => $y,
-                      'text-anchor' => $a,
-                      'font-size' => 0.07 );
-
-  return xml_wrap( 'text', $text_attr, $hol->name_using_hebrew_chars );
-}
-
-function svg_for_diff( $dpc, $wrap, $dwy1, $dwy2, $dr_kvs )
+function svg_for_diff( $dpc, $dwy1, $dwy2, $dr_kvs )
 {
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
-  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $wrap, $average_dwy, $dr_kvs, $dwy2 );
+  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $average_dwy, $dr_kvs, $dwy2 );
 
   $r2 = $r - 2 * falloff();
 
@@ -419,18 +407,20 @@ function svg_for_diff( $dpc, $wrap, $dwy1, $dwy2, $dr_kvs )
   return xml_wrap( 'text', $text_attr, $diff );
 }
 
-function svg_for_edge( $dpc, $wrap, $dr_kvs, $edge )
+function svg_for_edge( $dpc, $dr_kvs, $edge )
 {
   list ( $dwy1, $dwy2 ) = $edge;
 
-  list( $x1, $y1 ) = dwy_to_xy( $dpc, $wrap, $dwy1, $dr_kvs );
-  list( $x2, $y2 ) = dwy_to_xy( $dpc, $wrap, $dwy2, $dr_kvs );
+  list( $x1, $y1 ) = dwy_to_xy( $dpc, $dwy1, $dr_kvs );
+  list( $x2, $y2 ) = dwy_to_xy( $dpc, $dwy2, $dr_kvs );
 
-  $sfd = svg_for_diff( $dpc, $wrap, $dwy1, $dwy2, $dr_kvs );
+  $sfd = svg_for_diff( $dpc, $dwy1, $dwy2, $dr_kvs );
 
-  $rx = 1;
+  $r = radius2( $dr_kvs, $dwy1 );
 
-  $ry = 1;
+  $rx = $r;
+
+  $ry = $r;
 
   $x_axis_rotation = 0;
 
@@ -463,12 +453,12 @@ function falloff()
   return 0.05;
 }
 
-function svg_for_node( $dpc, $wrap, DrPair $dr_pair )
+function svg_for_node( $dpc, DrPair $dr_pair )
 {
   $dwys = $dr_pair->dwys;
   $dwy  = $dr_pair->dwy;
 
-  $radius = radius( $wrap, $dwys, $dwy );
+  $radius = radius( $dwys, $dwy );
 
   $line_attr = array
     (
@@ -482,15 +472,30 @@ function svg_for_node( $dpc, $wrap, DrPair $dr_pair )
   return xml_sc_tag( 'line', $line_attr );
 }
 
-function svg_for_node_label( $dpc, $wrap, $dr_kvs, $dl_pair )
+function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
 {
   list ( $dwy, $hol ) = $dl_pair;
 
-  list( $r, $x, $y ) = dwy_to_rxy( $dpc, $wrap, $dwy, $dr_kvs );
+  $r = radius2( $dr_kvs, $dwy );
 
-  $r2 = $r - 2 * falloff();
+  $r2 = $r - 1.2 * falloff();
 
-  return holiday_label( $r2 * $x, $r2 * $y, $hol );
+  $d = 360 * $dwy / $dpc;
+
+  $a = $d < 180 ? 'end' : 'start';
+
+  $transforms = array
+    (
+     svg_tr1( $d ),
+     svg_tt1( 0, -$r2 ),
+     svg_tr1( -$d ),
+     );
+
+  $text_attr = array( 'transform' => implode( ' ', $transforms ),
+                      'text-anchor' => $a,
+                      'font-size' => 0.07 );
+
+  return xml_wrap( 'text', $text_attr, $hol->name_using_hebrew_chars );
 }
 
 function ss()
@@ -507,18 +512,18 @@ function ss()
  * down. (This is the convention in most computer graphics systems,
  * but is not the mathematical convention.)
  */
-function dwy_to_xy( $dpc, $wrap, $dwy, $dr_kvs, $dwy_for_rf = NULL )
+function dwy_to_xy( $dpc, $dwy, $dr_kvs, $dwy_for_rf = NULL )
 {
-  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $wrap, $dwy, $dr_kvs, $dwy_for_rf );
+  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $dwy, $dr_kvs, $dwy_for_rf );
 
   return array( $r * $x, $r * $y );
 }
 
-function dwy_to_rxy( $dpc, $wrap, $dwy, $dr_kvs, $dwy_for_rf = NULL )
+function dwy_to_rxy( $dpc, $dwy, $dr_kvs, $dwy_for_rf = NULL )
 {
   $actual_dwy_for_rf = is_null( $dwy_for_rf ) ? $dwy : $dwy_for_rf;
 
-  $r = radius( $wrap, $dr_kvs[ $actual_dwy_for_rf ], $actual_dwy_for_rf );
+  $r = radius2( $dr_kvs, $actual_dwy_for_rf );
 
   return prepend( dwy_to_uxy( $dpc, $dwy ), $r );
 }
@@ -538,19 +543,20 @@ function dwy_to_uxy( $dpc, $dwy )
   return array( $x, $y );
 }
 
-// sr: sort regular
+// sr: sort regular [and] renumber
 //
-function array_unique_sr( array $a ) { return array_unique( $a, SORT_REGULAR ); }
+function array_unique_srr( array $a )
+{
+  return array_values( array_unique( $a, SORT_REGULAR ) );
+}
 
 function nodes_for_all_da( $dpc, $all_da, $hols )
 {
   $in = $all_da['dwy_given_yls_for_hols'];
 
-  $udwy_given_yls_for_hols = array_map( 'array_unique_sr', $in );
+  $udwy_given_yls_for_hols = array_map( 'array_unique_srr', $in );
 
   $min_dwy_of_first_hol = min( $udwy_given_yls_for_hols[0] );
-
-  $wrap = $min_dwy_of_first_hol + $dpc;
 
   $aa = array_map( 'nodes_for_one_hol', $udwy_given_yls_for_hols );
 
@@ -560,7 +566,7 @@ function nodes_for_all_da( $dpc, $all_da, $hols )
 
   $fl = flatten( $laa );
 
-  return array( 'dr_pairs' => $f, 'dl_pairs' => $fl, 'wrap' => $wrap );
+  return array( 'dr_pairs' => $f, 'dl_pairs' => $fl );
 }
 
 function nodes_for_one_hol( array $dwys )
@@ -568,7 +574,12 @@ function nodes_for_one_hol( array $dwys )
   return array_map_pa( 'make_dr_pair', $dwys, $dwys );
 }
 
-function radius( $wrap, $dwys, $dwy )
+function radius2( $dr_kvs, $dwy )
+{
+  return radius( $dr_kvs[ $dwy ], $dwy );
+}
+
+function radius( $dwys, $dwy )
 {
   $radii = radii();
 
@@ -576,11 +587,7 @@ function radius( $wrap, $dwys, $dwy )
 
   $r = $radii[ $index_within ];
 
-  $ofs = 3*falloff();
-
-  // $r3 = $r2 - 3*falloff();
-
-  return $dwy > $wrap ? $r + $ofs : $r;
+  return $r;
 }
 
 function radii()
@@ -590,9 +597,9 @@ function radii()
      1 - 0 * falloff(),
      1 - 1 * falloff(),
      1 - 2 * falloff(),
-     1 - 0 * falloff(),
-     1 - 1 * falloff(),
-     1 - 2 * falloff(),
+     1 + 3 * falloff(),
+     1 + 2 * falloff(),
+     1 + 1 * falloff(),
      );
 }
 
@@ -640,7 +647,7 @@ function edges_for_all_hd( $all_hd )
 
   $a = flatten( $aa );
 
-  return array_unique_sr( $a );
+  return array_unique_srr( $a );
 }
 
 function edges_for_one_hd( array $hd )
@@ -652,19 +659,18 @@ function the_drawing( $dpc, $edges, $nodes )
 {
   $dr_pairs = $nodes['dr_pairs'];
   $dl_pairs = $nodes['dl_pairs'];
-  $wrap = $nodes['wrap'];
 
-  $svg_for_node_dpc = pa( 'svg_for_node', $dpc, $wrap );
+  $svg_for_node_dpc = pa( 'svg_for_node', $dpc );
 
   $svg_for_nodes = array_map( $svg_for_node_dpc, $dr_pairs );
 
   $dr_kvs = dr_pairs_to_kvs( $dr_pairs );
 
-  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc, $wrap, $dr_kvs );
+  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc, $dr_kvs );
 
   $svg_for_node_labels = array_map( $svg_for_node_label_dpc, $dl_pairs );
 
-  $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc, $wrap, $dr_kvs );
+  $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc, $dr_kvs );
 
   $svg_for_edges = array_map( $svg_for_edge_dpc, $edges );
 
