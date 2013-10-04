@@ -123,12 +123,28 @@ function tiu( $what, $val, $possible_vals )
 
 function append( array $a, $i )
 {
+  // Below, we could have also used array_push. It would only be
+  // locally destructive due to call-by-value.
+  //
   return array_merge( $a, array( $i ) );
+}
+
+function prepend( array $a, $i )
+{
+  // Below, we could have also used array_unshift. It would only be
+  // locally destructive due to call-by-value.
+  //
+  return array_merge( array( $i ), $a );
 }
 
 function make_pair( $a, $b )
 {
   return array( $a, $b );
+}
+
+function flipped_make_pair( $a, $b )
+{
+  return array( $b, $a );
 }
 
 function pa() // Partially Apply
@@ -373,7 +389,12 @@ function dr_pairs_to_kvs( array $a )
 
 function holiday_label( $x, $y, Holiday $hol )
 {
-  $text_attr = array( 'x' => $x, 'y' => $y, 'font-size' => 0.05 );
+  $a = $x > 0 ? 'end' : 'start';
+
+  $text_attr = array( 'x' => $x,
+                      'y' => $y,
+                      'text-anchor' => $a,
+                      'font-size' => 0.07 );
 
   return xml_wrap( 'text', $text_attr, $hol->name_using_hebrew_chars );
 }
@@ -382,9 +403,16 @@ function svg_for_diff( $dpc, $wrap, $dwy1, $dwy2, $dr_kvs )
 {
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
-  list ( $x, $y ) = dwy_to_xy( $dpc, $wrap, $average_dwy, $dr_kvs, $dwy2 );
+  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $wrap, $average_dwy, $dr_kvs, $dwy2 );
 
-  $text_attr = array( 'x' => $x, 'y' => $y, 'font-size' => 0.05 );
+  $r2 = $r - 2 * falloff();
+
+  $a = $x > 0 ? 'end' : 'start';
+
+  $text_attr = array( 'x' => $r2 * $x,
+                      'y' => $r2 * $y,
+                      'text-anchor' => $a,
+                      'font-size' => 0.05 );
 
   $diff = $dwy2 - $dwy1;
 
@@ -454,13 +482,15 @@ function svg_for_node( $dpc, $wrap, DrPair $dr_pair )
   return xml_sc_tag( 'line', $line_attr );
 }
 
-function svg_for_node_label( $dpc, $wrap, $dl_pair )
+function svg_for_node_label( $dpc, $wrap, $dr_kvs, $dl_pair )
 {
   list ( $dwy, $hol ) = $dl_pair;
 
-  list( $x, $y ) = dwy_to_xy( $dpc, $wrap, $dwy );
+  list( $r, $x, $y ) = dwy_to_rxy( $dpc, $wrap, $dwy, $dr_kvs );
 
-  return holiday_label( $x, $y, $hol );
+  $r2 = $r - 2 * falloff();
+
+  return holiday_label( $r2 * $x, $r2 * $y, $hol );
 }
 
 function ss()
@@ -477,38 +507,56 @@ function ss()
  * down. (This is the convention in most computer graphics systems,
  * but is not the mathematical convention.)
  */
-function dwy_to_xy( $dpc, $wrap, $dwy, $dr_kvs = NULL, $dwy_for_rf = NULL )
+function dwy_to_xy( $dpc, $wrap, $dwy, $dr_kvs, $dwy_for_rf = NULL )
 {
-  $r = 2 * M_PI * $dwy / $dpc;
+  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $wrap, $dwy, $dr_kvs, $dwy_for_rf );
 
-  $s = M_PI_2 - $r;
+  return array( $r * $x, $r * $y );
+}
 
+function dwy_to_rxy( $dpc, $wrap, $dwy, $dr_kvs, $dwy_for_rf = NULL )
+{
   $actual_dwy_for_rf = is_null( $dwy_for_rf ) ? $dwy : $dwy_for_rf;
 
-  $radius = is_null( $dr_kvs ) ? 1 : radius( $wrap, $dr_kvs[ $actual_dwy_for_rf ], $actual_dwy_for_rf );
+  $r = radius( $wrap, $dr_kvs[ $actual_dwy_for_rf ], $actual_dwy_for_rf );
 
-  $x = $radius * cos( $s );
+  return prepend( dwy_to_uxy( $dpc, $dwy ), $r );
+}
 
-  $y = $radius * -sin( $s );
+// uxy: unit x and y, i.e. x and y on the unit circle
+//
+function dwy_to_uxy( $dpc, $dwy )
+{
+  $t = 2 * M_PI * $dwy / $dpc;
+
+  $s = M_PI_2 - $t;
+
+  $x = cos( $s );
+
+  $y = -sin( $s );
 
   return array( $x, $y );
 }
 
+// sr: sort regular
+//
+function array_unique_sr( array $a ) { return array_unique( $a, SORT_REGULAR ); }
+
 function nodes_for_all_da( $dpc, $all_da, $hols )
 {
-  $dwy_given_yls_for_hols = $all_da['dwy_given_yls_for_hols'];
+  $in = $all_da['dwy_given_yls_for_hols'];
 
-  $dwy_given_yls_for_first_hol = $dwy_given_yls_for_hols[0];
+  $udwy_given_yls_for_hols = array_map( 'array_unique_sr', $in );
 
-  $min_dwy_of_first_hol = min( $dwy_given_yls_for_first_hol );
+  $min_dwy_of_first_hol = min( $udwy_given_yls_for_hols[0] );
 
   $wrap = $min_dwy_of_first_hol + $dpc;
 
-  $aa = array_map( 'nodes_for_one_hol', $dwy_given_yls_for_hols );
+  $aa = array_map( 'nodes_for_one_hol', $udwy_given_yls_for_hols );
 
   $f = flatten( $aa );
 
-  $laa = array_map( 'node_labels_for_one_hol', $dwy_given_yls_for_hols, $hols );
+  $laa = array_map( 'node_labels_for_one_hol', $udwy_given_yls_for_hols, $hols );
 
   $fl = flatten( $laa );
 
@@ -517,9 +565,7 @@ function nodes_for_all_da( $dpc, $all_da, $hols )
 
 function nodes_for_one_hol( array $dwys )
 {
-  $udwys = array_values( array_unique( $dwys, SORT_REGULAR ) );
-
-  return array_map_pa( 'make_dr_pair', $udwys, $udwys );
+  return array_map_pa( 'make_dr_pair', $dwys, $dwys );
 }
 
 function radius( $wrap, $dwys, $dwy )
@@ -550,19 +596,42 @@ function radii()
      );
 }
 
+function cluster( array $dwys )
+{
+  if ( empty( $dwys ) ) { return $dwys; }
+
+  $p = partition_w2m( $dwys );
+
+  return prepend( cluster( $p[1] ), $p[0] );
+}
+
+// w2m: within 2 of min
+//
+function partition_w2m( array $dwys )
+{
+  $within_2_of_min = pa( 'within_2', min( $dwys ) );
+
+  return partition( $within_2_of_min, $dwys );
+}
+
+function within_2( $x, $y ) { return abs( $x - $y ) <= 2; }
+
+function partition( $f, array $a )
+{
+  $n = pa( 'not', $f );
+  return array( array_filter( $a, $f ),
+                array_filter( $a, $n ) );
+}
+
+function not( $f, $a ) { return ! $f( $a ); }
+
 function node_labels_for_one_hol( array $dwys, Holiday $hol )
 {
-  $min = min( $dwys );
-  $max = max( $dwys );
+  $cdwys = cluster( $dwys );
 
-  $min_label = array( $min, $hol );
-  $max_label = array( $max, $hol );
+  $mc = array_map( 'max', $cdwys );
 
-  $big_diff = $max - $min > 3;
-
-  return $big_diff
-    ? array( $min_label, $max_label )
-    : array( $min_label );
+  return array_map_pa( 'flipped_make_pair', $hol, $mc );
 }
 
 function edges_for_all_hd( $all_hd )
@@ -571,7 +640,7 @@ function edges_for_all_hd( $all_hd )
 
   $a = flatten( $aa );
 
-  return array_unique( $a, SORT_REGULAR );
+  return array_unique_sr( $a );
 }
 
 function edges_for_one_hd( array $hd )
@@ -589,11 +658,11 @@ function the_drawing( $dpc, $edges, $nodes )
 
   $svg_for_nodes = array_map( $svg_for_node_dpc, $dr_pairs );
 
-  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc, $wrap );
+  $dr_kvs = dr_pairs_to_kvs( $dr_pairs );
+
+  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc, $wrap, $dr_kvs );
 
   $svg_for_node_labels = array_map( $svg_for_node_label_dpc, $dl_pairs );
-
-  $dr_kvs = dr_pairs_to_kvs( $dr_pairs );
 
   $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc, $wrap, $dr_kvs );
 
@@ -780,7 +849,7 @@ function the_drawing( $dpc, $edges, $nodes )
 function main( $dummy_arg )
 {
   $hols = holidays();
-  //$hols = all_rosh_chodesh();
+  $hols = all_rosh_chodesh();
 
   $all_yearlen = all_yearlen();
 
