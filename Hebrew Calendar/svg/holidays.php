@@ -387,18 +387,26 @@ function dr_pairs_to_kvs( array $a )
 // dwy: day within year
 // dpc: days per circumference
 
-function svg_for_diff( $dpc, $dwy1, $dwy2, $dr_kvs )
+function svg_for_diff_label( $dpc, $dwy1, $dwy2, $dr_kvs )
 {
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
-  list ( $r, $x, $y ) = dwy_to_rxy( $dpc, $average_dwy, $dr_kvs, $dwy2 );
+  $r = dradius2( $dr_kvs, $dwy2 );
 
   $r2 = $r - 2 * falloff();
 
-  $a = $x > 0 ? 'end' : 'start';
+  $d = 360 * $average_dwy / $dpc;
 
-  $text_attr = array( 'x' => $r2 * $x,
-                      'y' => $r2 * $y,
+  $a = $d < 180 ? 'end' : 'start';
+
+  $transforms = array
+    (
+     svg_tr1( $d ),
+     svg_tt1( 0, -$r2 ),
+     svg_tr1( -$d ),
+     );
+
+  $text_attr = array( 'transform' => implode( ' ', $transforms ),
                       'text-anchor' => $a,
                       'font-size' => 0.05 );
 
@@ -414,9 +422,9 @@ function svg_for_edge( $dpc, $dr_kvs, $edge )
   list( $x1, $y1 ) = dwy_to_xy( $dpc, $dwy1, $dr_kvs );
   list( $x2, $y2 ) = dwy_to_xy( $dpc, $dwy2, $dr_kvs );
 
-  $sfd = svg_for_diff( $dpc, $dwy1, $dwy2, $dr_kvs );
+  $sfd = svg_for_diff_label( $dpc, $dwy1, $dwy2, $dr_kvs );
 
-  $r = radius2( $dr_kvs, $dwy1 );
+  $r = nradius2( $dr_kvs, $dwy1 );
 
   $rx = $r;
 
@@ -458,12 +466,12 @@ function svg_for_node( $dpc, DrPair $dr_pair )
   $dwys = $dr_pair->dwys;
   $dwy  = $dr_pair->dwy;
 
-  $radius = radius( $dwys, $dwy );
+  $r = nradius( $dwys, $dwy );
 
   $line_attr = array
     (
-     'y1' => -$radius,
-     'y2' => -$radius + falloff(),
+     'y1' => -$r,
+     'y2' => -$r + falloff(),
      'stroke' => 'black',
      'stroke-width' => 0.01,
      'transform' => svg_tr1( 360 * $dwy / $dpc ),
@@ -476,7 +484,7 @@ function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
 {
   list ( $dwy, $hol ) = $dl_pair;
 
-  $r = radius2( $dr_kvs, $dwy );
+  $r = nradius2( $dr_kvs, $dwy );
 
   $r2 = $r - 1.2 * falloff();
 
@@ -523,7 +531,7 @@ function dwy_to_rxy( $dpc, $dwy, $dr_kvs, $dwy_for_rf = NULL )
 {
   $actual_dwy_for_rf = is_null( $dwy_for_rf ) ? $dwy : $dwy_for_rf;
 
-  $r = radius2( $dr_kvs, $actual_dwy_for_rf );
+  $r = nradius2( $dr_kvs, $actual_dwy_for_rf );
 
   return prepend( dwy_to_uxy( $dpc, $dwy ), $r );
 }
@@ -556,13 +564,11 @@ function nodes_for_all_da( $dpc, $all_da, $hols )
 
   $udwy_given_yls_for_hols = array_map( 'array_unique_srr', $in );
 
-  $min_dwy_of_first_hol = min( $udwy_given_yls_for_hols[0] );
-
   $aa = array_map( 'nodes_for_one_hol', $udwy_given_yls_for_hols );
 
   $f = flatten( $aa );
 
-  $laa = array_map( 'node_labels_for_one_hol', $udwy_given_yls_for_hols, $hols );
+  $laa = array_map( 'dl_pairs_for_one_hol', $udwy_given_yls_for_hols, $hols );
 
   $fl = flatten( $laa );
 
@@ -574,23 +580,34 @@ function nodes_for_one_hol( array $dwys )
   return array_map_pa( 'make_dr_pair', $dwys, $dwys );
 }
 
-function radius2( $dr_kvs, $dwy )
+function nradius2( $dr_kvs, $dwy )
 {
-  return radius( $dr_kvs[ $dwy ], $dwy );
+  return radius2( $dr_kvs, $dwy, node_radii() );
 }
 
-function radius( $dwys, $dwy )
+function dradius2( $dr_kvs, $dwy )
 {
-  $radii = radii();
+  return radius2( $dr_kvs, $dwy, diff_label_radii() );
+}
 
+function nradius( $dwys, $dwy )
+{
+  return radius( $dwys, $dwy, node_radii() );
+}
+
+function radius2( $dr_kvs, $dwy, $radii )
+{
+  return radius( $dr_kvs[ $dwy ], $dwy, $radii );
+}
+
+function radius( $dwys, $dwy, $radii )
+{
   $index_within = array_search( $dwy, $dwys );
 
-  $r = $radii[ $index_within ];
-
-  return $r;
+  return $radii[ $index_within ];
 }
 
-function radii()
+function node_radii()
 {
   return array
     (
@@ -600,6 +617,19 @@ function radii()
      1 + 3 * falloff(),
      1 + 2 * falloff(),
      1 + 1 * falloff(),
+     );
+}
+
+function diff_label_radii()
+{
+  return array
+    (
+     1 - 0 * falloff(),
+     1 - 2 * falloff(),
+     1 - 4 * falloff(),
+     1 - 0 * falloff(),
+     1 - 2 * falloff(),
+     1 - 4 * falloff(),
      );
 }
 
@@ -632,7 +662,7 @@ function partition( $f, array $a )
 
 function not( $f, $a ) { return ! $f( $a ); }
 
-function node_labels_for_one_hol( array $dwys, Holiday $hol )
+function dl_pairs_for_one_hol( array $dwys, Holiday $hol )
 {
   $cdwys = cluster( $dwys );
 
