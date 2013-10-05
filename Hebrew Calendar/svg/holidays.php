@@ -1,6 +1,42 @@
 #!/usr/bin/php -q
 <?php
 
+   /* TODO: to get diff label placement right, we need to treat edges
+    * more like we do nodes, i.e. consider the cluster to which they
+    * belong. I.e. a cluster label is placed relative to the min
+    * element of that cluster, and diff labels need to be placed
+    * relative to the min element of their cluster (of edges). Maybe
+    * coalesce them into a single label, i.e. instead of 3 separate
+    * 30s, "30 30 30" or "30 x3"?
+    *
+    * TODO: how to show path divergence in Rosh Chodesh case. And
+    * related problem, suppressing showing zero-length month.
+    *
+    * TODO: use smaller radius for leap paths to make leap paths loop
+    * way out of the way of other things.
+    *
+    * TODO: instead of leap/nonleap, produce major holidays/rosh
+    * chodesh as separate files.
+    *
+    * Rescuscitate leap/nonleap in "figure 8" view.
+    *
+    * Show seasonal spread.
+    *
+    * Show units (360 degrees = 1 tropical year (365.25...))
+    *
+    * Show accompanying data table
+    *
+    * Show absolute dwy, not just diffs. Show on graph or in
+    * accompanying table?
+    *
+    * Show near-symmetry surrounding Purim in non-leap years (almost
+    * 50,30,30,50 diffs).
+    *
+    * Show near-opposition of Pesach and Sukkot and perhaps
+    * near-opposition of Shavuot and Channukah.
+    *
+    */
+
 require_once 'svg.php';
 
 function holidays()
@@ -885,7 +921,7 @@ function the_drawing( $dpc, $edges, $nodes )
 function main( $dummy_arg )
 {
   $hols = holidays();
-  $hols = all_rosh_chodesh();
+  //$hols = all_rosh_chodesh();
 
   $all_yearlen = all_yearlen();
 
