@@ -423,7 +423,7 @@ function dr_pairs_to_kvs( array $a )
 // dwy: day within year
 // dpc: days per circumference
 
-function svg_for_diff_label( $dpc, $dwy1, $dwy2, $dr_kvs )
+function svg_for_diff_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
 {
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
@@ -446,9 +446,7 @@ function svg_for_diff_label( $dpc, $dwy1, $dwy2, $dr_kvs )
                       'text-anchor' => $a,
                       'font-size' => 0.05 );
 
-  $diff = $dwy2 - $dwy1;
-
-  return xml_wrap( 'text', $text_attr, $diff );
+  return xml_wrap( 'text', $text_attr, $label );
 }
 
 function svg_for_edge( $dpc, $dr_kvs, $edge )
@@ -457,8 +455,6 @@ function svg_for_edge( $dpc, $dr_kvs, $edge )
 
   list( $x1, $y1 ) = dwy_to_xy( $dpc, $dwy1, $dr_kvs );
   list( $x2, $y2 ) = dwy_to_xy( $dpc, $dwy2, $dr_kvs );
-
-  $sfd = svg_for_diff_label( $dpc, $dwy1, $dwy2, $dr_kvs );
 
   $r = nradius2( $dr_kvs, $dwy1 );
 
@@ -489,7 +485,25 @@ function svg_for_edge( $dpc, $dr_kvs, $edge )
 
   $path = xml_sc_tag( 'path', $path_attr );
 
-  return xml_seqa( $path, $sfd );
+  return $path;
+}
+
+function svg_for_edge_cluster( $dpc, $dr_kvs, $edge_cluster )
+{
+  $diffs = array_map( 'edge_len', $edge_cluster );
+
+  $diff_string = implode( ' ', $diffs );
+
+  list ( $dwy1, $dwy2 ) = $edge_cluster[0];
+
+  $sfd = svg_for_diff_label( $dpc, $dr_kvs, $dwy1, $dwy2, $diff_string );
+
+  return $sfd;
+}
+
+function edge_len( array $edge )
+{
+  return $edge[1] - $edge[0];
 }
 
 function falloff()
@@ -602,13 +616,13 @@ function nodes_for_all_da( $dpc, $all_da, $hols )
 
   $aa = array_map( 'nodes_for_one_hol', $udwy_given_yls_for_hols );
 
-  $f = flatten( $aa );
+  $faa = flatten( $aa );
 
   $laa = array_map( 'dl_pairs_for_one_hol', $udwy_given_yls_for_hols, $hols );
 
-  $fl = flatten( $laa );
+  $flaa = flatten( $laa );
 
-  return array( 'dr_pairs' => $f, 'dl_pairs' => $fl );
+  return array( 'dr_pairs' => $faa, 'dl_pairs' => $flaa );
 }
 
 function nodes_for_one_hol( array $dwys )
@@ -638,6 +652,8 @@ function radius2( $dr_kvs, $dwy, $radii )
 
 function radius( $dwys, $dwy, $radii )
 {
+  tiu( 'dwy', $dwy, $dwys );
+
   $index_within = array_search( $dwy, $dwys );
 
   return $radii[ $index_within ];
@@ -678,6 +694,15 @@ function cluster( array $dwys )
   return prepend( cluster( $p[1] ), $p[0] );
 }
 
+function cluster_edges( array $edges )
+{
+  if ( empty( $edges ) ) { return $edges; }
+
+  $p = partition_edges_w2m( $edges );
+
+  return prepend( cluster_edges( $p[1] ), $p[0] );
+}
+
 // w2m: within 2 of min
 //
 function partition_w2m( array $dwys )
@@ -687,13 +712,28 @@ function partition_w2m( array $dwys )
   return partition( $within_2_of_min, $dwys );
 }
 
+function partition_edges_w2m( array $edges )
+{
+  $within_2_of_min = pa( 'edges_within_2', min( $edges ) );
+
+  return partition( $within_2_of_min, $edges );
+}
+
 function within_2( $x, $y ) { return abs( $x - $y ) <= 2; }
+
+function edges_within_2( $x, $y )
+{
+  return
+    within_2( $x[0], $y[0] )
+    &&
+    within_2( $x[1], $y[1] );
+}
 
 function partition( $f, array $a )
 {
   $n = pa( 'not', $f );
-  return array( array_filter( $a, $f ),
-                array_filter( $a, $n ) );
+  return array( array_values( array_filter( $a, $f ) ),
+                array_values( array_filter( $a, $n ) ) );
 }
 
 function not( $f, $a ) { return ! $f( $a ); }
@@ -707,13 +747,17 @@ function dl_pairs_for_one_hol( array $dwys, Holiday $hol )
   return array_map_pa( 'flipped_make_pair', $hol, $mc );
 }
 
-function edges_for_all_hd( $all_hd )
+function edges_for_all_ad( $all_ad )
 {
-  $aa = array_map( 'edges_for_one_hd', $all_hd );
+  $aa = array_map( 'edges_for_one_hd', $all_ad );
 
-  $a = flatten( $aa );
+  $faa = flatten( $aa );
 
-  return array_unique_srr( $a );
+  $ufaa = array_unique_srr( $faa );
+
+  $cufaa = cluster_edges( $ufaa );
+
+  return array( 'flat' => $ufaa, 'clustered' => $cufaa );
 }
 
 function edges_for_one_hd( array $hd )
@@ -738,9 +782,16 @@ function the_drawing( $dpc, $edges, $nodes )
 
   $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc, $dr_kvs );
 
-  $svg_for_edges = array_map( $svg_for_edge_dpc, $edges );
+  $svg_for_edges = array_map( $svg_for_edge_dpc, $edges['flat'] );
 
-  $ne = array_merge( $svg_for_edges, $svg_for_nodes, $svg_for_node_labels );
+  $svg_for_edge_cluster_dpc = pa( 'svg_for_edge_cluster', $dpc, $dr_kvs );
+
+  $svg_for_edge_clusters = array_map( $svg_for_edge_cluster_dpc, $edges['clustered'] );
+
+  $ne = array_merge( $svg_for_edges,
+                     $svg_for_edge_clusters,
+                     $svg_for_nodes,
+                     $svg_for_node_labels );
 
   return xml_seq( $ne );
 }
@@ -936,7 +987,7 @@ function main( $dummy_arg )
 
   $nodes = nodes_for_all_da( $dpc, $all_da, $hols );
 
-  $edges = edges_for_all_hd( $all_ad );
+  $edges = edges_for_all_ad( $all_ad );
 
   $drawing = the_drawing( $dpc, $edges, $nodes );
 
