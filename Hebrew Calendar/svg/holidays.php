@@ -423,7 +423,7 @@ function dr_pairs_to_kvs( array $a )
 // dwy: day within year
 // dpc: days per circumference
 
-function svg_for_diff_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
+function svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
 {
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
@@ -488,15 +488,24 @@ function svg_for_edge( $dpc, $dr_kvs, $edge )
   return $path;
 }
 
+function cv_as_string( $value, $count )
+{
+  return $count > 1 ? $value .'×'. $count : $value;
+}
+
 function svg_for_edge_cluster( $dpc, $dr_kvs, $edge_cluster )
 {
-  $diffs = array_map( 'edge_len', $edge_cluster );
+  $edge_lens = array_map( 'edge_len', $edge_cluster );
 
-  $diff_string = implode( ' ', $diffs );
+  $cvs_of_els = array_count_values( $edge_lens );
 
-  list ( $dwy1, $dwy2 ) = $edge_cluster[0];
+  $strs_of_cvs_of_els = array_map_wk( 'cv_as_string', $cvs_of_els );
 
-  $sfd = svg_for_diff_label( $dpc, $dr_kvs, $dwy1, $dwy2, $diff_string );
+  $edge_lens_as_string = implode( ', ', $strs_of_cvs_of_els );
+
+  list ( $dwy1, $dwy2 ) = $edge_cluster[count($edge_cluster)-1];
+
+  $sfd = svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $edge_lens_as_string );
 
   return $sfd;
 }
@@ -637,7 +646,7 @@ function nradius2( $dr_kvs, $dwy )
 
 function dradius2( $dr_kvs, $dwy )
 {
-  return radius2( $dr_kvs, $dwy, diff_label_radii() );
+  return radius2( $dr_kvs, $dwy, ec_label_radii() );
 }
 
 function nradius( $dwys, $dwy )
@@ -672,16 +681,16 @@ function node_radii()
      );
 }
 
-function diff_label_radii()
+function ec_label_radii()
 {
   return array
     (
-     1 - 0 * falloff(),
-     1 - 2 * falloff(),
-     1 - 4 * falloff(),
-     1 - 0 * falloff(),
-     1 - 2 * falloff(),
-     1 - 4 * falloff(),
+     1 - 1 * falloff(),
+     1 - 1 * falloff(),
+     1 - 1 * falloff(),
+     1 - 1 * falloff(),
+     1 - 1 * falloff(),
+     1 - 1 * falloff(),
      );
 }
 
