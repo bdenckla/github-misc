@@ -41,7 +41,9 @@ require_once 'svg.php';
 
 function holidays()
 {
-  // month number, day within month, name in Latin characters, name in Hebrew characters
+  // month number, day offset, name in Latin characters, name in Hebrew characters
+  // usually day offset is day within month, but it can be anything
+  //
   $r = array
     (
      new Holiday( mn_ad(), 14, 'Purim',        'פורים' ),
@@ -86,9 +88,9 @@ function rosh_chodesh( $month_number, $month_names )
 {
   list ( $lc_name, $hc_name ) = $month_names;
 
-  $day_within_month = 1;
+  $day_offset = 1;
 
-  return new Holiday( $month_number, $day_within_month, $lc_name, $hc_name );
+  return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
 }
 
 function add_final_holiday( array $r )
@@ -98,7 +100,7 @@ function add_final_holiday( array $r )
   $add_year = true;
 
   $final = new Holiday( $first->month_number,
-                        $first->day_within_month,
+                        $first->day_offset,
                         '',
                         '',
                         $add_year );
@@ -135,6 +137,14 @@ function all_yearlen()
      new YearLen( -1, 1 ),
      new YearLen(  0, 1 ),
      new YearLen(  1, 1 ),
+     );
+}
+
+function dummy_yearlen()
+{
+  return array
+    (
+     new YearLen( -1, 0 ),
      );
 }
 
@@ -269,7 +279,9 @@ function previous_month( $month_number )
   return $month_number == mn_min() ? mn_max() : $month_number - 1;
 }
 
-function day_within_year_of_month( YearLen $yl, $month_number )
+// dwy of rc: day within year of Rosh Chodesh (first of the month)
+//
+function dwy_of_rc( YearLen $yl, $month_number )
 {
   if ( $month_number == mn_start() )
     {
@@ -294,11 +306,14 @@ function day_within_year_of_month( YearLen $yl, $month_number )
   return sum_of_days_per_month( $yl, $mns );
 }
 
+function all_mns()
+{
+  return range( mn_min(), mn_max() );
+}
+
 function days_per_year( YearLen $yl )
 {
-  $mns = range( mn_min(), mn_max() );
-
-  return sum_of_days_per_month( $yl, $mns );
+  return sum_of_days_per_month( $yl, all_mns() );
 }
 
 function sum_of_days_per_month( YearLen $yl, array $mns )
@@ -306,15 +321,42 @@ function sum_of_days_per_month( YearLen $yl, array $mns )
   return array_sum( array_map_pa( 'days_per_month', $yl, $mns ) );
 }
 
+function min_shabbat() { return 0; }
+
+function shabbats()
+{
+  return array_map( 'shabbat', range( min_shabbat(), 60 ) );
+}
+
+function shabbat( $n )
+{
+  $month_number = mn_start();
+
+  // dfms: distance_from_min_shabbat
+  //
+  $dfms = $n - min_shabbat();
+
+  // usually the day offset is the day within the month but here we
+  // use it as day within year
+  //
+  $day_offset = 7 * $dfms + 1; // i.e. 1, 8, 15, 22, 29, 36
+
+  $name = $n;
+
+  list ( $lc_name, $hc_name ) = array( $name, $name );
+
+  return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
+}
+
 function dwy_for_yl_hol( YearLen $yl, Holiday $hol )
 {
-  $dwyom = day_within_year_of_month( $yl, $hol->month_number );
+  $dwyom = dwy_of_rc( $yl, $hol->month_number );
 
   // mdpy: maybe_days_per_year
   //
   $mdpy = $hol->add_year ? days_per_year( $yl ) : 0;
 
-  return $mdpy + $dwyom + $hol->day_within_month;
+  return $mdpy + $dwyom + $hol->day_offset;
 }
 
 function dwy_for_hol_yl( Holiday $hol, YearLen $yl )
@@ -327,7 +369,6 @@ function dwpy_for_hols_yl( array $hols, YearLen $yl )
   return array
     (
      'dwy_given_yl_for_hols' => array_map_pa( 'dwy_for_yl_hol', $yl, $hols ),
-     'dpy_given_yl'          => days_per_year( $yl ),
      );
 }
 
@@ -346,7 +387,6 @@ function dwpy_for_yls_hols( array $yls, array $hols )
   return array
     (
      'dwy_given_yls_for_hols' => array_map_pa( 'dwy_for_yls_hol', $yls, $hols ),
-     'dpy_for_yls'            => array_map( 'days_per_year', $yls ),
      );
 }
 
@@ -377,19 +417,19 @@ class YearLen
 class Holiday
 {
   function __construct( $month_number,
-                        $day_within_month,
+                        $day_offset,
                         $name_using_latin_chars,
                         $name_using_hebrew_chars,
                         $add_year = false )
   {
     $this->month_number            = $month_number;
-    $this->day_within_month        = $day_within_month;
+    $this->day_offset              = $day_offset;
     $this->name_using_latin_chars  = $name_using_latin_chars;
     $this->name_using_hebrew_chars = $name_using_hebrew_chars;
     $this->add_year                = $add_year;
   }
   public $month_number;
-  public $day_within_month;
+  public $day_offset;
   public $name_using_latin_chars;
   public $name_using_hebrew_chars;
   public $add_year;
@@ -434,6 +474,7 @@ function svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
   $d = 360 * $average_dwy / $dpc;
 
   $a = $d < 180 ? 'end' : 'start';
+  $a = 'middle';
 
   $transforms = array
     (
@@ -539,6 +580,16 @@ function svg_for_node( $dpc, DrPair $dr_pair )
   return xml_sc_tag( 'line', $line_attr );
 }
 
+function mod( $a, $b )
+{
+  return ($a % $b) + ($a < 0 ? $b : 0);
+}
+
+function div( $a, $b )
+{
+  return (integer) ( $a / $b );
+}
+
 function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
 {
   list ( $dwy, $hol ) = $dl_pair;
@@ -549,20 +600,42 @@ function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
 
   $d = 360 * $dwy / $dpc;
 
-  $a = $d < 180 ? 'end' : 'start';
+  $width = 0.2;
+  $height = 0.1;
+
+  $t = 2 * M_PI * $dwy / $dpc;
+
+  $s = M_PI_2 - $t;
+
+  $rectx = 0.5 * $width * -( 1 + cos( $s ) );
+  $recty = 0.5 * $height * -( 1 + sin( -$s ) );
 
   $transforms = array
     (
      svg_tr1( $d ),
      svg_tt1( 0, -$r2 ),
      svg_tr1( -$d ),
+     svg_tt1( $rectx, $recty ),
      );
 
-  $text_attr = array( 'transform' => implode( ' ', $transforms ),
-                      'text-anchor' => $a,
-                      'font-size' => 0.07 );
 
-  return xml_wrap( 'text', $text_attr, $hol->name_using_hebrew_chars );
+  $rect = svg_rect( array(
+                          'width' => $width,
+                          'height' => $height,
+                          'stroke' => 'black',
+                          'stroke-width' => 0.01,
+                          'fill' => 'none',
+                          ) );
+
+  $text_attr = array( 'font-size' => 0.07, 'y' => $height );
+
+  $text = xml_wrap( 'text', $text_attr, $hol->name_using_hebrew_chars );
+
+  $g_attr = array( 'transform' => implode( ' ', $transforms ) );
+
+  $g = svg_g( $g_attr, xml_seqa( $text, $rect ) );
+
+  return $g;
 }
 
 function ss()
@@ -665,7 +738,9 @@ function radius( $dwys, $dwy, $radii )
 
   $index_within = array_search( $dwy, $dwys );
 
-  return $radii[ $index_within ];
+  $spiral = 1 + 0.1 * ( $dwy / 365.25 );
+
+  return $spiral * $radii[ $index_within ];
 }
 
 function node_radii()
@@ -978,15 +1053,23 @@ function the_drawing( $dpc, $edges, $nodes )
  * )
  */
 
-function main( $dummy_arg )
+function calendar_types()
 {
-  $hols = holidays();
-  //$hols = all_rosh_chodesh();
+  return array
+    (
+     'major'    => array( holidays(), all_yearlen() ),
+     'roshchod' => array( all_rosh_chodesh(), all_yearlen() ),
+     'shabbat'  => array( shabbats(), dummy_yearlen() ),
+     );
+}
 
-  $all_yearlen = all_yearlen();
+function main( $calendar_type )
+{
+  $calendar_types = calendar_types();
 
-  $yearlens = $all_yearlen;
-  //$yearlens = array( $all_yearlen[3] );
+  tiu( 'calendar type', $calendar_type, array_keys( $calendar_types ) );
+
+  list( $hols, $yearlens ) = $calendar_types[ $calendar_type ];
 
   $all_da = dwpy_for_yls_hols( $yearlens, $hols );
 
@@ -1020,7 +1103,7 @@ function main( $dummy_arg )
      svg_ts1( $scale ),
      );
 
-  $g_attr = svg_transf2( implode( ' ', $transforms ) );
+  $g_attr = array( 'transform' => implode( ' ', $transforms ) );
 
   $g = svg_g( $g_attr, $drawing );
 

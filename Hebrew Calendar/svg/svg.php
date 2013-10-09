@@ -175,13 +175,6 @@ function svg_transf1( $fn, array $args )
   return $fn . '(' . $cs_args . ')';
 }
 
-// trans: transform
-//
-function svg_transf2( $transform )
-{
-  return array( 'transform' => $transform );
-}
-
 // tt: transform translate
 //
 function svg_tt1( $x, $y )
@@ -205,34 +198,6 @@ function svg_ts1( $sx_or_sxy, $in_sy = NULL )
 function svg_tr1( $d )
 {
   return svg_transf1( 'rotate', array( $d ) );
-}
-
-// tt: transform translate
-//
-function svg_tt2( $x, $y )
-{
-  return svg_transf2( svg_tt1( $x, $y ) );
-}
-
-// ts: transform scale
-//
-function svg_ts2( $s )
-{
-  return svg_transf2( svg_ts1( $s ) );
-}
-
-// gtt: group transform translate
-//
-function svg_gtt( $x, $y, $i )
-{
-  return svg_g( svg_tt2( $x, $y ), $i );
-}
-
-// gts: group transform scale
-//
-function svg_gts( $s, $i )
-{
-  return svg_g( svg_ts2( $s ), $i );
 }
 
 ?>
