@@ -507,12 +507,16 @@ function edge_lt( Edge $edge1, Edge $edge2 )
 
 // dwy: day within year
 // dpc: days per circumference
+// redge: representative edge
 
-function svg_for_ec_label( $dpc, $dwy1, $dwy2, $label )
+function svg_for_ec_label( $dpc, $redge, $label )
 {
+  $dwy1 = $redge->node1->dwy();
+  $dwy2 = $redge->node2->dwy();
+
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
-  $r = dradius2( $dwy2 );
+  $r = dradius( $redge->node2 );
 
   $r2 = $r - 2 * falloff();
 
@@ -587,16 +591,18 @@ function svg_for_edge_cluster( $dpc, $edge_cluster )
 
   $edge_lens_as_string = implode( ', ', $strs_of_cvs_of_els );
 
-  list ( $dwy1, $dwy2 ) = $edge_cluster[count($edge_cluster)-1];
+  // lec: last edge cluster
+  //
+  $lec = $edge_cluster[count($edge_cluster)-1];
 
-  $sfd = svg_for_ec_label( $dpc, $dwy1, $dwy2, $edge_lens_as_string );
+  $sfd = svg_for_ec_label( $dpc, $lec, $edge_lens_as_string );
 
   return $sfd;
 }
 
-function edge_len( array $edge )
+function edge_len( Edge $edge )
 {
-  return $edge[1] - $edge[0];
+  return $edge->node2->dwy() - $edge->node1->dwy();
 }
 
 function falloff()
@@ -760,14 +766,14 @@ function ss()
  * down. (This is the convention in most computer graphics systems,
  * but is not the mathematical convention.)
  */
-function node_to_xy( $dpc, $node, $node_for_rf = NULL )
+function node_to_xy( $dpc, Node $node, $node_for_rf = NULL )
 {
   list ( $r, $x, $y ) = node_to_rxy( $dpc, $node, $node_for_rf );
 
   return array( $r * $x, $r * $y );
 }
 
-function node_to_rxy( $dpc, $node, $node_for_rf = NULL )
+function node_to_rxy( $dpc, Node $node, $node_for_rf = NULL )
 {
   $actual_node_for_rf = is_null( $node_for_rf ) ? $node : $node_for_rf;
 
@@ -1001,16 +1007,12 @@ function the_drawing( $dpc, $nodes_broadly )
 
   $svg_for_edges = array_map( $svg_for_edge_dpc, $nodes_broadly['edges'] );
 
-  return xml_seq( array_merge( $svg_for_nodes,
-                               $svg_for_node_labels,
-                               $svg_for_edges ) );
-
   $svg_for_edge_cluster_dpc = pa( 'svg_for_edge_cluster', $dpc );
 
-  $svg_for_edge_clusters = array_map( $svg_for_edge_cluster_dpc, $edges['clustered'] );
+  $svg_for_cedges = array_map( $svg_for_edge_cluster_dpc, $nodes_broadly['cedges'] );
 
   $ne = array_merge( $svg_for_edges,
-                     $svg_for_edge_clusters,
+                     $svg_for_cedges,
                      $svg_for_nodes,
                      $svg_for_node_labels );
 
