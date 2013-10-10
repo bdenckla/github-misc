@@ -463,24 +463,27 @@ class Holiday
 
 class DrPair
 {
-  function __construct( array $dwys, $dwy )
+  function __construct( array $dwys, $dwyi )
   {
     $this->dwys = $dwys;
-    $this->dwy  = $dwy;
+    $this->dwyi = $dwyi;
   }
+  function dwy() { return $this->dwys[ $this->dwyi ]; }
   public $dwys;
-  public $dwy;
+  public $dwyi;
 }
 
 function make_dr_pair( $a, $b ) { return new DrPair( $a, $b ); }
 
-function dr_pair_dwy( DrPair $d ) { return $d->dwy; }
+function dr_pair_dwyi( DrPair $d ) { return $d->dwyi; }
 
 function dr_pair_dwys( DrPair $d ) { return $d->dwys; }
 
+function dr_pair_dwy( DrPair $d )  { return $d->dwy(); }
+
 function dr_pairs_to_kvs( array $a )
 {
-  $keys   = array_map( 'dr_pair_dwy',  $a );
+  $keys   = array_map( 'dr_pair_dwyi',  $a );
   $values = array_map( 'dr_pair_dwys', $a );
 
   return array_combine( $keys, $values );
@@ -589,10 +592,7 @@ function falloff()
 
 function svg_for_node( $dpc, DrPair $dr_pair )
 {
-  $dwys = $dr_pair->dwys;
-  $dwy  = $dr_pair->dwy;
-
-  $r = nradius( $dwys, $dwy );
+  $r = nradius( $dr_pair );
 
   $line_attr = array
     (
@@ -600,7 +600,7 @@ function svg_for_node( $dpc, DrPair $dr_pair )
      'y2' => -$r + falloff(),
      'stroke' => 'black',
      'stroke-width' => 0.01,
-     'transform' => svg_tr1( 360 * $dwy / $dpc ),
+     'transform' => svg_tr1( 360 * $dr_pair->dwy() / $dpc ),
      );
 
   return xml_sc_tag( 'line', $line_attr );
@@ -616,15 +616,15 @@ function div( $a, $b )
   return (integer) ( $a / $b );
 }
 
-function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
+function svg_for_node_label( $dpc, $dl_pair )
 {
-  list ( $dwy, $hol ) = $dl_pair;
+  list ( $dr_pair, $hol ) = $dl_pair;
 
-  $r = nradius2( $dr_kvs, $dwy );
+  $r = nradius( $dr_pair );
 
   $r2 = $r - 1.2 * falloff();
 
-  $d = 360 * $dwy / $dpc;
+  $d = 360 * $dr_pair->dwy() / $dpc;
 
   $font_size = 0.07;
 
@@ -635,7 +635,7 @@ function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
   $width = $bbox[0];
   $height = $bbox[1];
 
-  $t = 2 * M_PI * $dwy / $dpc;
+  $t = 2 * M_PI * $dr_pair->dwy() / $dpc;
 
   $s = M_PI_2 - $t;
 
@@ -669,8 +669,8 @@ function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
 
   $g_attr = array( 'transform' => implode( ' ', $transforms ) );
 
-  //$show_rect = false;
-  $show_rect = true;
+  $show_rect = false;
+  //$show_rect = true;
 
   // mrect: maybe rect
   //
@@ -786,29 +786,22 @@ function array_unique_srr( array $a )
 
 function nodes_for_all_da( $dpc, $all_da, $hols )
 {
-  $in = $all_da['dwy_given_yls_for_hols'];
+  $dwy_given_yls_for_hols = $all_da['dwy_given_yls_for_hols'];
 
-  $udwy_given_yls_for_hols = array_map( 'array_unique_srr', $in );
+  $dr_pairs_for_hols = array_map( 'dr_pairs_for_one_hol', $dwy_given_yls_for_hols );
 
-  $aa = array_map( 'nodes_for_one_hol', $udwy_given_yls_for_hols );
+  $dl_pairs_for_hols = array_map( 'dl_pairs_for_one_hol', $dr_pairs_for_hols, $hols );
 
-  $faa = flatten( $aa );
+  $fdrs = flatten( $dr_pairs_for_hols );
 
-  $laa = array_map( 'dl_pairs_for_one_hol', $udwy_given_yls_for_hols, $hols );
+  $fdls = flatten( $dl_pairs_for_hols );
 
-  $flaa = flatten( $laa );
-
-  return array( 'dr_pairs' => $faa, 'dl_pairs' => $flaa );
+  return array( 'dr_pairs' => $fdrs, 'dl_pairs' => $fdls );
 }
 
-function nodes_for_one_hol( array $dwys )
+function dr_pairs_for_one_hol( array $dwys )
 {
-  return array_map_pa( 'make_dr_pair', $dwys, $dwys );
-}
-
-function nradius2( $dr_kvs, $dwy )
-{
-  return radius2( $dr_kvs, $dwy, node_radii() );
+  return array_map_pa( 'make_dr_pair', $dwys, array_keys( $dwys ) );
 }
 
 function dradius2( $dr_kvs, $dwy )
@@ -816,25 +809,20 @@ function dradius2( $dr_kvs, $dwy )
   return radius2( $dr_kvs, $dwy, ec_label_radii() );
 }
 
-function nradius( $dwys, $dwy )
+function nradius( DrPair $dr_pair )
 {
-  return radius( $dwys, $dwy, node_radii() );
+  return radius( $dr_pair, node_radii() );
 }
 
-function radius2( $dr_kvs, $dwy, $radii )
+function radius( DrPair $dr_pair, $radii )
 {
-  return radius( $dr_kvs[ $dwy ], $dwy, $radii );
-}
+  $sf = ($dr_pair->dwyi - 2) * 0.05;
 
-function radius( $dwys, $dwy, $radii )
-{
-  tiu( 'dwy', $dwy, $dwys );
+  $spiral = 1 + $sf * ( $dr_pair->dwy() / 365.25 );
 
-  $index_within = array_search( $dwy, $dwys );
+  //return $spiral * $radii[ $index_within ];
 
-  $spiral = 1 + 0.1 * ( $dwy / 365.25 );
-
-  return $spiral * $radii[ $index_within ];
+  return $spiral;
 }
 
 function node_radii()
@@ -863,13 +851,20 @@ function ec_label_radii()
      );
 }
 
-function cluster( array $dwys )
+function cluster_dr_pairs( array $a )
 {
-  if ( empty( $dwys ) ) { return $dwys; }
+  return cluster( $a, 'partition_dr_pairs' );
+}
 
-  $p = partition_w2m( $dwys );
+// pf: partition function
+//
+function cluster( array $a, $pf )
+{
+  if ( empty( $a ) ) { return $a; }
 
-  return prepend( cluster( $p[1] ), $p[0] );
+  $p = $pf( $a );
+
+  return prepend( cluster( $p[1], $pf ), $p[0] );
 }
 
 function cluster_edges( array $edges )
@@ -883,11 +878,13 @@ function cluster_edges( array $edges )
 
 // w2m: within 2 of min
 //
-function partition_w2m( array $dwys )
+function partition_dr_pairs( array $dr_pairs )
 {
-  $within_2_of_min = pa( 'within_2', min( $dwys ) );
+  $min = min_of_dr_pairs_dwy( $dr_pairs );
 
-  return partition( $within_2_of_min, $dwys );
+  $within_2_of_min = pa( 'dr_pairs_are_within_2', $min );
+
+  return partition( $within_2_of_min, $dr_pairs );
 }
 
 function partition_edges_w2m( array $edges )
@@ -895,6 +892,37 @@ function partition_edges_w2m( array $edges )
   $within_2_of_min = pa( 'edges_within_2', min( $edges ) );
 
   return partition( $within_2_of_min, $edges );
+}
+
+function dr_pairs_are_within_2( $x, $y ) { return abs( $x->dwy() - $y->dwy() ) <= 2; }
+
+function min_of_dr_pairs_dwyi( array $dr_pairs )
+{
+  return amina( $dr_pairs, 'dr_pair_dwyi' );
+}
+
+function min_of_dr_pairs_dwy( array $dr_pairs )
+{
+  return amina( $dr_pairs, 'dr_pair_dwy' );
+}
+
+// amina: abstract minimum of array
+// vf: value [extraction] function
+//
+function amina( array $a, $vf )
+{
+  if ( empty( $a ) ) { return NULL; }
+
+  $p = array_pop( $a );
+
+  if ( empty( $a ) ) { return $p; }
+
+  return array_reduce( $a, pa( 'min_of_2_using_vf', $vf ), $p );
+}
+
+function min_of_2_using_vf( $vf, $a, $b )
+{
+  return $vf( $a ) < $vf( $b ) ? $a : $b;
 }
 
 function within_2( $x, $y ) { return abs( $x - $y ) <= 2; }
@@ -916,13 +944,15 @@ function partition( $f, array $a )
 
 function not( $f, $a ) { return ! $f( $a ); }
 
-function dl_pairs_for_one_hol( array $dwys, Holiday $hol )
+function dl_pairs_for_one_hol( array $dr_pairs, Holiday $hol )
 {
-  $cdwys = cluster( $dwys );
+  $dr_pair_clusters = cluster_dr_pairs( $dr_pairs );
 
-  $mc = array_map( 'max', $cdwys );
+  // modcs: representatives of dr_pair clusters with max indexes
+  //
+  $modcs = array_map( 'min_of_dr_pairs_dwyi', $dr_pair_clusters );
 
-  return array_map_pa( 'flipped_make_pair', $hol, $mc );
+  return array_map_pa( 'flipped_make_pair', $hol, $modcs );
 }
 
 function edges_for_all_ad( $all_ad )
@@ -954,9 +984,12 @@ function the_drawing( $dpc, $edges, $nodes )
 
   $dr_kvs = dr_pairs_to_kvs( $dr_pairs );
 
-  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc, $dr_kvs );
+  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $dpc );
 
   $svg_for_node_labels = array_map( $svg_for_node_label_dpc, $dl_pairs );
+
+  return xml_seq( array_merge( $svg_for_nodes,
+                               $svg_for_node_labels ) );
 
   $svg_for_edge_dpc = pa( 'svg_for_edge', $dpc, $dr_kvs );
 
