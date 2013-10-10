@@ -156,6 +156,11 @@ function svg_g( $attr, $i )
   return xml_wrap( 'g', $attr, $i );
 }
 
+function svg_text( $attr, $i )
+{
+  return xml_wrap( 'text', $attr, $i );
+}
+
 function svg_circle( $attr )
 {
   return xml_sc_tag( 'circle', $attr );

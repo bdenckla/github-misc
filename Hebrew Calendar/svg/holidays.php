@@ -487,7 +487,7 @@ function svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
                       'text-anchor' => $a,
                       'font-size' => 0.05 );
 
-  return xml_wrap( 'text', $text_attr, $label );
+  return svg_text( $text_attr, $label );
 }
 
 function svg_for_edge( $dpc, $dr_kvs, $edge )
@@ -600,8 +600,14 @@ function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
 
   $d = 360 * $dwy / $dpc;
 
-  $width = 0.2;
-  $height = 0.1;
+  $font_size = 0.07;
+
+  $string = $hol->name_using_hebrew_chars;
+
+  $bbox = bbox( $string, $font_size );
+
+  $width = $bbox[0];
+  $height = $bbox[1];
 
   $t = 2 * M_PI * $dwy / $dpc;
 
@@ -618,24 +624,53 @@ function svg_for_node_label( $dpc, $dr_kvs, $dl_pair )
      svg_tt1( $rectx, $recty ),
      );
 
+  $xpad = $font_size / 12;
+  $ypad = $font_size / 5;
+
+  $text_attr = array( 'font-size' => $font_size,
+                      'x' => $xpad,
+                      'y' => $height - $ypad );
+
+  $text = svg_text( $text_attr, $string );
 
   $rect = svg_rect( array(
                           'width' => $width,
                           'height' => $height,
                           'stroke' => 'black',
-                          'stroke-width' => 0.01,
+                          'stroke-width' => $font_size / 20,
                           'fill' => 'none',
                           ) );
 
-  $text_attr = array( 'font-size' => 0.07, 'y' => $height );
-
-  $text = xml_wrap( 'text', $text_attr, $hol->name_using_hebrew_chars );
-
   $g_attr = array( 'transform' => implode( ' ', $transforms ) );
 
-  $g = svg_g( $g_attr, xml_seqa( $text, $rect ) );
+  //$show_rect = false;
+  $show_rect = true;
+
+  // mrect: maybe rect
+  //
+  $mrect = $show_rect ? array( $rect ) : array();
+
+  $elements = append( $mrect, $text );
+
+  $g = svg_g( $g_attr, xml_seq( $elements ) );
 
   return $g;
+}
+
+function bbox( $string, $font_size )
+{
+  if ( is_int( $string ) )
+    {
+      $chars = $string === 0 ? 1 : 1 + floor( log10( $string ) );
+      $width = $font_size * 0.7 * $chars;
+      $height = $font_size * 1.1;
+      return array( $width, $height );
+    }
+
+  $chars = mb_strlen( $string, 'UTF-8' );
+  $width = $font_size * 0.7 * $chars;
+  $height = $font_size * 1.1;
+  return array( $width, $height );
 }
 
 function ss()
