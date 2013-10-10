@@ -390,30 +390,14 @@ function dwy_for_hol_yl( Holiday $hol, YearLen $yl )
   return dwy_for_yl_hol( $yl, $hol );
 }
 
-function dwpy_for_hols_yl( array $hols, YearLen $yl )
-{
-  return array
-    (
-     'dwy_given_yl_for_hols' => array_map_pa( 'dwy_for_yl_hol', $yl, $hols ),
-     );
-}
-
 function dwy_for_yls_hol( array $yls, Holiday $hol )
 {
   return array_map_pa( 'dwy_for_hol_yl', $hol, $yls );
 }
 
-function dwpy_for_hols_yls( array $hols, array $yls )
+function dwy_for_yls_hols( array $yls, array $hols )
 {
-  return array_map_pa( 'dwpy_for_hols_yl', $hols, $yls );
-}
-
-function dwpy_for_yls_hols( array $yls, array $hols )
-{
-  return array
-    (
-     'dwy_given_yls_for_hols' => array_map_pa( 'dwy_for_yls_hol', $yls, $hols ),
-     );
+  return array_map_pa( 'dwy_for_yls_hol', $yls, $hols );
 }
 
 /* day_adj: -1, 0, or 1 (short Kislev, normal, long Cheshvan)
@@ -473,30 +457,62 @@ class Node
   public $dwyi;
 }
 
-function make_node( $dwys, $dwyi ) { return new Node( $dwys, $dwyi ); }
-
-function node_dwyi( Node $node ) { return $node->dwyi; }
-
-function node_dwys( Node $node ) { return $node->dwys; }
-
-function node_dwy( Node $node )  { return $node->dwy(); }
-
-function nodes_to_kvs( array $a )
+function make_node( $dwys, $dwyi )
 {
-  $keys   = array_map( 'node_dwyi',  $a );
-  $values = array_map( 'node_dwys', $a );
-
-  return array_combine( $keys, $values );
+  return new Node( $dwys, $dwyi );
 }
+
+function node_dwyi_lt( Node $node1, Node $node2 )
+{
+  return $node1->dwyi < $node2->dwyi;
+}
+
+function node_dwy_lt( Node $node1, Node $node2 )
+{
+  return $node1->dwy() < $node2->dwy();
+}
+
+class Edge
+{
+  function __construct( Node $node1, Node $node2 )
+  {
+    $this->node1 = $node1;
+    $this->node2 = $node2;
+  }
+  public $node1;
+  public $node2;
+}
+
+function make_edge( Node $node1, Node $node2 )
+{
+  return new Edge( $node1, $node2 );
+}
+
+function edge_lt( Edge $edge1, Edge $edge2 )
+{
+  if ( node_dwy_lt( $edge1->node1, $edge2->node1 ) )
+    {
+      return true;
+    }
+
+  if ( node_dwy_lt( $edge2->node1, $edge1->node1 ) )
+    {
+      return false;
+    }
+
+  return node_dwy_lt( $edge1->node2, $edge2->node2 );
+}
+
+
 
 // dwy: day within year
 // dpc: days per circumference
 
-function svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
+function svg_for_ec_label( $dpc, $dwy1, $dwy2, $label )
 {
   $average_dwy = ($dwy1 + $dwy2) / 2;
 
-  $r = dradius2( $dr_kvs, $dwy2 );
+  $r = dradius2( $dwy2 );
 
   $r2 = $r - 2 * falloff();
 
@@ -519,14 +535,12 @@ function svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $label )
   return svg_text( $text_attr, $label );
 }
 
-function svg_for_edge( $dpc, $edge )
+function svg_for_edge( $dpc, Edge $edge )
 {
-  list ( $node1, $node2 ) = $edge;
+  list( $x1, $y1 ) = node_to_xy( $dpc, $edge->node1 );
+  list( $x2, $y2 ) = node_to_xy( $dpc, $edge->node2 );
 
-  list( $x1, $y1 ) = node_to_xy( $dpc, $node1 );
-  list( $x2, $y2 ) = node_to_xy( $dpc, $node2 );
-
-  $r = nradius( $node1 );
+  $r = nradius( $edge->node1 );
 
   $rx = $r;
 
@@ -563,7 +577,7 @@ function cv_as_string( $value, $count )
   return $count > 1 ? $value .'×'. $count : $value;
 }
 
-function svg_for_edge_cluster( $dpc, $dr_kvs, $edge_cluster )
+function svg_for_edge_cluster( $dpc, $edge_cluster )
 {
   $edge_lens = array_map( 'edge_len', $edge_cluster );
 
@@ -575,7 +589,7 @@ function svg_for_edge_cluster( $dpc, $dr_kvs, $edge_cluster )
 
   list ( $dwy1, $dwy2 ) = $edge_cluster[count($edge_cluster)-1];
 
-  $sfd = svg_for_ec_label( $dpc, $dr_kvs, $dwy1, $dwy2, $edge_lens_as_string );
+  $sfd = svg_for_ec_label( $dpc, $dwy1, $dwy2, $edge_lens_as_string );
 
   return $sfd;
 }
@@ -784,33 +798,30 @@ function array_unique_srr( array $a )
   return array_values( array_unique( $a, SORT_REGULAR ) );
 }
 
-function nodes_for_all_da( $dpc, $all_da, $hols )
+function nodes_for_all_da( $dpc, $dwy_for_yls_hols, $hols )
 {
-  $dwy_given_yls_for_hols = $all_da['dwy_given_yls_for_hols'];
+  // bh: by holiday, i.e. indexed by integer holiday index
+  //
+  $nodes_bh = array_map( 'nodes_for_one_hol', $dwy_for_yls_hols );
 
-  $nodes_for_hols = array_map( 'nodes_for_one_hol', $dwy_given_yls_for_hols );
+  $dl_pairs_bh = array_map( 'dl_pairs_for_one_hol', $nodes_bh, $hols );
 
-  $dl_pairs_for_hols = array_map( 'dl_pairs_for_one_hol', $nodes_for_hols, $hols );
+  $edges_bh = array_map_wn( 'edges_for_2_hols', $nodes_bh );
 
-  $edges_for_hol_pairs = array_map_wn( 'edges_for_2_hols', $nodes_for_hols );
+  $cedges_bh = array_map( 'cluster_edges', $edges_bh );
 
-  $fdrs = flatten( $nodes_for_hols );
-
-  $fdls = flatten( $dl_pairs_for_hols );
-
-  $fes = flatten( $edges_for_hol_pairs );
-
-  return array( 'nodes' => $fdrs, 'dl_pairs' => $fdls, 'edges' => $fes );
+  return array
+    (
+     'nodes'    => flatten( $nodes_bh ),
+     'dl_pairs' => flatten( $dl_pairs_bh ),
+     'edges'    => flatten( $edges_bh ),
+     'cedges'   => flatten( $cedges_bh ),
+     );
 }
 
 function edges_for_2_hols( array $nodes_for_hol1, array $nodes_for_hol2 )
 {
-  return array_map( 'edge_for_2_nodes', $nodes_for_hol1, $nodes_for_hol2 );
-}
-
-function edge_for_2_nodes( Node $node1, Node $node2 )
-{
-  return make_pair( $node1, $node2 );
+  return array_map( 'make_edge', $nodes_for_hol1, $nodes_for_hol2 );
 }
 
 function nodes_for_one_hol( array $dwys )
@@ -818,9 +829,9 @@ function nodes_for_one_hol( array $dwys )
   return array_map_pa( 'make_node', $dwys, array_keys( $dwys ) );
 }
 
-function dradius2( $dr_kvs, $dwy )
+function dradius( Node $node )
 {
-  return radius2( $dr_kvs, $dwy, ec_label_radii() );
+  return radius( $node, ec_label_radii() );
 }
 
 function nradius( Node $node )
@@ -865,29 +876,14 @@ function ec_label_radii()
      );
 }
 
-function cluster_nodes( array $a )
+function cluster_nodes( array $nodes )
 {
-  return cluster( $a, 'partition_nodes' );
-}
-
-// pf: partition function
-//
-function cluster( array $a, $pf )
-{
-  if ( empty( $a ) ) { return $a; }
-
-  $p = $pf( $a );
-
-  return prepend( cluster( $p[1], $pf ), $p[0] );
+  return cluster( $nodes, 'partition_nodes' );
 }
 
 function cluster_edges( array $edges )
 {
-  if ( empty( $edges ) ) { return $edges; }
-
-  $p = partition_edges_w2m( $edges );
-
-  return prepend( cluster_edges( $p[1] ), $p[0] );
+  return cluster( $edges, 'partition_edges' );
 }
 
 // w2m: within 2 of min
@@ -901,52 +897,52 @@ function partition_nodes( array $nodes )
   return partition( $within_2_of_min, $nodes );
 }
 
-function partition_edges_w2m( array $edges )
+function partition_edges( array $edges )
 {
-  $within_2_of_min = pa( 'edges_within_2', min( $edges ) );
+  $min = min_of_edges( $edges );
+
+  $within_2_of_min = pa( 'edges_are_within_2', $min );
 
   return partition( $within_2_of_min, $edges );
 }
 
-function nodes_are_within_2( $x, $y ) { return abs( $x->dwy() - $y->dwy() ) <= 2; }
+function nodes_are_within_2( $x, $y )
+{
+  return abs( $x->dwy() - $y->dwy() ) <= 2;
+}
+
+function edges_are_within_2( Edge $edge1, Edge $edge2 )
+{
+  return
+    nodes_are_within_2( $edge1->node1, $edge2->node1 )
+    &&
+    nodes_are_within_2( $edge1->node2, $edge2->node2 );
+}
 
 function min_of_nodes_dwyi( array $nodes )
 {
-  return amina( $nodes, 'node_dwyi' );
+  return amina( $nodes, 'node_dwyi_lt' );
 }
 
 function min_of_nodes_dwy( array $nodes )
 {
-  return amina( $nodes, 'node_dwy' );
+  return amina( $nodes, 'node_dwy_lt' );
 }
 
-// amina: abstract minimum of array
-// vf: value [extraction] function
+function min_of_edges( array $edges )
+{
+  return amina( $edges, 'edge_lt' );
+}
+
+// pf: partition function
 //
-function amina( array $a, $vf )
+function cluster( array $a, $pf )
 {
-  if ( empty( $a ) ) { return NULL; }
+  if ( empty( $a ) ) { return $a; }
 
-  $p = array_pop( $a );
+  $p = $pf( $a );
 
-  if ( empty( $a ) ) { return $p; }
-
-  return array_reduce( $a, pa( 'min_of_2_using_vf', $vf ), $p );
-}
-
-function min_of_2_using_vf( $vf, $a, $b )
-{
-  return $vf( $a ) < $vf( $b ) ? $a : $b;
-}
-
-function within_2( $x, $y ) { return abs( $x - $y ) <= 2; }
-
-function edges_within_2( $x, $y )
-{
-  return
-    within_2( $x[0], $y[0] )
-    &&
-    within_2( $x[1], $y[1] );
+  return prepend( cluster( $p[1], $pf ), $p[0] );
 }
 
 function partition( $f, array $a )
@@ -957,6 +953,25 @@ function partition( $f, array $a )
 }
 
 function not( $f, $a ) { return ! $f( $a ); }
+
+// amina: abstract minimum of array
+// lt: "less than" [function]
+//
+function amina( array $a, $lt )
+{
+  if ( empty( $a ) ) { return NULL; }
+
+  $p = array_pop( $a );
+
+  if ( empty( $a ) ) { return $p; }
+
+  return array_reduce( $a, pa( 'min_of_2_using_lt', $lt ), $p );
+}
+
+function min_of_2_using_lt( $lt, $a, $b )
+{
+  return $lt( $a, $b ) ? $a : $b;
+}
 
 function dl_pairs_for_one_hol( array $nodes, Holiday $hol )
 {
@@ -969,25 +984,7 @@ function dl_pairs_for_one_hol( array $nodes, Holiday $hol )
   return array_map_pa( 'flipped_make_pair', $hol, $modcs );
 }
 
-function edges_for_all_ad( $all_ad )
-{
-  $aa = array_map( 'edges_for_one_hd', $all_ad );
-
-  $faa = flatten( $aa );
-
-  // $ufaa = array_unique_srr( $faa );
-
-  $cufaa = NULL;//cluster_edges( $faa );
-
-  return array( 'flat' => $faa, 'clustered' => $cufaa );
-}
-
-function edges_for_one_hd( array $hd )
-{
-  return array_map_wn( 'make_pair', $hd['dwy_given_yl_for_hols'] );
-}
-
-function the_drawing( $dpc, $edges, $nodes_broadly )
+function the_drawing( $dpc, $nodes_broadly )
 {
   $nodes = $nodes_broadly['nodes'];
   $dl_pairs = $nodes_broadly['dl_pairs'];
@@ -1008,7 +1005,7 @@ function the_drawing( $dpc, $edges, $nodes_broadly )
                                $svg_for_node_labels,
                                $svg_for_edges ) );
 
-  $svg_for_edge_cluster_dpc = pa( 'svg_for_edge_cluster', $dpc, $dr_kvs );
+  $svg_for_edge_cluster_dpc = pa( 'svg_for_edge_cluster', $dpc );
 
   $svg_for_edge_clusters = array_map( $svg_for_edge_cluster_dpc, $edges['clustered'] );
 
@@ -1211,17 +1208,13 @@ function main( $calendar_type )
 
   list( $hols, $yearlens ) = $calendar_types[ $calendar_type ];
 
-  $all_da = dwpy_for_yls_hols( $yearlens, $hols );
-
-  $all_ad = dwpy_for_hols_yls( $hols, $yearlens );
+  $dwy_for_yls_hols = dwy_for_yls_hols( $yearlens, $hols );
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $nodes_broadly = nodes_for_all_da( $dpc, $all_da, $hols );
+  $nodes_broadly = nodes_for_all_da( $dpc, $dwy_for_yls_hols, $hols );
 
-  $edges = edges_for_all_ad( $all_ad );
-
-  $drawing = the_drawing( $dpc, $edges, $nodes_broadly );
+  $drawing = the_drawing( $dpc, $nodes_broadly );
 
   $width = 700;
 
