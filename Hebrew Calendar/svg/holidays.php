@@ -39,6 +39,32 @@
 
 require_once 'svg.php';
 
+// shh: string, Hebrew, holiday, i.e. string [in] Hebrew [characters for a ] holiday [name]
+//
+function shh_pu() { return 'פורים'; }
+function shh_pe() { return 'פסח'; }
+function shh_sh() { return 'שבועות'; }
+function shh_su() { return 'סוכות'; }
+function shh_ch() { return 'חנוכה'; }
+function shh_tu() { return 'טו בשבט'; }
+
+// shh: string, Hebrew, month, i.e. string [in] Hebrew [characters for a ] month [name]
+//
+function shm_ad() { return 'אדר'; } // and Adar Sheni
+function shm_ni() { return 'ניסן'; }
+function shm_iy() { return 'אייר'; }
+function shm_si() { return 'סיון'; }
+function shm_ta() { return 'תמוז'; }
+function shm_av() { return 'אב'; }
+function shm_el() { return 'אלול'; }
+function shm_ti() { return 'תשרי'; }
+function shm_ch() { return 'חשון'; }
+function shm_ki() { return 'כסלו'; }
+function shm_te() { return 'טבת'; }
+function shm_sh() { return 'שבט'; }
+function shm_ar() { return 'אדר א׳'; } // R for Rishon
+
+
 function holidays()
 {
   // month number, day offset, name in Latin characters, name in Hebrew characters
@@ -46,12 +72,12 @@ function holidays()
   //
   $r = array
     (
-     new Holiday( mn_ad(), 14, 'Purim',        'פורים' ),
-     new Holiday( mn_ni(), 15, 'Pesach',       'פסח' ),
-     new Holiday( mn_si(),  6, 'Shavuot',      'שבועות' ),
-     new Holiday( mn_ti(), 15, 'Sukkot',       'סוכות' ),
-     new Holiday( mn_ki(), 25, 'Chanukkah',    'חנוכה' ),
-     new Holiday( mn_sh(), 15, 'Tu B\'Shevat', 'טו בשבט' ),
+     new Holiday( mn_ad(), 14, 'Purim',        shh_pu() ),
+     new Holiday( mn_ni(), 15, 'Pesach',       shh_pe() ),
+     new Holiday( mn_si(),  6, 'Shavuot',      shh_sh() ),
+     new Holiday( mn_ti(), 15, 'Sukkot',       shh_su() ),
+     new Holiday( mn_ki(), 25, 'Chanukkah',    shh_ch() ),
+     new Holiday( mn_sh(), 15, 'Tu B\'Shevat', shh_tu() ),
      );
 
   return add_final_holiday( $r );
@@ -61,19 +87,19 @@ function month_names()
 {
   return array
     (
-     mn_ad() => array( 'Adar'     , 'אדר' ), // and Adar Sheni
-     mn_ni() => array( 'Nisan'    , 'ניסן' ),
-     mn_iy() => array( 'Iyyar'    , 'אייר' ),
-     mn_si() => array( 'Sivan'    , 'סיון' ),
-     mn_ta() => array( 'Tammuz'   , 'תמוז' ),
-     mn_av() => array( 'Av'       , 'אב' ),
-     mn_el() => array( 'Elul'     , 'אלול' ),
-     mn_ti() => array( 'Tishrei'  , 'תשרי' ),
-     mn_ch() => array( 'Cheshvan' , 'חשון' ),
-     mn_ki() => array( 'Kislev'   , 'כסלו' ),
-     mn_te() => array( 'Tevet'    , 'טבת' ),
-     mn_sh() => array( 'Shevat'   , 'שבט' ),
-     mn_ar() => array( 'Adar R'   , 'אדר א׳' ), // R for Rishon
+     mn_ad() => array( 'Adar'     , shm_ad() ), // and Adar Sheni
+     mn_ni() => array( 'Nisan'    , shm_ni() ),
+     mn_iy() => array( 'Iyyar'    , shm_iy() ),
+     mn_si() => array( 'Sivan'    , shm_si() ),
+     mn_ta() => array( 'Tammuz'   , shm_ta() ),
+     mn_av() => array( 'Av'       , shm_av() ),
+     mn_el() => array( 'Elul'     , shm_el() ),
+     mn_ti() => array( 'Tishrei'  , shm_ti() ),
+     mn_ch() => array( 'Cheshvan' , shm_ch() ),
+     mn_ki() => array( 'Kislev'   , shm_ki() ),
+     mn_te() => array( 'Tevet'    , shm_te() ),
+     mn_sh() => array( 'Shevat'   , shm_sh() ),
+     mn_ar() => array( 'Adar R'   , shm_ar() ), // R for Rishon
      );
 }
 
@@ -667,10 +693,43 @@ function bbox( $string, $font_size )
       return array( $width, $height );
     }
 
-  $chars = mb_strlen( $string, 'UTF-8' );
-  $width = $font_size * 0.7 * $chars;
-  $height = $font_size * 1.1;
+  $ubbox = ubbox_lookup( $string );
+
+  $width = $font_size * $ubbox[0];
+  $height = $font_size * $ubbox[1];
+
   return array( $width, $height );
+}
+
+function ubbox_lookup( $string )
+{
+  $a = array
+    (
+     '' => [ 0, 0 ],
+     shh_pu() => [ 2.4, 1 ],
+     shh_pe() => [ 1.8, 1 ],
+     shh_sh() => [ 3.1, 1 ],
+     shh_su() => [ 2.5, 1 ],
+     shh_ch() => [ 2.6, 1 ],
+     shh_tu() => [ 3.5, 1 ],
+     shm_ad() => [ 1.8, 1 ],
+     shm_ni() => [ 1.8, 1 ],
+     shm_iy() => [ 2.0, 1 ],
+     shm_si() => [ 1.8, 1 ],
+     shm_ta() => [ 2.0, 1 ],
+     shm_av() => [ 1.2, 1 ],
+     shm_el() => [ 2.1, 1 ],
+     shm_ti() => [ 2.1, 1 ],
+     shm_ch() => [ 2.0, 1 ],
+     shm_ki() => [ 2.1, 1 ],
+     shm_te() => [ 1.8, 1 ],
+     shm_sh() => [ 1.9, 1 ],
+     shm_ar() => [ 2.8, 1 ],
+     );
+
+  tiu( 'string', $string, array_keys( $a ) );
+
+  return $a[ $string ];
 }
 
 function ss()
