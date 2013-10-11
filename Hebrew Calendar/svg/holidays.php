@@ -1,22 +1,7 @@
 #!/usr/bin/php -q
 <?php
 
-   /* TODO: to get diff label placement right, we need to treat edges
-    * more like we do nodes, i.e. consider the cluster to which they
-    * belong. I.e. a cluster label is placed relative to the min
-    * element of that cluster, and diff labels need to be placed
-    * relative to the min element of their cluster (of edges). Maybe
-    * coalesce them into a single label, i.e. instead of 3 separate
-    * 30s, "30 30 30" or "30 x3"?
-    *
-    * TODO: how to show path divergence in Rosh Chodesh case. And
-    * related problem, suppressing showing zero-length month.
-    *
-    * TODO: use smaller radius for leap paths to make leap paths loop
-    * way out of the way of other things.
-    *
-    * TODO: instead of leap/nonleap, produce major holidays/rosh
-    * chodesh as separate files.
+   /* Don't show zero-length month (non-leap Adar Rishon).
     *
     * Rescuscitate leap/nonleap in "figure 8" view.
     *
@@ -374,7 +359,7 @@ function shabbat( $n )
   return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
 }
 
-function dwy_for_yl_hol( YearLen $yl, Holiday $hol )
+function dwy_for_hol_yl( Holiday $hol, YearLen $yl )
 {
   $dwyom = dwy_of_rc( $yl, $hol->month_number );
 
@@ -383,11 +368,6 @@ function dwy_for_yl_hol( YearLen $yl, Holiday $hol )
   $mdpy = $hol->add_year ? days_per_year( $yl ) : 0;
 
   return $mdpy + $dwyom + $hol->day_offset;
-}
-
-function dwy_for_hol_yl( Holiday $hol, YearLen $yl )
-{
-  return dwy_for_yl_hol( $yl, $hol );
 }
 
 function dwy_for_yls_hol( array $yls, Holiday $hol )
