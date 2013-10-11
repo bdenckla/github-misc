@@ -257,9 +257,9 @@ function array_map_pa( $f, $a, array $b )
   return array_map( pa( $f, $a ), $b );
 }
 
-function days_per_month( YearLen $yl, $month_number )
+function days_per_month( YearLen $oyl, $month_number )
 {
-  list( $day_adj, $month_adj ) = array( $yl->day_adj, $yl->month_adj );
+  list( $day_adj, $month_adj ) = array( $oyl->day_adj, $oyl->month_adj );
 
   tiu( 'month_number', $month_number, array_keys( month_names() ) );
 
@@ -292,7 +292,7 @@ function previous_month( $month_number )
 
 // dwy of rc: day within year of Rosh Chodesh (first of the month)
 //
-function dwy_of_rc( YearLen $yl, $month_number )
+function dwy_of_rc( YearLen $oyl, $month_number )
 {
   if ( $month_number == mn_start() )
     {
@@ -314,7 +314,7 @@ function dwy_of_rc( YearLen $yl, $month_number )
     $mns = range( mn_start(), $p );
   }
 
-  return sum_of_days_per_month( $yl, $mns );
+  return sum_of_days_per_month( $oyl, $mns );
 }
 
 function all_mns()
@@ -322,14 +322,14 @@ function all_mns()
   return range( mn_min(), mn_max() );
 }
 
-function days_per_year( YearLen $yl )
+function days_per_year( YearLen $oyl )
 {
-  return sum_of_days_per_month( $yl, all_mns() );
+  return sum_of_days_per_month( $oyl, all_mns() );
 }
 
-function sum_of_days_per_month( YearLen $yl, array $mns )
+function sum_of_days_per_month( YearLen $oyl, array $mns )
 {
-  return array_sum( array_map_pa( 'days_per_month', $yl, $mns ) );
+  return array_sum( array_map_pa( 'days_per_month', $oyl, $mns ) );
 }
 
 function min_shabbat() { return 0; }
@@ -359,25 +359,34 @@ function shabbat( $n )
   return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
 }
 
-function dwy_for_hol_yl( Holiday $hol, YearLen $yl )
+class Bogus
 {
-  $dwyom = dwy_of_rc( $yl, $hol->month_number );
+}
+
+function dwy_for_ohol_oyl( Holiday $ohol, YearLen $oyl )
+{
+  if ( days_per_month( $oyl, $ohol->month_number ) == 0 )
+    {
+      return new Bogus;
+    }
+
+  $dwyom = dwy_of_rc( $oyl, $ohol->month_number );
 
   // mdpy: maybe_days_per_year
   //
-  $mdpy = $hol->add_year ? days_per_year( $yl ) : 0;
+  $mdpy = $ohol->add_year ? days_per_year( $oyl ) : 0;
 
-  return $mdpy + $dwyom + $hol->day_offset;
+  return $mdpy + $dwyom + $ohol->day_offset;
 }
 
-function dwy_for_yls_hol( array $yls, Holiday $hol )
+function dwy_for_myl_ohol( array $myl, Holiday $ohol )
 {
-  return array_map_pa( 'dwy_for_hol_yl', $hol, $yls );
+  return array_map_pa( 'dwy_for_ohol_oyl', $ohol, $myl );
 }
 
-function dwy_for_yls_hols( array $yls, array $hols )
+function dwy_for_myl_mhol( array $myl, array $mhol )
 {
-  return array_map_pa( 'dwy_for_yls_hol', $yls, $hols );
+  return array_map_pa( 'dwy_for_myl_ohol', $myl, $mhol );
 }
 
 /* day_adj: -1, 0, or 1 (short Kislev, normal, long Cheshvan)
@@ -609,7 +618,7 @@ function div( $a, $b )
 
 function svg_for_node_label( $dpc, $dl_pair )
 {
-  list ( $node, $hol ) = $dl_pair;
+  list ( $node, $ohol ) = $dl_pair;
 
   $where = array
     (
@@ -619,7 +628,7 @@ function svg_for_node_label( $dpc, $dl_pair )
 
   $what = array
     (
-     'string' => $hol->name_using_hebrew_chars,
+     'string' => $ohol->name_using_hebrew_chars,
      'font size' => 0.07,
      'show rect' => false,
      );
@@ -803,13 +812,13 @@ function array_unique_srr( array $a )
   return array_values( array_unique( $a, SORT_REGULAR ) );
 }
 
-function nodes_for_all_da( $dpc, $dwy_for_yls_hols, $hols )
+function nodes_for_all_da( $dpc, $dwy_for_myl_mhol, $mhol )
 {
   // bh: by holiday, i.e. indexed by integer holiday index
   //
-  $nodes_bh = array_map( 'nodes_for_one_hol', $dwy_for_yls_hols );
+  $nodes_bh = array_map( 'nodes_for_ohol', $dwy_for_myl_mhol );
 
-  $dl_pairs_bh = array_map( 'dl_pairs_for_one_hol', $nodes_bh, $hols );
+  $dl_pairs_bh = array_map( 'dl_pairs_for_ohol', $nodes_bh, $mhol );
 
   $edges_bh = array_map_wn( 'edges_for_2_hols', $nodes_bh );
 
@@ -829,7 +838,7 @@ function edges_for_2_hols( array $nodes_for_hol1, array $nodes_for_hol2 )
   return array_map( 'make_edge', $nodes_for_hol1, $nodes_for_hol2 );
 }
 
-function nodes_for_one_hol( array $dwys )
+function nodes_for_ohol( array $dwys )
 {
   return array_map_pa( 'make_node', $dwys, array_keys( $dwys ) );
 }
@@ -978,7 +987,7 @@ function min_of_2_using_lt( $lt, $a, $b )
   return $lt( $a, $b ) ? $a : $b;
 }
 
-function dl_pairs_for_one_hol( array $nodes, Holiday $hol )
+function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
 {
   $node_clusters = cluster_nodes( $nodes );
 
@@ -986,7 +995,7 @@ function dl_pairs_for_one_hol( array $nodes, Holiday $hol )
   //
   $modcs = array_map( 'min_of_nodes_dwyi', $node_clusters );
 
-  return array_map_pa( 'flipped_make_pair', $hol, $modcs );
+  return array_map_pa( 'flipped_make_pair', $ohol, $modcs );
 }
 
 function the_drawing( $dpc, $nodes_broadly )
@@ -1024,7 +1033,7 @@ function the_drawing( $dpc, $nodes_broadly )
  * array (
  *   0 =>
  *   array (
- *     'dwy_given_yls_for_hols' =>
+ *     'dwy_given_myl_for_mhol' =>
  *     array (
  *       0 =>
  *       array (
@@ -1091,7 +1100,7 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 399,
  *       ),
  *     ),
- *     'dpy_for_yls' =>
+ *     'dpy_for_myl' =>
  *     array (
  *       0 => 353,
  *       1 => 354,
@@ -1105,7 +1114,7 @@ function the_drawing( $dpc, $nodes_broadly )
  *   array (
  *     0 =>
  *     array (
- *       'dwy_given_yl_for_hols' =>
+ *       'dwy_given_oyl_for_mhol' =>
  *       array (
  *         0 => 14,
  *         1 => 44,
@@ -1115,11 +1124,11 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 338,
  *         6 => 367,
  *       ),
- *       'dpy_given_yl' => 353,
+ *       'dpy_given_oyl' => 353,
  *     ),
  *     1 =>
  *     array (
- *       'dwy_given_yl_for_hols' =>
+ *       'dwy_given_oyl_for_mhol' =>
  *       array (
  *         0 => 14,
  *         1 => 44,
@@ -1129,11 +1138,11 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 339,
  *         6 => 368,
  *       ),
- *       'dpy_given_yl' => 354,
+ *       'dpy_given_oyl' => 354,
  *     ),
  *     2 =>
  *     array (
- *       'dwy_given_yl_for_hols' =>
+ *       'dwy_given_oyl_for_mhol' =>
  *       array (
  *         0 => 14,
  *         1 => 44,
@@ -1143,11 +1152,11 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 340,
  *         6 => 369,
  *       ),
- *       'dpy_given_yl' => 355,
+ *       'dpy_given_oyl' => 355,
  *     ),
  *     3 =>
  *     array (
- *       'dwy_given_yl_for_hols' =>
+ *       'dwy_given_oyl_for_mhol' =>
  *       array (
  *         0 => 14,
  *         1 => 44,
@@ -1157,11 +1166,11 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 338,
  *         6 => 397,
  *       ),
- *       'dpy_given_yl' => 383,
+ *       'dpy_given_oyl' => 383,
  *     ),
  *     4 =>
  *     array (
- *       'dwy_given_yl_for_hols' =>
+ *       'dwy_given_oyl_for_mhol' =>
  *       array (
  *         0 => 14,
  *         1 => 44,
@@ -1171,11 +1180,11 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 339,
  *         6 => 398,
  *       ),
- *       'dpy_given_yl' => 384,
+ *       'dpy_given_oyl' => 384,
  *     ),
  *     5 =>
  *     array (
- *       'dwy_given_yl_for_hols' =>
+ *       'dwy_given_oyl_for_mhol' =>
  *       array (
  *         0 => 14,
  *         1 => 44,
@@ -1185,7 +1194,7 @@ function the_drawing( $dpc, $nodes_broadly )
  *         5 => 340,
  *         6 => 399,
  *       ),
- *       'dpy_given_yl' => 385,
+ *       'dpy_given_oyl' => 385,
  *     ),
  *   ),
  * )
@@ -1207,13 +1216,13 @@ function main( $calendar_type )
 
   tiu( 'calendar type', $calendar_type, array_keys( $calendar_types ) );
 
-  list( $hols, $yearlens ) = $calendar_types[ $calendar_type ];
+  list( $mhol, $yearlens ) = $calendar_types[ $calendar_type ];
 
-  $dwy_for_yls_hols = dwy_for_yls_hols( $yearlens, $hols );
+  $dwy_for_myl_mhol = dwy_for_myl_mhol( $yearlens, $mhol );
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $nodes_broadly = nodes_for_all_da( $dpc, $dwy_for_yls_hols, $hols );
+  $nodes_broadly = nodes_for_all_da( $dpc, $dwy_for_myl_mhol, $mhol );
 
   $drawing = the_drawing( $dpc, $nodes_broadly );
 
