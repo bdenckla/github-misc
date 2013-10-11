@@ -163,19 +163,26 @@ function dummy_yearlen()
 //
 function tiu( $what, $val, $possible_vals )
 {
-    if ( ! in_array( $val, $possible_vals ) )
-      {
-        $e = array
-          (
-           'Unexpected',
-           $what,
-           $val,
-           '.',
-           'Expected one of the following:',
-           $possible_vals
-           );
-        throw new ErrorException( var_export( $e, 1 ) );
-      }
+  $strict = true;
+  if ( ! in_array( $val, $possible_vals, $strict ) )
+    {
+      $e = array
+        (
+         'Unexpected',
+         $what,
+         $val,
+         '.',
+         'Expected one of the following:',
+         $possible_vals
+         );
+      tneve( $e );
+    }
+}
+
+// tneve: throw new ErrorException of var_export
+function tneve( $e )
+{
+  throw new ErrorException( var_export( $e, 1 ) );
 }
 
 function append( array $a, $i )
@@ -265,17 +272,17 @@ function days_per_month( YearLen $oyl, $month_number )
 
   $da = 0;
 
-  if ( $month_number == mn_ch() ) // Cheshvan
+  if ( $month_number === mn_ch() ) // Cheshvan
     {
-      $da = $day_adj == 1 ? 1 : 0;
+      $da = $day_adj === 1 ? 1 : 0;
     }
 
-  if ( $month_number == mn_ki() ) // Kislev
+  if ( $month_number === mn_ki() ) // Kislev
     {
-      $da = $day_adj == -1 ? -1 : 0;
+      $da = $day_adj === -1 ? -1 : 0;
     }
 
-  if ( $month_number == mn_ar() ) // Adar Rishon
+  if ( $month_number === mn_ar() ) // Adar Rishon
     {
       $da = $month_adj ? 1 : -29;
     }
@@ -287,14 +294,14 @@ function previous_month( $month_number )
 {
   // Below, we could use modulo operator, but why bother?
   //
-  return $month_number == mn_min() ? mn_max() : $month_number - 1;
+  return $month_number === mn_min() ? mn_max() : $month_number - 1;
 }
 
 // dwy of rc: day within year of Rosh Chodesh (first of the month)
 //
 function dwy_of_rc( YearLen $oyl, $month_number )
 {
-  if ( $month_number == mn_start() )
+  if ( $month_number === mn_start() )
     {
       return 0;
     }
@@ -352,7 +359,7 @@ function shabbat( $n )
   //
   $day_offset = 7 * $dfms + 1; // i.e. 1, 8, 15, 22, 29, 36
 
-  $name = $n % 4 == 0 ? $n : '';
+  $name = $n % 4 === 0 ? $n : '';
 
   list ( $lc_name, $hc_name ) = array( $name, $name );
 
@@ -365,7 +372,7 @@ class Bogus
 
 function dwy_for_ohol_oyl( Holiday $ohol, YearLen $oyl )
 {
-  if ( days_per_month( $oyl, $ohol->month_number ) == 0 )
+  if ( days_per_month( $oyl, $ohol->month_number ) === 0 )
     {
       return new Bogus;
     }
@@ -559,26 +566,32 @@ function svg_for_edge( $dpc, Edge $edge )
   return $path;
 }
 
-function cv_as_string( $value, $count )
+function times() { return '×'; }
+
+function edge_lens_string( array $edge_lens )
 {
-  return $count > 1 ? $value .'×'. $count : $value;
+  $c = count( $edge_lens );
+
+  $cu = count( array_unique( $edge_lens ) );
+
+  if ( $c !== 1 && $cu === 1 )
+    {
+      return $edge_lens[0] . times() . count( $edge_lens );
+    }
+  return implode( ', ', $edge_lens );
 }
 
 function svg_for_edge_cluster( $dpc, $edge_cluster )
 {
   $edge_lens = array_map( 'edge_len', $edge_cluster );
 
-  $cvs_of_els = array_count_values( $edge_lens );
-
-  $strs_of_cvs_of_els = array_map_wk( 'cv_as_string', $cvs_of_els );
-
-  $edge_lens_as_string = implode( ', ', $strs_of_cvs_of_els );
+  $edge_lens_string = edge_lens_string( $edge_lens );
 
   // redge: representative edge (representative of cluster)
   //
   $redge = $edge_cluster[0];
 
-  $sfd = svg_for_ec_label( $dpc, $redge, $edge_lens_as_string );
+  $sfd = svg_for_ec_label( $dpc, $redge, $edge_lens_string );
 
   return $sfd;
 }
@@ -743,24 +756,58 @@ function ubbox_lookup( $string )
      shm_te() => [ 1.8, 1 ],
      shm_sh() => [ 1.9, 1 ],
      shm_ar() => [ 2.8, 1 ],
-     '30×6' => [ 2.8, 1 ],
-     '50×6' => [ 2.8, 1 ],
-     '127×6' => [ 2.8, 1 ],
-     '69×4, 70×2' => [ 2.8, 1 ],
-     '48×2, 49×4' => [ 2.8, 1 ],
-     '29×3' => [ 2.8, 1 ],
-     '59×3' => [ 2.8, 1 ],
-     '29×6' => [ 2.8, 1 ],
-     '29×4, 30×2' => [ 2.8, 1 ],
-     '29×2, 30×4' => [ 2.8, 1 ],
-     '0×3' => [ 2.8, 1 ],
-     '30×3' => [ 2.8, 1 ],
-     '7' => [ 0.85, 1 ],
      );
 
-  tiu( 'string', $string, array_keys( $a ) );
+  if ( array_key_exists( $string, $a ) )
+    {
+      return $a[ $string ];
+    }
 
-  return $a[ $string ];
+  return ubbox_char_lookup( $string );
+}
+
+function ubbox_char_lookup( $string )
+{
+  $s = preg_split('//u', $string, -1, PREG_SPLIT_NO_EMPTY );
+
+  $lookups = array_map( 'ubbox_char_lookup2', $s );
+
+  $trues = array_filter( $lookups );
+
+  if ( count( $trues ) !== count( $lookups ) )
+    {
+      tneve( array( 'could not find a character in', $string, $lookups ) );
+    }
+
+  $width = array_sum( $lookups );
+
+  return [ $width, 1.1 ];
+}
+
+function ubbox_char_lookup2( $char )
+{
+  $xchar = 'x' . $char; // to allow array keys below to be all strings
+
+  $a = array
+    (
+     'x0' => 0.7,
+     'x1' => 0.7,
+     'x2' => 0.7,
+     'x3' => 0.7,
+     'x4' => 0.7,
+     'x5' => 0.7,
+     'x6' => 0.7,
+     'x7' => 0.7,
+     'x8' => 0.7,
+     'x9' => 0.7,
+     'x,' => 0.2,
+     'x ' => 0.3,
+     'x'.times() => 0.7,
+     );
+
+  return array_key_exists( $xchar, $a )
+    ? $a[ $xchar ]
+    : NULL;
 }
 
 function ss()
@@ -1011,7 +1058,7 @@ function min_of_2_using_lt( $lt, $a, $b )
 
 function not_bogus( $x )
 {
-  return ! is_object( $x ) || get_class( $x ) != 'Bogus';
+  return ! is_object( $x ) || get_class( $x ) !== 'Bogus';
 }
 
 function node_not_bogus( Node $node )
