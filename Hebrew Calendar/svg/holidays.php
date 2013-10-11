@@ -367,7 +367,7 @@ function shabbat( $n )
   //
   $day_offset = 7 * $dfms + 1; // i.e. 1, 8, 15, 22, 29, 36
 
-  $name = $n;
+  $name = $n % 4 == 0 ? $n : '';
 
   list ( $lc_name, $hc_name ) = array( $name, $name );
 
@@ -509,34 +509,25 @@ function edge_lt( Edge $edge1, Edge $edge2 )
 // dpc: days per circumference
 // redge: representative edge
 
-function svg_for_ec_label( $dpc, $redge, $label )
+function svg_for_ec_label( $dpc, $redge, $string )
 {
   $dwy1 = $redge->node1->dwy();
   $dwy2 = $redge->node2->dwy();
 
-  $average_dwy = ($dwy1 + $dwy2) / 2;
-
-  $r = dradius( $redge->node2 );
-
-  $r2 = $r - 2 * falloff();
-
-  $d = 360 * $average_dwy / $dpc;
-
-  $a = $d < 180 ? 'end' : 'start';
-  $a = 'middle';
-
-  $transforms = array
+  $where = array
     (
-     svg_tr1( $d ),
-     svg_tt1( 0, -$r2 ),
-     svg_tr1( -$d ),
+     'r' => dradius( $redge->node2 ),
+     'dwy' => ($dwy1 + $dwy2) * 0.5,
      );
 
-  $text_attr = array( 'transform' => implode( ' ', $transforms ),
-                      'text-anchor' => $a,
-                      'font-size' => 0.05 );
+  $what = array
+    (
+     'string' => $string,
+     'font size' => 0.05,
+     'show rect' => false,
+     );
 
-  return svg_text( $text_attr, $label );
+  return svg_for_label( $dpc, $where, $what );
 }
 
 function svg_for_edge( $dpc, Edge $edge )
@@ -591,11 +582,11 @@ function svg_for_edge_cluster( $dpc, $edge_cluster )
 
   $edge_lens_as_string = implode( ', ', $strs_of_cvs_of_els );
 
-  // lec: last edge cluster
+  // redge: representative edge (representative of cluster)
   //
-  $lec = $edge_cluster[count($edge_cluster)-1];
+  $redge = $edge_cluster[0];
 
-  $sfd = svg_for_ec_label( $dpc, $lec, $edge_lens_as_string );
+  $sfd = svg_for_ec_label( $dpc, $redge, $edge_lens_as_string );
 
   return $sfd;
 }
@@ -640,22 +631,40 @@ function svg_for_node_label( $dpc, $dl_pair )
 {
   list ( $node, $hol ) = $dl_pair;
 
-  $r = nradius( $node );
+  $where = array
+    (
+     'r' => nradius( $node ),
+     'dwy' => $node->dwy(),
+     );
+
+  $what = array
+    (
+     'string' => $hol->name_using_hebrew_chars,
+     'font size' => 0.07,
+     'show rect' => false,
+     );
+
+  return svg_for_label( $dpc, $where, $what );
+}
+
+function svg_for_label( $dpc, $where, $what )
+{
+ $r         = $where['r'];
+ $dwy       = $where['dwy'];
+ $string    = $what['string'];
+ $font_size = $what['font size'];
+ $show_rect = $what['show rect'];
 
   $r2 = $r - 1.2 * falloff();
 
-  $d = 360 * $node->dwy() / $dpc;
-
-  $font_size = 0.07;
-
-  $string = $hol->name_using_hebrew_chars;
+  $d = 360 * $dwy / $dpc;
 
   $bbox = bbox( $string, $font_size );
 
   $width = $bbox[0];
   $height = $bbox[1];
 
-  $t = 2 * M_PI * $node->dwy() / $dpc;
+  $t = 2 * M_PI * $dwy / $dpc;
 
   $s = M_PI_2 - $t;
 
@@ -670,8 +679,8 @@ function svg_for_node_label( $dpc, $dl_pair )
      svg_tt1( $rectx, $recty ),
      );
 
-  $xpad = $font_size / 12;
-  $ypad = $font_size / 5;
+  $xpad = $font_size * 0.084;
+  $ypad = $font_size * 0.2;
 
   $text_attr = array( 'font-size' => $font_size,
                       'x' => $xpad,
@@ -683,14 +692,11 @@ function svg_for_node_label( $dpc, $dl_pair )
                           'width' => $width,
                           'height' => $height,
                           'stroke' => 'black',
-                          'stroke-width' => $font_size / 20,
+                          'stroke-width' => $font_size * 0.05,
                           'fill' => 'none',
                           ) );
 
   $g_attr = array( 'transform' => implode( ' ', $transforms ) );
-
-  $show_rect = false;
-  //$show_rect = true;
 
   // mrect: maybe rect
   //
@@ -745,6 +751,19 @@ function ubbox_lookup( $string )
      shm_te() => [ 1.8, 1 ],
      shm_sh() => [ 1.9, 1 ],
      shm_ar() => [ 2.8, 1 ],
+     '30×6' => [ 2.8, 1 ],
+     '50×6' => [ 2.8, 1 ],
+     '127×6' => [ 2.8, 1 ],
+     '69×4, 70×2' => [ 2.8, 1 ],
+     '48×2, 49×4' => [ 2.8, 1 ],
+     '29×3' => [ 2.8, 1 ],
+     '59×3' => [ 2.8, 1 ],
+     '29×6' => [ 2.8, 1 ],
+     '29×4, 30×2' => [ 2.8, 1 ],
+     '29×2, 30×4' => [ 2.8, 1 ],
+     '0×3' => [ 2.8, 1 ],
+     '30×3' => [ 2.8, 1 ],
+     '7' => [ 0.85, 1 ],
      );
 
   tiu( 'string', $string, array_keys( $a ) );
@@ -1234,7 +1253,7 @@ function main( $calendar_type )
 
   $transforms = array
     (
-     svg_tt1( $width / 2, $height / 2 ),
+     svg_tt1( $width * 0.5, $height * 0.5 ),
      svg_ts1( $scale ),
      );
 
