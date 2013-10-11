@@ -524,7 +524,10 @@ function svg_for_edge( $dpc, Edge $edge )
   list( $x1, $y1 ) = node_to_xy( $dpc, $edge->node1 );
   list( $x2, $y2 ) = node_to_xy( $dpc, $edge->node2 );
 
-  $r = nradius( $edge->node1 );
+  $r1 = nradius( $edge->node1 );
+  $r2 = nradius( $edge->node2 );
+
+  $r = 0.5 * ( $r1 + $r2 );
 
   $rx = $r;
 
@@ -817,30 +820,44 @@ function nodes_for_all_da( $dpc, $mhol, $myl )
   $dwy_for_myl_mhol = dwy_for_myl_mhol( $myl, $mhol );
 
   // bh: by holiday, i.e. indexed by integer holiday index
+  // pb: possibly-bogus
   //
-
   $pb_nodes_bh = array_map( 'nodes_for_ohol', $dwy_for_myl_mhol );
 
   $nb_nodes_bh = array_map( 'nb_nodes', $pb_nodes_bh );
 
   $dl_pairs_bh = array_map( 'dl_pairs_for_ohol', $nb_nodes_bh, $mhol );
 
-  $edges_bh = array();//array_map_wn( 'edges_for_2_hols', $nodes_bh );
+  $pb_nodes_by = transpose( $pb_nodes_bh );
 
-  $cedges_bh = array();//array_map( 'cluster_edges', $edges_bh );
+  $edges = flatten( array_map( 'edges_for_oyl', $pb_nodes_by ) );
+
+  $cedges = cluster_edges( $edges );
 
   return array
     (
      'nodes'    => flatten( $nb_nodes_bh ),
      'dl_pairs' => flatten( $dl_pairs_bh ),
-     'edges'    => flatten( $edges_bh ),
-     'cedges'   => flatten( $cedges_bh ),
+     'edges'    => $edges,
+     'cedges'   => $cedges,
      );
 }
 
-function edges_for_2_hols( array $nodes_for_hol1, array $nodes_for_hol2 )
+function transpose( array $a )
 {
-  return array_map( 'make_edge', $nodes_for_hol1, $nodes_for_hol2 );
+  // You can't do array_map( 'array', $a, $b, $c, ... ).
+  // But you can achieve that effect with array_map( NULL, $a, $b, $c, ... ).
+  // That's what we're doing below.
+
+  array_unshift( $a, NULL );
+  return call_user_func_array( 'array_map', $a );
+}
+
+function edges_for_oyl( array $nodes_for_oyl )
+{
+  $nb_nodes = nb_nodes( $nodes_for_oyl );
+
+  return array_map_wn( 'make_edge', $nb_nodes );
 }
 
 function nodes_for_ohol( array $dwys )
