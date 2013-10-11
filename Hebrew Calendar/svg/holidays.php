@@ -512,7 +512,7 @@ function svg_for_ec_label( $dpc, $redge, $string )
 
   $where = array
     (
-     'r' => dradius( $redge->node2 ),
+     'r' => radius( $redge->node2 ),
      'dwy' => ($dwy1 + $dwy2) * 0.5,
      );
 
@@ -531,8 +531,8 @@ function svg_for_edge( $dpc, Edge $edge )
   list( $x1, $y1 ) = node_to_xy( $dpc, $edge->node1 );
   list( $x2, $y2 ) = node_to_xy( $dpc, $edge->node2 );
 
-  $r1 = nradius( $edge->node1 );
-  $r2 = nradius( $edge->node2 );
+  $r1 = radius( $edge->node1 );
+  $r2 = radius( $edge->node2 );
 
   $r = 0.5 * ( $r1 + $r2 );
 
@@ -572,13 +572,34 @@ function edge_lens_string( array $edge_lens )
 {
   $c = count( $edge_lens );
 
+  if ( $c === 1 ) { return $edge_lens[0]; }
+
   $cu = count( array_unique( $edge_lens ) );
 
-  if ( $c !== 1 && $cu === 1 )
+  if ( $cu === 1 )
     {
       return $edge_lens[0] . times() . count( $edge_lens );
     }
+
+  $h = halves_equal( $edge_lens );
+
+  if ( $h !== FALSE )
+    {
+      return '('.edge_lens_string( $h ).')'.times().'2';
+    }
+
   return implode( ', ', $edge_lens );
+}
+
+function halves_equal( array $a )
+{
+  $c = count( $a );
+
+  if ( $c % 2 === 1 ) { return FALSE; }
+
+  list( $b, $c ) = array_chunk( $a, $c / 2 );
+
+  return $b === $c ? $b : FALSE;
 }
 
 function svg_for_edge_cluster( $dpc, $edge_cluster )
@@ -608,7 +629,7 @@ function falloff()
 
 function svg_for_node( $dpc, Node $node )
 {
-  $r = nradius( $node );
+  $r = radius( $node );
 
   $line_attr = array
     (
@@ -638,7 +659,7 @@ function svg_for_node_label( $dpc, $dl_pair )
 
   $where = array
     (
-     'r' => nradius( $node ),
+     'r' => radius( $node ),
      'dwy' => $node->dwy(),
      );
 
@@ -803,6 +824,9 @@ function ubbox_char_lookup2( $char )
      'x,' => 0.2,
      'x ' => 0.3,
      'x'.times() => 0.7,
+     'x'.times() => 0.7,
+     'x(' => 0.4,
+     'x)' => 0.4,
      );
 
   return array_key_exists( $xchar, $a )
@@ -835,7 +859,7 @@ function node_to_rxy( $dpc, Node $node, $node_for_rf = NULL )
 {
   $actual_node_for_rf = is_null( $node_for_rf ) ? $node : $node_for_rf;
 
-  $r = nradius( $actual_node_for_rf );
+  $r = radius( $actual_node_for_rf );
 
   return prepend( node_to_uxy( $dpc, $node ), $r );
 }
@@ -912,17 +936,7 @@ function nodes_for_ohol( array $dwys )
   return array_map_pa( 'make_node', $dwys, array_keys( $dwys ) );
 }
 
-function dradius( Node $node )
-{
-  return radius( $node, ec_label_radii() );
-}
-
-function nradius( Node $node )
-{
-  return radius( $node, node_radii() );
-}
-
-function radius( Node $node, $radii )
+function radius( Node $node )
 {
   $sf = ($node->dwyi - 2) * 0.05;
 
@@ -931,32 +945,6 @@ function radius( Node $node, $radii )
   //return $spiral * $radii[ $index_within ];
 
   return $spiral;
-}
-
-function node_radii()
-{
-  return array
-    (
-     1 - 0 * falloff(),
-     1 - 1 * falloff(),
-     1 - 2 * falloff(),
-     1 + 3 * falloff(),
-     1 + 2 * falloff(),
-     1 + 1 * falloff(),
-     );
-}
-
-function ec_label_radii()
-{
-  return array
-    (
-     1 - 1 * falloff(),
-     1 - 1 * falloff(),
-     1 - 1 * falloff(),
-     1 - 1 * falloff(),
-     1 - 1 * falloff(),
-     1 - 1 * falloff(),
-     );
 }
 
 function cluster_nodes( array $nodes )
