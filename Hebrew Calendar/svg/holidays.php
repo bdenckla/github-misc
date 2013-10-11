@@ -812,21 +812,26 @@ function array_unique_srr( array $a )
   return array_values( array_unique( $a, SORT_REGULAR ) );
 }
 
-function nodes_for_all_da( $dpc, $dwy_for_myl_mhol, $mhol )
+function nodes_for_all_da( $dpc, $mhol, $myl )
 {
+  $dwy_for_myl_mhol = dwy_for_myl_mhol( $myl, $mhol );
+
   // bh: by holiday, i.e. indexed by integer holiday index
   //
-  $nodes_bh = array_map( 'nodes_for_ohol', $dwy_for_myl_mhol );
 
-  $dl_pairs_bh = array_map( 'dl_pairs_for_ohol', $nodes_bh, $mhol );
+  $pb_nodes_bh = array_map( 'nodes_for_ohol', $dwy_for_myl_mhol );
 
-  $edges_bh = array_map_wn( 'edges_for_2_hols', $nodes_bh );
+  $nb_nodes_bh = array_map( 'nb_nodes', $pb_nodes_bh );
 
-  $cedges_bh = array_map( 'cluster_edges', $edges_bh );
+  $dl_pairs_bh = array_map( 'dl_pairs_for_ohol', $nb_nodes_bh, $mhol );
+
+  $edges_bh = array();//array_map_wn( 'edges_for_2_hols', $nodes_bh );
+
+  $cedges_bh = array();//array_map( 'cluster_edges', $edges_bh );
 
   return array
     (
-     'nodes'    => flatten( $nodes_bh ),
+     'nodes'    => flatten( $nb_nodes_bh ),
      'dl_pairs' => flatten( $dl_pairs_bh ),
      'edges'    => flatten( $edges_bh ),
      'cedges'   => flatten( $cedges_bh ),
@@ -987,6 +992,23 @@ function min_of_2_using_lt( $lt, $a, $b )
   return $lt( $a, $b ) ? $a : $b;
 }
 
+function not_bogus( $x )
+{
+  return ! is_object( $x ) || get_class( $x ) != 'Bogus';
+}
+
+function node_not_bogus( Node $node )
+{
+  return not_bogus( $node->dwy() );
+}
+
+// nb: non-bogus
+//
+function nb_nodes( array $nodes )
+{
+  return array_filter( $nodes, 'node_not_bogus' );
+}
+
 function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
 {
   $node_clusters = cluster_nodes( $nodes );
@@ -1026,179 +1048,6 @@ function the_drawing( $dpc, $nodes_broadly )
 
   return xml_seq( $ne );
 }
-/*
- * var_export( array( $all_da, $all_ad ) );
- *
- *
- * array (
- *   0 =>
- *   array (
- *     'dwy_given_myl_for_mhol' =>
- *     array (
- *       0 =>
- *       array (
- *         0 => 14,
- *         1 => 14,
- *         2 => 14,
- *         3 => 14,
- *         4 => 14,
- *         5 => 14,
- *       ),
- *       1 =>
- *       array (
- *         0 => 44,
- *         1 => 44,
- *         2 => 44,
- *         3 => 44,
- *         4 => 44,
- *         5 => 44,
- *       ),
- *       2 =>
- *       array (
- *         0 => 94,
- *         1 => 94,
- *         2 => 94,
- *         3 => 94,
-
- *         4 => 94,
- *         5 => 94,
- *       ),
- *       3 =>
- *       array (
- *         0 => 221,
- *         1 => 221,
- *         2 => 221,
- *         3 => 221,
- *         4 => 221,
- *         5 => 221,
- *       ),
- *       4 =>
- *       array (
- *         0 => 290,
- *         1 => 290,
- *         2 => 291,
- *         3 => 290,
- *         4 => 290,
- *         5 => 291,
- *       ),
- *       5 =>
- *       array (
- *         0 => 338,
- *         1 => 339,
- *         2 => 340,
- *         3 => 338,
- *         4 => 339,
- *         5 => 340,
- *       ),
- *       6 =>
- *       array (
- *         0 => 367,
- *         1 => 368,
- *         2 => 369,
- *         3 => 397,
- *         4 => 398,
- *         5 => 399,
- *       ),
- *     ),
- *     'dpy_for_myl' =>
- *     array (
- *       0 => 353,
- *       1 => 354,
- *       2 => 355,
- *       3 => 383,
- *       4 => 384,
- *       5 => 385,
- *     ),
- *   ),
- *   1 =>
- *   array (
- *     0 =>
- *     array (
- *       'dwy_given_oyl_for_mhol' =>
- *       array (
- *         0 => 14,
- *         1 => 44,
- *         2 => 94,
- *         3 => 221,
- *         4 => 290,
- *         5 => 338,
- *         6 => 367,
- *       ),
- *       'dpy_given_oyl' => 353,
- *     ),
- *     1 =>
- *     array (
- *       'dwy_given_oyl_for_mhol' =>
- *       array (
- *         0 => 14,
- *         1 => 44,
- *         2 => 94,
- *         3 => 221,
- *         4 => 290,
- *         5 => 339,
- *         6 => 368,
- *       ),
- *       'dpy_given_oyl' => 354,
- *     ),
- *     2 =>
- *     array (
- *       'dwy_given_oyl_for_mhol' =>
- *       array (
- *         0 => 14,
- *         1 => 44,
- *         2 => 94,
- *         3 => 221,
- *         4 => 291,
- *         5 => 340,
- *         6 => 369,
- *       ),
- *       'dpy_given_oyl' => 355,
- *     ),
- *     3 =>
- *     array (
- *       'dwy_given_oyl_for_mhol' =>
- *       array (
- *         0 => 14,
- *         1 => 44,
- *         2 => 94,
- *         3 => 221,
- *         4 => 290,
- *         5 => 338,
- *         6 => 397,
- *       ),
- *       'dpy_given_oyl' => 383,
- *     ),
- *     4 =>
- *     array (
- *       'dwy_given_oyl_for_mhol' =>
- *       array (
- *         0 => 14,
- *         1 => 44,
- *         2 => 94,
- *         3 => 221,
- *         4 => 290,
- *         5 => 339,
- *         6 => 398,
- *       ),
- *       'dpy_given_oyl' => 384,
- *     ),
- *     5 =>
- *     array (
- *       'dwy_given_oyl_for_mhol' =>
- *       array (
- *         0 => 14,
- *         1 => 44,
- *         2 => 94,
- *         3 => 221,
- *         4 => 291,
- *         5 => 340,
- *         6 => 399,
- *       ),
- *       'dpy_given_oyl' => 385,
- *     ),
- *   ),
- * )
- */
 
 function calendar_types()
 {
@@ -1216,13 +1065,11 @@ function main( $calendar_type )
 
   tiu( 'calendar type', $calendar_type, array_keys( $calendar_types ) );
 
-  list( $mhol, $yearlens ) = $calendar_types[ $calendar_type ];
-
-  $dwy_for_myl_mhol = dwy_for_myl_mhol( $yearlens, $mhol );
+  list( $mhol, $myl ) = $calendar_types[ $calendar_type ];
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $nodes_broadly = nodes_for_all_da( $dpc, $dwy_for_myl_mhol, $mhol );
+  $nodes_broadly = nodes_for_all_da( $dpc, $mhol, $myl );
 
   $drawing = the_drawing( $dpc, $nodes_broadly );
 

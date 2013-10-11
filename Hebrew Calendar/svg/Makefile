@@ -13,4 +13,4 @@ holidays.shabbat.novc.svg: *.php
 	mv $@.tmp $@
 
 echo: *.php
-	./holidays.php major
+	./holidays.php roshchod
