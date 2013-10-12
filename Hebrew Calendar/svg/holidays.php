@@ -24,9 +24,83 @@
     *
     * Fade shabbats out after 1 tropical year.
     *
+    * Address the following warning given by Firefox: "Use of
+    * getPreventDefault() is deprecated.  Use defaultPrevented
+    * instead."
+    *
     */
 
 require_once 'svg.php';
+
+class Bogus {}
+
+/* day_adj: -1, 0, or 1 (short Kislev, normal, long Cheshvan)
+ * month_adj: 0 or 1 (non-leap or leap)
+ *
+ * I.e. the 6 possible year dpys have the following correspondences
+ * to day_adj/month_adj pairs:
+ *
+ * 353, 354, 355 correspond to (-1,0), (0,0), (1,0)
+ * 383, 384, 385 correspond to (-1,1), (0,1), (1,1)
+*/
+
+class YearLen
+{
+  function __construct( $day_adj, $month_adj )
+  {
+    tiu( 'day_adj',   $day_adj,   [ -1, 0, 1 ] );
+    tiu( 'month_adj', $month_adj, [ 0, 1 ] );
+
+    $this->day_adj   = $day_adj;
+    $this->month_adj = $month_adj;
+  }
+  public $day_adj;
+  public $month_adj;
+}
+
+class Holiday
+{
+  function __construct( $month_number,
+                        $day_offset,
+                        $name_using_latin_chars,
+                        $name_using_hebrew_chars,
+                        $add_year = false )
+  {
+    $this->month_number            = $month_number;
+    $this->day_offset              = $day_offset;
+    $this->name_using_latin_chars  = $name_using_latin_chars;
+    $this->name_using_hebrew_chars = $name_using_hebrew_chars;
+    $this->add_year                = $add_year;
+  }
+  public $month_number;
+  public $day_offset;
+  public $name_using_latin_chars;
+  public $name_using_hebrew_chars;
+  public $add_year;
+}
+
+class Node
+{
+  function __construct( array $dwys, $dwyi )
+  {
+    $this->dwys = $dwys;
+    $this->dwyi = $dwyi;
+  }
+  function dwy() { return $this->dwys[ $this->dwyi ]; }
+  public $dwys;
+  public $dwyi;
+}
+
+class Edge
+{
+  function __construct( Node $node1, Node $node2 )
+  {
+    $this->node1 = $node1;
+    $this->node2 = $node2;
+  }
+  public $node1;
+  public $node2;
+}
 
 // shh: string, Hebrew, holiday, i.e. string [in] Hebrew [characters for a ] holiday [name]
 //
@@ -53,6 +127,7 @@ function shm_te() { return 'טבת'; }
 function shm_sh() { return 'שבט'; }
 function shm_ar() { return 'אדר א׳'; } // R for Rishon
 
+function times() { return '×'; }
 
 function holidays()
 {
@@ -72,25 +147,66 @@ function holidays()
   return add_final_holiday( $r );
 }
 
+function mn_ad() { return  0; }
+function mn_ni() { return  1; }
+function mn_iy() { return  2; }
+function mn_si() { return  3; }
+function mn_ta() { return  4; }
+function mn_av() { return  5; }
+function mn_el() { return  6; }
+function mn_ti() { return  7; }
+function mn_ch() { return  8; }
+function mn_ki() { return  9; }
+function mn_te() { return 10; }
+function mn_sh() { return 11; }
+function mn_ar() { return 12; }
+
+function mn_min() { return  0; }
+function mn_max() { return 12; }
+
+function mn_start() { return mn_ad(); }
+
 function month_names()
 {
   return array
     (
-     mn_ad() => array( 'Adar'     , shm_ad() ), // and Adar Sheni
-     mn_ni() => array( 'Nisan'    , shm_ni() ),
-     mn_iy() => array( 'Iyyar'    , shm_iy() ),
-     mn_si() => array( 'Sivan'    , shm_si() ),
-     mn_ta() => array( 'Tammuz'   , shm_ta() ),
-     mn_av() => array( 'Av'       , shm_av() ),
-     mn_el() => array( 'Elul'     , shm_el() ),
-     mn_ti() => array( 'Tishrei'  , shm_ti() ),
-     mn_ch() => array( 'Cheshvan' , shm_ch() ),
-     mn_ki() => array( 'Kislev'   , shm_ki() ),
-     mn_te() => array( 'Tevet'    , shm_te() ),
-     mn_sh() => array( 'Shevat'   , shm_sh() ),
-     mn_ar() => array( 'Adar R'   , shm_ar() ), // R for Rishon
+     mn_ad() => [ 'Adar'     , shm_ad() ], // and Adar Sheni
+     mn_ni() => [ 'Nisan'    , shm_ni() ],
+     mn_iy() => [ 'Iyyar'    , shm_iy() ],
+     mn_si() => [ 'Sivan'    , shm_si() ],
+     mn_ta() => [ 'Tammuz'   , shm_ta() ],
+     mn_av() => [ 'Av'       , shm_av() ],
+     mn_el() => [ 'Elul'     , shm_el() ],
+     mn_ti() => [ 'Tishrei'  , shm_ti() ],
+     mn_ch() => [ 'Cheshvan' , shm_ch() ],
+     mn_ki() => [ 'Kislev'   , shm_ki() ],
+     mn_te() => [ 'Tevet'    , shm_te() ],
+     mn_sh() => [ 'Shevat'   , shm_sh() ],
+     mn_ar() => [ 'Adar R'   , shm_ar() ], // R for Rishon
      );
 }
+
+function all_yearlen()
+{
+  return array
+    (
+     new YearLen( -1, 0 ),
+     new YearLen(  0, 0 ),
+     new YearLen(  1, 0 ),
+     new YearLen( -1, 1 ),
+     new YearLen(  0, 1 ),
+     new YearLen(  1, 1 ),
+     );
+}
+
+function falloff() { return 0.05; }
+function node_label_font_size() { return 0.07; }
+function ec_label_font_size() { return 0.05; }
+function node_stroke_width() { return 0.01; }
+function edge_stroke_width() { return 0.01; }
+function label_rect_stroke_width() { return 0.05; }
+function label_pads() { return [ 0.084, 0.2 ]; }
+function spiral_factor() { return 0.05; }
 
 function all_rosh_chodesh()
 {
@@ -123,45 +239,7 @@ function add_final_holiday( array $r )
   return append( $r, $final );
 }
 
-function mn_ad() { return  0; }
-function mn_ni() { return  1; }
-function mn_iy() { return  2; }
-function mn_si() { return  3; }
-function mn_ta() { return  4; }
-function mn_av() { return  5; }
-function mn_el() { return  6; }
-function mn_ti() { return  7; }
-function mn_ch() { return  8; }
-function mn_ki() { return  9; }
-function mn_te() { return 10; }
-function mn_sh() { return 11; }
-function mn_ar() { return 12; }
-
-function mn_min() { return  0; }
-function mn_max() { return 12; }
-
-function mn_start() { return mn_ad(); }
-
-function all_yearlen()
-{
-  return array
-    (
-     new YearLen( -1, 0 ),
-     new YearLen(  0, 0 ),
-     new YearLen(  1, 0 ),
-     new YearLen( -1, 1 ),
-     new YearLen(  0, 1 ),
-     new YearLen(  1, 1 ),
-     );
-}
-
-function dummy_yearlen()
-{
-  return array
-    (
-     new YearLen( -1, 0 ),
-     );
-}
+function dummy_yearlen() { return [ new YearLen( -1, 0 ) ]; }
 
 // tiu: throw if unexpected
 //
@@ -203,11 +281,6 @@ function prepend( array $a, $i )
   // locally destructive due to call-by-value.
   //
   return array_merge( [ $i ], $a );
-}
-
-function make_pair( $a, $b )
-{
-  return [ $a, $b ];
 }
 
 function flipped_make_pair( $a, $b )
@@ -370,10 +443,6 @@ function shabbat( $n )
   return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
 }
 
-class Bogus
-{
-}
-
 function dwy_for_ohol_oyl( Holiday $ohol, YearLen $oyl )
 {
   if ( days_per_month( $oyl, $ohol->month_number ) === 0 )
@@ -400,63 +469,6 @@ function dwy_for_myl_mhol( array $myl, array $mhol )
   return array_map_pa( 'dwy_for_myl_ohol', $myl, $mhol );
 }
 
-/* day_adj: -1, 0, or 1 (short Kislev, normal, long Cheshvan)
- * month_adj: 0 or 1 (non-leap or leap)
- *
- * I.e. the 6 possible year dpys have the following correspondences
- * to day_adj/month_adj pairs:
- *
- * 353, 354, 355 correspond to (-1,0), (0,0), (1,0)
- * 383, 384, 385 correspond to (-1,1), (0,1), (1,1)
-*/
-
-class YearLen
-{
-  function __construct( $day_adj, $month_adj )
-  {
-    tiu( 'day_adj',   $day_adj,   [ -1, 0, 1 ] );
-    tiu( 'month_adj', $month_adj, [ 0, 1 ] );
-
-    $this->day_adj   = $day_adj;
-    $this->month_adj = $month_adj;
-  }
-  public $day_adj;
-  public $month_adj;
-}
-
-class Holiday
-{
-  function __construct( $month_number,
-                        $day_offset,
-                        $name_using_latin_chars,
-                        $name_using_hebrew_chars,
-                        $add_year = false )
-  {
-    $this->month_number            = $month_number;
-    $this->day_offset              = $day_offset;
-    $this->name_using_latin_chars  = $name_using_latin_chars;
-    $this->name_using_hebrew_chars = $name_using_hebrew_chars;
-    $this->add_year                = $add_year;
-  }
-  public $month_number;
-  public $day_offset;
-  public $name_using_latin_chars;
-  public $name_using_hebrew_chars;
-  public $add_year;
-}
-
-class Node
-{
-  function __construct( array $dwys, $dwyi )
-  {
-    $this->dwys = $dwys;
-    $this->dwyi = $dwyi;
-  }
-  function dwy() { return $this->dwys[ $this->dwyi ]; }
-  public $dwys;
-  public $dwyi;
-}
-
 function make_node( $dwys, $dwyi )
 {
   return new Node( $dwys, $dwyi );
@@ -470,17 +482,6 @@ function node_dwyi_lt( Node $node1, Node $node2 )
 function node_dwy_lt( Node $node1, Node $node2 )
 {
   return $node1->dwy() < $node2->dwy();
-}
-
-class Edge
-{
-  function __construct( Node $node1, Node $node2 )
-  {
-    $this->node1 = $node1;
-    $this->node2 = $node2;
-  }
-  public $node1;
-  public $node2;
 }
 
 function make_edge( Node $node1, Node $node2 )
@@ -502,8 +503,6 @@ function edge_lt( Edge $edge1, Edge $edge2 )
 
   return node_dwy_lt( $edge1->node2, $edge2->node2 );
 }
-
-
 
 // dwy: day within year
 // dpc: days per circumference
@@ -582,8 +581,6 @@ function svg_for_edge( $dpc, Edge $edge )
   return $path;
 }
 
-function times() { return '×'; }
-
 function edge_lens_string( array $edge_lens )
 {
   $c = count( $edge_lens );
@@ -633,15 +630,6 @@ function edge_len( Edge $edge )
 {
   return $edge->node2->dwy() - $edge->node1->dwy();
 }
-
-function falloff() { return 0.05; }
-function node_label_font_size() { return 0.07; }
-function ec_label_font_size() { return 0.05; }
-function node_stroke_width() { return 0.01; }
-function edge_stroke_width() { return 0.01; }
-function label_rect_stroke_width() { return 0.05; }
-function label_pads() { return [ 0.084, 0.2 ]; }
-function spiral_factor() { return 0.05; }
 
 function svg_for_node( $dpc, Node $node )
 {
