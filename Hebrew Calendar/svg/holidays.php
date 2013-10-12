@@ -1,17 +1,15 @@
 #!/usr/bin/php -q
 <?php
 
-   /* Don't show zero-length month (non-leap Adar Rishon).
-    *
-    * Rescuscitate leap/nonleap in "figure 8" view.
+   /* Rescuscitate leap/nonleap in "figure 8" view.
     *
     * Show seasonal spread.
     *
-    * Show units (360 degrees = 1 tropical year (365.25...))
+    * Show units (360 degrees = 1 tropical year (365.25...)).
     *
-    * Show accompanying data table
+    * Show accompanying data table.
     *
-    * Show absolute dwy, not just diffs. Show on graph or in
+    * Show absolute dwy, not just diffs. Show on graph or just in
     * accompanying table?
     *
     * Show near-symmetry surrounding Purim in non-leap years (almost
@@ -19,6 +17,12 @@
     *
     * Show near-opposition of Pesach and Sukkot and perhaps
     * near-opposition of Shavuot and Channukah.
+    *
+    * Move leap-year-related labels to somewhere out of the way.
+    *
+    * Spiral shabbats outward.
+    *
+    * Fade shabbats out after 1 tropical year.
     *
     */
 
@@ -190,7 +194,7 @@ function append( array $a, $i )
   // Below, we could have also used array_push. It would only be
   // locally destructive due to call-by-value.
   //
-  return array_merge( $a, array( $i ) );
+  return array_merge( $a, [ $i ] );
 }
 
 function prepend( array $a, $i )
@@ -198,17 +202,17 @@ function prepend( array $a, $i )
   // Below, we could have also used array_unshift. It would only be
   // locally destructive due to call-by-value.
   //
-  return array_merge( array( $i ), $a );
+  return array_merge( [ $i ], $a );
 }
 
 function make_pair( $a, $b )
 {
-  return array( $a, $b );
+  return [ $a, $b ];
 }
 
 function flipped_make_pair( $a, $b )
 {
-  return array( $b, $a );
+  return [ $b, $a ];
 }
 
 function pa() // Partially Apply
@@ -237,7 +241,7 @@ function shl( array $a )
 
 function flatten( array $a ) // $a should be an array of arrays
 {
-  return array_reduce( $a, 'array_merge', array() );
+  return array_reduce( $a, 'array_merge', [] );
 }
 
 // wn: with next, i.e. f( a[i], a[i+1] ) where i in (0..n-2)
@@ -266,7 +270,7 @@ function array_map_pa( $f, $a, array $b )
 
 function days_per_month( YearLen $oyl, $month_number )
 {
-  list( $day_adj, $month_adj ) = array( $oyl->day_adj, $oyl->month_adj );
+  list( $day_adj, $month_adj ) = [ $oyl->day_adj, $oyl->month_adj ];
 
   tiu( 'month_number', $month_number, array_keys( month_names() ) );
 
@@ -361,7 +365,7 @@ function shabbat( $n )
 
   $name = $n % 4 === 0 ? $n : '';
 
-  list ( $lc_name, $hc_name ) = array( $name, $name );
+  list ( $lc_name, $hc_name ) = [ $name, $name ];
 
   return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
 }
@@ -410,8 +414,8 @@ class YearLen
 {
   function __construct( $day_adj, $month_adj )
   {
-    tiu( 'day_adj',   $day_adj,   array( -1, 0, 1 ) );
-    tiu( 'month_adj', $month_adj, array( 0, 1 ) );
+    tiu( 'day_adj',   $day_adj,   [ -1, 0, 1 ] );
+    tiu( 'month_adj', $month_adj, [ 0, 1 ] );
 
     $this->day_adj   = $day_adj;
     $this->month_adj = $month_adj;
@@ -505,21 +509,33 @@ function edge_lt( Edge $edge1, Edge $edge2 )
 // dpc: days per circumference
 // redge: representative edge
 
-function svg_for_ec_label( $dpc, $redge, $string )
+function svg_for_ec_label( $dpc, $is_last, $edge_cluster, $string )
 {
+  $c = count( $edge_cluster );
+  // rei: representative edge index (index within cluster)
+  //
+  $rei = $is_last ? $c-1 : 0;
+
+  // redge: representative edge (representative of cluster)
+  //
+  $redge = $edge_cluster[$rei];
+
   $dwy1 = $redge->node1->dwy();
   $dwy2 = $redge->node2->dwy();
+
+  $r_ofs = $is_last ? 1 : -1; // XXX HACK
 
   $where = array
     (
      'r' => radius( $redge->node2 ),
+     'r ofs' => $r_ofs,
      'dwy' => ($dwy1 + $dwy2) * 0.5,
      );
 
   $what = array
     (
      'string' => $string,
-     'font size' => 0.05,
+     'font size' => ec_label_font_size(),
      'show rect' => false,
      );
 
@@ -558,7 +574,7 @@ function svg_for_edge( $dpc, Edge $edge )
                 $x2, $y2 ),
      'fill' => 'none',
      'stroke' => 'black',
-     'stroke-width' => 0.01,
+     'stroke-width' => edge_stroke_width(),
      );
 
   $path = xml_sc_tag( 'path', $path_attr );
@@ -602,17 +618,13 @@ function halves_equal( array $a )
   return $b === $c ? $b : FALSE;
 }
 
-function svg_for_edge_cluster( $dpc, $edge_cluster )
+function svg_for_edge_cluster( $dpc, $last_key, $key, $edge_cluster )
 {
   $edge_lens = array_map( 'edge_len', $edge_cluster );
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
-  // redge: representative edge (representative of cluster)
-  //
-  $redge = $edge_cluster[0];
-
-  $sfd = svg_for_ec_label( $dpc, $redge, $edge_lens_string );
+  $sfd = svg_for_ec_label( $dpc, $last_key === $key, $edge_cluster, $edge_lens_string );
 
   return $sfd;
 }
@@ -622,10 +634,14 @@ function edge_len( Edge $edge )
   return $edge->node2->dwy() - $edge->node1->dwy();
 }
 
-function falloff()
-{
-  return 0.05;
-}
+function falloff() { return 0.05; }
+function node_label_font_size() { return 0.07; }
+function ec_label_font_size() { return 0.05; }
+function node_stroke_width() { return 0.01; }
+function edge_stroke_width() { return 0.01; }
+function label_rect_stroke_width() { return 0.05; }
+function label_pads() { return [ 0.084, 0.2 ]; }
+function spiral_factor() { return 0.05; }
 
 function svg_for_node( $dpc, Node $node )
 {
@@ -636,37 +652,32 @@ function svg_for_node( $dpc, Node $node )
      'y1' => -$r,
      'y2' => -$r + falloff(),
      'stroke' => 'black',
-     'stroke-width' => 0.01,
+     'stroke-width' => node_stroke_width(),
      'transform' => svg_tr1( 360 * $node->dwy() / $dpc ),
      );
 
   return xml_sc_tag( 'line', $line_attr );
 }
 
-function mod( $a, $b )
-{
-  return ($a % $b) + ($a < 0 ? $b : 0);
-}
-
-function div( $a, $b )
-{
-  return (integer) ( $a / $b );
-}
-
 function svg_for_node_label( $dpc, $dl_pair )
 {
   list ( $node, $ohol ) = $dl_pair;
 
+  $string = $ohol->name_using_hebrew_chars;
+
+  $r_ofs = $string === shm_ar() ? 1 : -1; // XXX HACK
+
   $where = array
     (
      'r' => radius( $node ),
+     'r ofs' => $r_ofs,
      'dwy' => $node->dwy(),
      );
 
   $what = array
     (
-     'string' => $ohol->name_using_hebrew_chars,
-     'font size' => 0.07,
+     'string' => $string,
+     'font size' => node_label_font_size(),
      'show rect' => false,
      );
 
@@ -675,13 +686,14 @@ function svg_for_node_label( $dpc, $dl_pair )
 
 function svg_for_label( $dpc, $where, $what )
 {
- $r         = $where['r'];
- $dwy       = $where['dwy'];
- $string    = $what['string'];
- $font_size = $what['font size'];
- $show_rect = $what['show rect'];
+  $r         = $where['r'];
+  $dwy       = $where['dwy'];
+  $r_ofs     = $where['r ofs'];
+  $string    = $what['string'];
+  $font_size = $what['font size'];
+  $show_rect = $what['show rect'];
 
-  $r2 = $r - 1.2 * falloff();
+  $r2 = $r  + $r_ofs * 1.2 * falloff();
 
   $d = 360 * $dwy / $dpc;
 
@@ -694,7 +706,7 @@ function svg_for_label( $dpc, $where, $what )
 
   $s = M_PI_2 - $t;
 
-  $rectx = 0.5 * $width * -( 1 + cos( $s ) );
+  $rectx = 0.5 * $width  * -( 1 + cos(  $s ) );
   $recty = 0.5 * $height * -( 1 + sin( -$s ) );
 
   $transforms = array
@@ -705,8 +717,7 @@ function svg_for_label( $dpc, $where, $what )
      svg_tt1( $rectx, $recty ),
      );
 
-  $xpad = $font_size * 0.084;
-  $ypad = $font_size * 0.2;
+  list ( $xpad, $ypad ) = scale( $font_size, label_pads() );
 
   $text_attr = array( 'font-size' => $font_size,
                       'x' => $xpad,
@@ -718,15 +729,15 @@ function svg_for_label( $dpc, $where, $what )
                           'width' => $width,
                           'height' => $height,
                           'stroke' => 'black',
-                          'stroke-width' => $font_size * 0.05,
+                          'stroke-width' => $font_size * label_rect_stroke_width(),
                           'fill' => 'none',
                           ) );
 
-  $g_attr = array( 'transform' => implode( ' ', $transforms ) );
+  $g_attr = [ 'transform' => implode( ' ', $transforms ) ];
 
   // mrect: maybe rect
   //
-  $mrect = $show_rect ? array( $rect ) : array();
+  $mrect = $show_rect ? [ $rect ] : [];
 
   $elements = append( $mrect, $text );
 
@@ -735,22 +746,16 @@ function svg_for_label( $dpc, $where, $what )
   return $g;
 }
 
+function scale( $k, array $a )
+{
+  return array_map_pa( 'multiply', $k, $a );
+}
+
+function multiply( $a, $b ) { return $a * $b; }
+
 function bbox( $string, $font_size )
 {
-  if ( is_int( $string ) )
-    {
-      $chars = $string === 0 ? 1 : 1 + floor( log10( $string ) );
-      $width = $font_size * 0.7 * $chars;
-      $height = $font_size * 1.1;
-      return array( $width, $height );
-    }
-
-  $ubbox = ubbox_lookup( $string );
-
-  $width = $font_size * $ubbox[0];
-  $height = $font_size * $ubbox[1];
-
-  return array( $width, $height );
+  return scale( $font_size, ubbox_lookup( $string ) );
 }
 
 function ubbox_lookup( $string )
@@ -797,7 +802,7 @@ function ubbox_char_lookup( $string )
 
   if ( count( $trues ) !== count( $lookups ) )
     {
-      tneve( array( 'could not find a character in', $string, $lookups ) );
+      tneve( [ 'could not find a character in', $string, $lookups ] );
     }
 
   $width = array_sum( $lookups );
@@ -848,25 +853,7 @@ function ss()
  * down. (This is the convention in most computer graphics systems,
  * but is not the mathematical convention.)
  */
-function node_to_xy( $dpc, Node $node, $node_for_rf = NULL )
-{
-  list ( $r, $x, $y ) = node_to_rxy( $dpc, $node, $node_for_rf );
-
-  return array( $r * $x, $r * $y );
-}
-
-function node_to_rxy( $dpc, Node $node, $node_for_rf = NULL )
-{
-  $actual_node_for_rf = is_null( $node_for_rf ) ? $node : $node_for_rf;
-
-  $r = radius( $actual_node_for_rf );
-
-  return prepend( node_to_uxy( $dpc, $node ), $r );
-}
-
-// uxy: unit x and y, i.e. x and y on the unit circle
-//
-function node_to_uxy( $dpc, $node )
+function node_to_xy( $dpc, Node $node )
 {
   $t = 2 * M_PI * $node->dwy() / $dpc;
 
@@ -876,7 +863,7 @@ function node_to_uxy( $dpc, $node )
 
   $y = -sin( $s );
 
-  return array( $x, $y );
+  return scale( radius( $node ), [ $x, $y ] );
 }
 
 // sr: sort regular [and] renumber
@@ -938,11 +925,9 @@ function nodes_for_ohol( array $dwys )
 
 function radius( Node $node )
 {
-  $sf = ($node->dwyi - 2) * 0.05;
+  $sf = ($node->dwyi - 2) * spiral_factor();
 
   $spiral = 1 + $sf * ( $node->dwy() / 365.25 );
-
-  //return $spiral * $radii[ $index_within ];
 
   return $spiral;
 }
@@ -1089,9 +1074,13 @@ function the_drawing( $dpc, $nodes_broadly )
 
   $svg_for_edges = array_map( $svg_for_edge_dpc, $nodes_broadly['edges'] );
 
-  $svg_for_edge_cluster_dpc = pa( 'svg_for_edge_cluster', $dpc );
+  $nbc = $nodes_broadly['cedges'];
 
-  $svg_for_cedges = array_map( $svg_for_edge_cluster_dpc, $nodes_broadly['cedges'] );
+  $lnbc = count( $nbc ) - 1; // last [index of] nbc
+
+  $svg_for_edge_cluster_dpc = pa( 'svg_for_edge_cluster', $dpc, $lnbc );
+
+  $svg_for_cedges = array_map_wk( $svg_for_edge_cluster_dpc, $nbc );
 
   $ne = array_merge( $svg_for_edges,
                      $svg_for_cedges,
@@ -1105,9 +1094,9 @@ function calendar_types()
 {
   return array
     (
-     'major'    => array( holidays(), all_yearlen() ),
-     'roshchod' => array( all_rosh_chodesh(), all_yearlen() ),
-     'shabbat'  => array( shabbats(), dummy_yearlen() ),
+     'major'    => [ holidays(), all_yearlen() ],
+     'roshchod' => [ all_rosh_chodesh(), all_yearlen() ],
+     'shabbat'  => [ shabbats(), dummy_yearlen() ],
      );
 }
 
@@ -1127,7 +1116,7 @@ function main( $calendar_type )
 
   $width = 700;
 
-  $height = 700;
+  $height = 800;
 
   $bounding_box = svg_rect( array(
                                   'width' => $width,
@@ -1145,7 +1134,7 @@ function main( $calendar_type )
      svg_ts1( $scale ),
      );
 
-  $g_attr = array( 'transform' => implode( ' ', $transforms ) );
+  $g_attr = [ 'transform' => implode( ' ', $transforms ) ];
 
   $g = svg_g( $g_attr, $drawing );
 
