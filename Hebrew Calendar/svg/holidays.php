@@ -479,6 +479,11 @@ function node_dwyi_lt( Node $node1, Node $node2 )
   return $node1->dwyi < $node2->dwyi;
 }
 
+function node_dwyi_gt( Node $node1, Node $node2 )
+{
+  return $node1->dwyi > $node2->dwyi;
+}
+
 function node_dwy_lt( Node $node1, Node $node2 )
 {
   return $node1->dwy() < $node2->dwy();
@@ -649,24 +654,32 @@ function svg_for_node( $dpc, Node $node )
 
 function svg_for_node_label( $dpc, $dl_pair )
 {
-  list ( $node, $ohol ) = $dl_pair;
+  list ( $node_cluster, $ohol ) = $dl_pair;
 
   $string = $ohol->name_using_hebrew_chars;
 
-  $r_ofs = $string === shm_ar() ? 1 : -1; // XXX HACK
+  $outer = $string === shm_ar(); // XXX HACK
+
+  // rnode: representative node (representative of cluster)
+  //
+  $rnode = $outer
+    ? max_of_nodes_dwyi( $node_cluster )
+    : min_of_nodes_dwyi( $node_cluster );
+
+  $r_ofs = $outer ? 1 : -1;
 
   $where = array
     (
-     'r' => radius( $node ),
+     'r' => radius( $rnode ),
      'r ofs' => $r_ofs,
-     'dwy' => $node->dwy(),
+     'dwy' => $rnode->dwy(),
      );
 
   $what = array
     (
      'string' => $string,
      'font size' => node_label_font_size(),
-     'show rect' => false,
+     'show rect' => true,
      );
 
   return svg_for_label( $dpc, $where, $what );
@@ -681,7 +694,7 @@ function svg_for_label( $dpc, $where, $what )
   $font_size = $what['font size'];
   $show_rect = $what['show rect'];
 
-  $r2 = $r  + $r_ofs * 1.2 * falloff();
+  $r2 = $r + $r_ofs * 1.2 * falloff();
 
   $d = 360 * $dwy / $dpc;
 
@@ -693,6 +706,8 @@ function svg_for_label( $dpc, $where, $what )
   $t = 2 * M_PI * $dwy / $dpc;
 
   $s = M_PI_2 - $t;
+
+  if ( $r_ofs === 1 ) { $s+=M_PI; }
 
   $rectx = 0.5 * $width  * -( 1 + cos(  $s ) );
   $recty = 0.5 * $height * -( 1 + sin( -$s ) );
@@ -968,6 +983,11 @@ function min_of_nodes_dwyi( array $nodes )
   return amina( $nodes, 'node_dwyi_lt' );
 }
 
+function max_of_nodes_dwyi( array $nodes )
+{
+  return amina( $nodes, 'node_dwyi_gt' );
+}
+
 function min_of_nodes_dwy( array $nodes )
 {
   return amina( $nodes, 'node_dwy_lt' );
@@ -1038,11 +1058,7 @@ function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
 {
   $node_clusters = cluster_nodes( $nodes );
 
-  // modcs: representatives of node clusters with max indexes
-  //
-  $modcs = array_map( 'min_of_nodes_dwyi', $node_clusters );
-
-  return array_map_pa( 'flipped_make_pair', $ohol, $modcs );
+  return array_map_pa( 'flipped_make_pair', $ohol, $node_clusters );
 }
 
 function the_drawing( $dpc, $nodes_broadly )
