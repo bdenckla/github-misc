@@ -82,14 +82,17 @@ class Holiday
 class Context
 {
   // lelo: last edge label [should be] outside
+  // snlo: string [for] node label [that should be] outside
   //
-  function __construct( $dpc, $lelo )
+  function __construct( $dpc, $lelo, $snlo )
   {
     $this->dpc = $dpc;
     $this->lelo = $lelo;
+    $this->snlo = $snlo;
   }
   public $dpc;
   public $lelo;
+  public $snlo;
 }
 
 class Node
@@ -667,13 +670,13 @@ function svg_for_node( $dpc, Node $node )
   return xml_sc_tag( 'line', $line_attr );
 }
 
-function svg_for_node_label( $dpc, $dl_pair )
+function svg_for_node_label( Context $ct, $dl_pair )
 {
   list ( $node_cluster, $ohol ) = $dl_pair;
 
   $string = $ohol->name_using_hebrew_chars;
 
-  $outer = $string === shm_ar(); // XXX HACK
+  $outer = $string === $ct->snlo;
 
   // rnode: representative node (representative of cluster)
   //
@@ -685,7 +688,7 @@ function svg_for_node_label( $dpc, $dl_pair )
 
   $where = array
     (
-     'r' => radius( $dpc, $rnode ),
+     'r' => radius( $ct->dpc, $rnode ),
      'r ofs' => $r_ofs,
      'dwy' => $rnode->dwy(),
      );
@@ -697,7 +700,7 @@ function svg_for_node_label( $dpc, $dl_pair )
      'show rect' => true,
      );
 
-  return svg_for_label( $dpc, $where, $what );
+  return svg_for_label( $ct->dpc, $where, $what );
 }
 
 function svg_for_label( $dpc, $where, $what )
@@ -1085,9 +1088,9 @@ function the_drawing( Context $ct, $nodes_broadly )
 
   $svg_for_nodes = array_map( $svg_for_node_dpc, $nodes );
 
-  $svg_for_node_label_dpc = pa( 'svg_for_node_label', $ct->dpc );
+  $pa_svg_for_node_label = pa( 'svg_for_node_label', $ct );
 
-  $svg_for_node_labels = array_map( $svg_for_node_label_dpc, $dl_pairs );
+  $svg_for_node_labels = array_map( $pa_svg_for_node_label, $dl_pairs );
 
   $svg_for_edge_dpc = pa( 'svg_for_edge', $ct->dpc );
 
@@ -1116,9 +1119,9 @@ function calendar_types()
 {
   return array
     (
-     'major'    => [ holidays(), all_yearlen(), lelo() ],
-     'roshchod' => [ all_rosh_chodesh(), all_yearlen(), lelo() ],
-     'shabbat'  => [ shabbats(), dummy_yearlen(), leli() ],
+     'major'    => [ holidays()         , all_yearlen(), lelo(), NULL ],
+     'roshchod' => [ all_rosh_chodesh() , all_yearlen(), lelo(), shm_ar() ],
+     'shabbat'  => [ shabbats()         , dummy_yearlen(), leli(), NULL ],
      );
 }
 
@@ -1128,13 +1131,13 @@ function main( $calendar_type )
 
   tiu( 'calendar type', $calendar_type, array_keys( $calendar_types ) );
 
-  list( $mhol, $myl, $lelo ) = $calendar_types[ $calendar_type ];
+  list( $mhol, $myl, $lelo, $snlo ) = $calendar_types[ $calendar_type ];
 
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
   $nodes_broadly = nodes_for_all_da( $dpc, $mhol, $myl );
 
-  $ct = new Context( $dpc, $lelo );
+  $ct = new Context( $dpc, $lelo, $snlo );
 
   $drawing = the_drawing( $ct, $nodes_broadly );
 
