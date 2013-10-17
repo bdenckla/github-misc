@@ -74,12 +74,6 @@ class Holiday
   public $add_year;
 }
 
-class Lelo
-{
-  function __construct( $lelo ) { $this->lelo = $lelo; }
-  public $lelo;
-}
-
 class Snlo
 {
   function __construct( $snlo ) { $this->snlo = $snlo; }
@@ -94,19 +88,16 @@ class Fade
 
 class Context
 {
-  // lelo: last edge label [should be] outside
   // snlo: string [for] node label [that should be] outside
   //
-  function __construct( $dpc, Lelo $lelo, Snlo $snlo, $ndwyi, Fade $fade )
+  function __construct( $dpc, Snlo $snlo, $ndwyi, Fade $fade )
   {
     $this->dpc = $dpc;
-    $this->lelo = $lelo;
     $this->snlo = $snlo;
     $this->neutral_dwyi = $ndwyi;
     $this->fade = $fade;
   }
   public $dpc;
-  public $lelo;
   public $snlo;
   public $neutral_dwyi;
   public $fade;
@@ -449,7 +440,7 @@ function sum_of_days_per_month( YearLen $oyl, array $mns )
   return array_sum( array_map_pa( 'days_per_month', $oyl, $mns ) );
 }
 
-function min_shabbat() { return 0; }
+function min_shabbat() { return 1; }
 
 function shabbats()
 {
@@ -469,7 +460,11 @@ function shabbat( $n )
   //
   $day_offset = 7 * $dfms + 1; // i.e. 1, 8, 15, 22, 29, 36
 
-  $name = $n % 4 === 0 ? $n : '';
+  $label_frequency = 4;
+
+  $label_phase = min_shabbat() % $label_frequency;
+
+  $name = $n % $label_frequency === $label_phase ? $n : '';
 
   list ( $lc_name, $hc_name ) = [ $name, $name ];
 
@@ -529,26 +524,48 @@ function make_edge( Node $node1, Node $node2 )
 
 function edge_lt( Edge $edge1, Edge $edge2 )
 {
-  if ( node_dwy_lt( $edge1->node1, $edge2->node1 ) )
-    {
-      return true;
-    }
+  $a = $edge1->node1;
+  $b = $edge2->node1;
 
-  if ( node_dwy_lt( $edge2->node1, $edge1->node1 ) )
-    {
-      return false;
-    }
+  if ( node_dwy_lt( $a, $b ) ) { return true; }
 
-  return node_dwy_lt( $edge1->node2, $edge2->node2 );
+  if ( node_dwy_lt( $b, $a ) ) { return false; }
+
+  $c = $edge1->node2;
+  $d = $edge2->node2;
+
+  return node_dwy_lt( $c, $d );
 }
 
 // dwy: day within year
 // dpc: days per circumference
 // redge: representative edge
 
-function svg_for_ec_label( Context $ct, $outside, $edge_cluster, $string )
+function max_dwy_of_edges( $edges )
+{
+  return max( array_map( 'max_dwy_of_edge', $edges ) );
+}
+
+function max_dwy_of_edge( Edge $edge )
+{
+  return max( $edge->node1->dwy(), $edge->node2->dwy() );
+}
+
+function min_dwy_of_nodes( $nodes )
+{
+  return min( array_map( 'node_dwy', $nodes ) );
+}
+
+function node_dwy( Node $node ) { return $node->dwy(); }
+
+function svg_for_ec_label( Context $ct, $min_dwy, $edge_cluster, $string )
 {
   $c = count( $edge_cluster );
+
+  $max_dwy_of_cluster = max_dwy_of_edges( $edge_cluster );
+
+  $outside = $max_dwy_of_cluster - $min_dwy > $ct->dpc;
+
   // rei: representative edge index (index within cluster)
   //
   $rei = $outside ? $c-1 : 0;
@@ -682,15 +699,13 @@ function halves_equal( array $a )
   return $b === $c ? $b : FALSE;
 }
 
-function svg_for_edge_cluster( Context $ct, $last_key, $key, $edge_cluster )
+function svg_for_edge_cluster( Context $ct, $min_dwy, $key, $edge_cluster )
 {
   $edge_lens = array_map( 'edge_len', $edge_cluster );
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
-  $outside = $ct->lelo->lelo && $last_key === $key;
-
-  $sfd = svg_for_ec_label( $ct, $outside, $edge_cluster, $edge_lens_string );
+  $sfd = svg_for_ec_label( $ct, $min_dwy, $edge_cluster, $edge_lens_string );
 
   return $sfd;
 }
@@ -1145,9 +1160,9 @@ function the_drawing( Context $ct, $nodes_broadly )
 
   $nbc = $nodes_broadly['cedges'];
 
-  $lnbc = count( $nbc ) - 1; // last [index of] nbc
+  $min_dwy = min_dwy_of_nodes( $nodes );
 
-  $pa_svg_for_edge_cluster = pa( 'svg_for_edge_cluster', $ct, $lnbc );
+  $pa_svg_for_edge_cluster = pa( 'svg_for_edge_cluster', $ct, $min_dwy );
 
   $svg_for_cedges = array_map_wk( $pa_svg_for_edge_cluster, $nbc );
 
@@ -1159,9 +1174,6 @@ function the_drawing( Context $ct, $nodes_broadly )
   return xml_seq( $ne );
 }
 
-function lelot() { return new Lelo( true ); }
-function lelof() { return new Lelo( false ); }
-
 function fadet() { return new Fade( true ); }
 function fadef() { return new Fade( false ); }
 
@@ -1172,9 +1184,9 @@ function calendar_types()
 {
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $ct_maj = new Context( $dpc, lelot(), snlo_null(),    2, fadef() );
-  $ct_rch = new Context( $dpc, lelot(), snlo_shm_ar(),  2, fadef() );
-  $ct_sha = new Context( $dpc, lelof(), snlo_null(),   -3, fadet() );
+  $ct_maj = new Context( $dpc, snlo_null(),    2, fadef() );
+  $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef() );
+  $ct_sha = new Context( $dpc, snlo_null(),   -3, fadet() );
 
   return array
     (
