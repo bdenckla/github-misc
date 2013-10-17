@@ -19,8 +19,6 @@
     * Show near-opposition of Pesach and Sukkot and perhaps
     * near-opposition of Shavuot and Channukah.
     *
-    * Fade shabbats out after 1 tropical year.
-    *
     * Address the following warning given by Firefox: "Use of
     * getPreventDefault() is deprecated.  Use defaultPrevented
     * instead."
@@ -76,22 +74,42 @@ class Holiday
   public $add_year;
 }
 
+class Lelo
+{
+  function __construct( $lelo ) { $this->lelo = $lelo; }
+  public $lelo;
+}
+
+class Snlo
+{
+  function __construct( $snlo ) { $this->snlo = $snlo; }
+  public $snlo;
+}
+
+class Fade
+{
+  function __construct( $fade ) { $this->fade = $fade; }
+  public $fade;
+}
+
 class Context
 {
   // lelo: last edge label [should be] outside
   // snlo: string [for] node label [that should be] outside
   //
-  function __construct( $dpc, $lelo, $snlo, $ndwyi )
+  function __construct( $dpc, Lelo $lelo, Snlo $snlo, $ndwyi, Fade $fade )
   {
     $this->dpc = $dpc;
     $this->lelo = $lelo;
     $this->snlo = $snlo;
     $this->neutral_dwyi = $ndwyi;
+    $this->fade = $fade;
   }
   public $dpc;
   public $lelo;
   public $snlo;
   public $neutral_dwyi;
+  public $fade;
 }
 
 class Node
@@ -558,7 +576,7 @@ function svg_for_ec_label( Context $ct, $outside, $edge_cluster, $string )
      'show rect' => false,
      );
 
-  return svg_for_label( $ct->dpc, $where, $what );
+  return svg_for_label( $ct, $where, $what );
 }
 
 function svg_for_edge( Context $ct, Edge $edge )
@@ -592,13 +610,42 @@ function svg_for_edge( Context $ct, Edge $edge )
                 $sweep_flag,
                 $x2, $y2 ),
      'fill' => 'none',
-     'stroke' => 'black',
+     'stroke' => color_for_edge( $ct, $edge ),
      'stroke-width' => edge_stroke_width(),
      );
 
   $path = xml_sc_tag( 'path', $path_attr );
 
   return $path;
+}
+
+function color_for_edge( Context $ct, Edge $edge )
+{
+  return color_for_node( $ct, $edge->node1 );
+}
+
+function color_for_node( Context $ct, Node $node )
+{
+  return color_for_dwy( $ct, $node->dwy() );
+}
+
+function color_for_dwy( Context $ct, $dwy )
+{
+  if ( ! $ct->fade->fade ) { return 'black'; }
+
+  $frac = $dwy / $ct->dpc;
+
+  if ( $frac < 1 ) { return 'black'; }
+
+  $n = ($frac-1) / 0.125;
+
+  $gray_level = 100*$n . '%';
+
+  // glt: gray level triple
+  //
+  $glt = array( $gray_level, $gray_level, $gray_level );
+
+  return 'rgb(' . implode( ', ', $glt ) . ')';
 }
 
 function edge_lens_string( array $edge_lens )
@@ -641,7 +688,7 @@ function svg_for_edge_cluster( Context $ct, $last_key, $key, $edge_cluster )
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
-  $outside = $ct->lelo && $last_key === $key;
+  $outside = $ct->lelo->lelo && $last_key === $key;
 
   $sfd = svg_for_ec_label( $ct, $outside, $edge_cluster, $edge_lens_string );
 
@@ -661,7 +708,7 @@ function svg_for_node( Context $ct, Node $node )
     (
      'y1' => -$r,
      'y2' => -$r + falloff(),
-     'stroke' => 'black',
+     'stroke' => color_for_node( $ct, $node ),
      'stroke-width' => node_stroke_width(),
      'transform' => svg_tr1( 360 * $node->dwy() / $ct->dpc ),
      );
@@ -675,7 +722,7 @@ function svg_for_node_label( Context $ct, $dl_pair )
 
   $string = $ohol->name_using_hebrew_chars;
 
-  $outside = $string === $ct->snlo;
+  $outside = $string === $ct->snlo->snlo;
 
   // rnode: representative node (representative of cluster)
   //
@@ -699,10 +746,10 @@ function svg_for_node_label( Context $ct, $dl_pair )
      'show rect' => false,
      );
 
-  return svg_for_label( $ct->dpc, $where, $what );
+  return svg_for_label( $ct, $where, $what );
 }
 
-function svg_for_label( $dpc, $where, $what )
+function svg_for_label( Context $ct, $where, $what )
 {
   $r         = $where['r'];
   $dwy       = $where['dwy'];
@@ -713,14 +760,14 @@ function svg_for_label( $dpc, $where, $what )
 
   $r2 = $r + $r_ofs * 1.2 * falloff();
 
-  $d = 360 * $dwy / $dpc;
+  $d = 360 * $dwy / $ct->dpc;
 
   $bbox = bbox( $string, $font_size );
 
   $width = $bbox[0];
   $height = $bbox[1];
 
-  $t = 2 * M_PI * $dwy / $dpc;
+  $t = 2 * M_PI * $dwy / $ct->dpc;
 
   $s = M_PI_2 - $t;
 
@@ -740,6 +787,7 @@ function svg_for_label( $dpc, $where, $what )
   list ( $xpad, $ypad ) = scale( $font_size, label_pads() );
 
   $text_attr = array( 'font-size' => $font_size,
+                      'fill' => color_for_dwy( $ct, $dwy ),
                       'x' => $xpad,
                       'y' => $height - $ypad );
 
@@ -748,7 +796,7 @@ function svg_for_label( $dpc, $where, $what )
   $rect = svg_rect( array(
                           'width' => $width,
                           'height' => $height,
-                          'stroke' => 'black',
+                          'stroke' => color_for_dwy( $ct, $dwy ),
                           'stroke-width' => $font_size * label_rect_stroke_width(),
                           'fill' => 'none',
                           ) );
@@ -1111,16 +1159,28 @@ function the_drawing( Context $ct, $nodes_broadly )
   return xml_seq( $ne );
 }
 
-function lelo() { return true; }
-function leli() { return false; }
+function lelot() { return new Lelo( true ); }
+function lelof() { return new Lelo( false ); }
+
+function fadet() { return new Fade( true ); }
+function fadef() { return new Fade( false ); }
+
+function snlo_null()   { return new Snlo( NULL ); }
+function snlo_shm_ar() { return new Snlo( shm_ar() ); }
 
 function calendar_types()
 {
+  $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
+
+  $ct_maj = new Context( $dpc, lelot(), snlo_null(),    2, fadef() );
+  $ct_rch = new Context( $dpc, lelot(), snlo_shm_ar(),  2, fadef() );
+  $ct_sha = new Context( $dpc, lelof(), snlo_null(),   -3, fadet() );
+
   return array
     (
-     'major'    => [ holidays()         , all_yearlen(),   lelo(), NULL,     2 ],
-     'roshchod' => [ all_rosh_chodesh() , all_yearlen(),   lelo(), shm_ar(), 2 ],
-     'shabbat'  => [ shabbats()         , dummy_yearlen(), leli(), NULL,     -3 ],
+     'major'    => [ holidays()         , all_yearlen(),    $ct_maj ],
+     'roshchod' => [ all_rosh_chodesh() , all_yearlen(),    $ct_rch ],
+     'shabbat'  => [ shabbats()         , dummy_yearlen(),  $ct_sha ],
      );
 }
 
@@ -1130,13 +1190,9 @@ function main( $calendar_type )
 
   tiu( 'calendar type', $calendar_type, array_keys( $calendar_types ) );
 
-  list( $mhol, $myl, $lelo, $snlo, $ndwyi ) = $calendar_types[ $calendar_type ];
-
-  $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
+  list( $mhol, $myl, $ct ) = $calendar_types[ $calendar_type ];
 
   $nodes_broadly = nodes_for_all_da( $mhol, $myl );
-
-  $ct = new Context( $dpc, $lelo, $snlo, $ndwyi );
 
   $drawing = the_drawing( $ct, $nodes_broadly );
 
