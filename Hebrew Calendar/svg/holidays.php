@@ -682,7 +682,7 @@ function edge_lens_string( array $edge_lens )
 
   if ( $c === 1 ) { return $edge_lens[0]; }
 
-  $cu = count( array_unique( $edge_lens ) );
+  $cu = count_unique_sr( $edge_lens );
 
   if ( $cu === 1 )
     {
@@ -988,11 +988,11 @@ function node_to_xy( Context $ct, Node $node )
   return scale( radius( $ct, $node ), [ $x, $y ] );
 }
 
-// sr: sort regular [and] renumber
+// sr: count unique, sorting (comparing) regularly (not by string conversion)
 //
-function array_unique_srr( array $a )
+function count_unique_sr( array $a )
 {
-  return array_values( array_unique( $a, SORT_REGULAR ) );
+  return count( array_unique( $a, SORT_REGULAR ) );
 }
 
 function nodes_for_all_da( $mhol, $myl )
@@ -1072,16 +1072,23 @@ function reduce_nodes( array $nodes )
 {
   $ds = array_map( 'node_dwy', $nodes );
 
-  $all_equal = count( array_unique( $ds ) ) === 1;
-
-  //var_export( array( $ds, $all_equal ) );
+  $all_equal = count_unique_sr( $ds ) === 1;
 
   return $all_equal ? array( $nodes[0] ) : $nodes;
 }
 
 function reduce_edges( array $edges )
 {
-  return $edges;
+  $ds = array_map( 'edge_dwys', $edges );
+
+  $all_equal = count_unique_sr( $ds ) === 1;
+
+  return $all_equal ? array( $edges[0] ) : $edges;
+}
+
+function edge_dwys( Edge $edge )
+{
+  return array( $edge->node1->dwy(), $edge->node2->dwy() );
 }
 
 // w2m: within 2 of min
