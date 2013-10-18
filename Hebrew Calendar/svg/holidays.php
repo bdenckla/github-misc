@@ -290,6 +290,15 @@ function tiu( $what, $val, $possible_vals )
     }
 }
 
+// lubt: lookup, [with] behavior "throw [on failure]"
+//
+function lubt( $what, $k, array $a )
+{
+  tiu( $what, $k, array_keys( $a ) );
+
+  return $a[ $k ];
+}
+
 // tneve: throw new ErrorException of var_export
 function tneve( $e )
 {
@@ -1179,7 +1188,7 @@ function snlo_shm_ar() { return new Snlo( shm_ar() ); }
 function nyli_p2() { return new Nyli( 2 ); }
 function nyli_ze() { return new Nyli( 0 ); }
 
-function calendar_types()
+function calendar_specs()
 {
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
@@ -1195,13 +1204,64 @@ function calendar_types()
      );
 }
 
-function main( $calendar_type )
+function main( $argv )
 {
-  $calendar_types = calendar_types();
+  $actions = array
+    (
+      'svg' => 'action_svg',
+      'html' => 'action_html',
+     );
 
-  tiu( 'calendar type', $calendar_type, array_keys( $calendar_types ) );
+  $action = $argv[1];
 
-  list( $mhol, $myl, $ct ) = $calendar_types[ $calendar_type ];
+  $f = lubt( 'action', $action, $actions );
+
+  return $f( $argv );
+}
+
+function html_body()
+{
+  $calendar_type = 'major';
+
+  $calendar_spec = lubt( 'calendar type', $calendar_type, calendar_specs() );
+
+  list( $mhol, $myl, $ct ) = $calendar_spec;
+
+  $nodes_and_edges = nodes_and_edges( $mhol, $myl );
+
+  $dl_pairs = $nodes_and_edges['dl_pairs'];
+
+  return xml_seq( array_map( 'html_for_dl_pair', $dl_pairs ) );
+}
+
+function html_for_dl_pair( $dl_pair )
+{
+  list ( $nocl, $ohol ) = $dl_pair;
+
+  $dwys = array_map( 'node_dwy', $nocl );
+
+  $name = $ohol->name_using_hebrew_chars;
+
+  return xml_wrap( 'p', [], var_export( array( $dwys, $name) , 1 ) );
+}
+
+function action_html( $argv )
+{
+  $head = '';
+  $body = html_body();
+
+  $html = html_document( $head, $body );
+
+  return $html->s;
+}
+
+function action_svg( $argv )
+{
+  $calendar_type = $argv[2];
+
+  $calendar_spec = lubt( 'calendar type', $calendar_type, calendar_specs() );
+
+  list( $mhol, $myl, $ct ) = $calendar_spec;
 
   $nodes_and_edges = nodes_and_edges( $mhol, $myl );
 
@@ -1233,11 +1293,11 @@ function main( $calendar_type )
 
   $bg = xml_seqa( $bounding_box, $g );
 
-  $svg = svg_wrap( $width, $height, $bg );
+  $svg = svg_document( $width, $height, $bg );
 
   return $svg->s;
 }
 
-echo main( $argv[1] );
+echo main( $argv );
 
 ?>

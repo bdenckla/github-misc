@@ -118,7 +118,7 @@ class xml_raw
   function __construct( $s ) { $this->s = $s; }
 }
 
-function svg_wrap( $width, $height, $i )
+function svg_document( $width, $height, $i )
 {
   $xml_decl_attr = array( 'version' => '1.0', 'standalone' => 'no' );
 
@@ -147,6 +147,28 @@ function svg_wrap( $width, $height, $i )
   $svg = xml_wrap( 'svg', $svg_attr, $i );
 
   return xml_seqa( $xml_decl, $doctype_decl, $svg );
+}
+
+function html_document( $head, $body )
+{
+  $doctype_decl_attr = array
+    (
+     array( 'DOCTYPE', NULL ),
+     array( 'html', NULL ),
+     );
+
+  $doctype_decl = xml_gtag( $doctype_decl_attr, '!', '' );
+
+  $html_attr = array
+    (
+     );
+
+  $hb = xml_seqa( xml_wrap( 'head', array(), $head ),
+                  xml_wrap( 'body', array(), $body ) );
+
+  $html = xml_wrap( 'html', $html_attr, $hb );
+
+  return xml_seqa( $doctype_decl, $html );
 }
 
 // g: group
