@@ -712,13 +712,19 @@ function halves_equal( array $a )
 
 function svg_for_edge_cluster( Context $ct, $min_dwy, $key, $edge_cluster )
 {
+  $pa_svg_for_edge = pa( 'svg_for_edge', $ct );
+
+  $svg_for_edges = array_map( $pa_svg_for_edge, $edge_cluster );
+
   $edge_lens = array_map( 'edge_len', $edge_cluster );
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
-  $sfd = svg_for_ec_label( $ct, $min_dwy, $edge_cluster, $edge_lens_string );
+  $svg_for_ec_label = svg_for_ec_label( $ct, $min_dwy, $edge_cluster, $edge_lens_string );
 
-  return $sfd;
+  $c = append( $svg_for_edges, $svg_for_ec_label );
+
+  return xml_seq( $c );
 }
 
 function edge_len( Edge $edge )
@@ -764,7 +770,7 @@ function put_node_label_outside( Context $ct,
   return $string === $ct->snlo->snlo || $max_dwy_is_wrapped;
 }
 
-function svg_for_node_label( Context $ct, $min_dwy, $dl_pair )
+function svg_for_node_cluster( Context $ct, $min_dwy, $dl_pair )
 {
   list ( $node_cluster, $ohol ) = $dl_pair;
 
@@ -800,7 +806,9 @@ function svg_for_node_label( Context $ct, $min_dwy, $dl_pair )
 
   $svg_for_label = svg_for_label( $ct, $where, $what );
 
-  return xml_seq( append( $svg_for_nodes, $svg_for_label ) );
+  $c = append( $svg_for_nodes, $svg_for_label );
+
+  return xml_seq( $c );
 }
 
 function svg_for_label( Context $ct, $where, $what )
@@ -1217,17 +1225,9 @@ function the_drawing( Context $ct, $nodes_broadly )
 
   $min_dwy = min_dwy_of_nodes( $nodes );
 
-  $pa_svg_for_node = pa( 'svg_for_node', $ct );
+  $pa_svg_for_node_cluster = pa( 'svg_for_node_cluster', $ct, $min_dwy );
 
-  $svg_for_nodes = array();//array_map( $pa_svg_for_node, $nodes );
-
-  $pa_svg_for_node_label = pa( 'svg_for_node_label', $ct, $min_dwy );
-
-  $svg_for_node_labels = array_map( $pa_svg_for_node_label, $dl_pairs );
-
-  $pa_svg_for_edge = pa( 'svg_for_edge', $ct );
-
-  $svg_for_edges = array_map( $pa_svg_for_edge, $nodes_broadly['edges'] );
+  $svg_for_node_clusters = array_map( $pa_svg_for_node_cluster, $dl_pairs );
 
   $nbc = $nodes_broadly['cedges'];
 
@@ -1235,10 +1235,8 @@ function the_drawing( Context $ct, $nodes_broadly )
 
   $svg_for_cedges = array_map_wk( $pa_svg_for_edge_cluster, $nbc );
 
-  $ne = array_merge( $svg_for_edges,
-                     $svg_for_cedges,
-                     $svg_for_nodes,
-                     $svg_for_node_labels );
+  $ne = array_merge( $svg_for_cedges,
+                     $svg_for_node_clusters );
 
   return xml_seq( $ne );
 }
