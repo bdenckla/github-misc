@@ -4,11 +4,13 @@
    /* Rescuscitate leap/nonleap. Use "figure 8" or "wheel within
     * wheel" view.
     *
+    * fix label location when 6-furcation happens
+    *
+    * couple spiral to fade?
+    *
+    * fix neutral hack?
+    *
     * Move Shabbat major ticks labels out of the way of 7s.
-    *
-    * cluster edges themselves, not just labels
-    *
-    * don't spiral other than shabbat: use concentric instead
     *
     * Show seasonal spread.
     *
@@ -92,21 +94,29 @@ class Fade
   public $fade;
 }
 
+class Spiral
+{
+  function __construct( $spiral ) { $this->spiral = $spiral; }
+  public $spiral;
+}
+
 class Context
 {
   // snlo: string [for] node label [that should be] outside
   //
-  function __construct( $dpc, Snlo $snlo, $nyli, Fade $fade )
+  function __construct( $dpc, Snlo $snlo, $nyli, Fade $fade, Spiral $spiral )
   {
     $this->dpc = $dpc;
     $this->snlo = $snlo;
     $this->neutral_yli = $nyli;
     $this->fade = $fade;
+    $this->spiral = $spiral;
   }
   public $dpc;
   public $snlo;
   public $neutral_yli;
   public $fade;
+  public $spiral;
 }
 
 class Node
@@ -732,6 +742,13 @@ function edge_len( Edge $edge )
   return $edge->node2->dwy() - $edge->node1->dwy();
 }
 
+// yf: year fraction, i.e. portion of a year
+//
+function yf( Context $ct, Node $node )
+{
+  return $node->dwy() / $ct->dpc;
+}
+
 function svg_for_node( Context $ct, Node $node )
 {
   $r = radius( $ct, $node );
@@ -742,7 +759,7 @@ function svg_for_node( Context $ct, Node $node )
      'y2' => -$r + falloff(),
      'stroke' => color_for_node( $ct, $node ),
      'stroke-width' => node_stroke_width(),
-     'transform' => svg_tr1( 360 * $node->dwy() / $ct->dpc ),
+     'transform' => svg_tr1( 360 * yf( $ct, $node ) ),
      );
 
   return xml_sc_tag( 'line', $line_attr );
@@ -822,14 +839,16 @@ function svg_for_label( Context $ct, $where, $what )
 
   $r2 = $r + $r_ofs * 1.2 * falloff();
 
-  $d = 360 * $dwy / $ct->dpc;
+  $frac = $dwy / $ct->dpc;
+
+  $d = 360 * $frac;
 
   $bbox = bbox( $string, $font_size );
 
   $width = $bbox[0];
   $height = $bbox[1];
 
-  $t = 2 * M_PI * $dwy / $ct->dpc;
+  $t = 2 * M_PI * $frac;
 
   $s = M_PI_2 - $t;
 
@@ -985,7 +1004,7 @@ function ss()
  */
 function node_to_xy( Context $ct, Node $node )
 {
-  $t = 2 * M_PI * $node->dwy() / $ct->dpc;
+  $t = 2 * M_PI * yf( $ct, $node );
 
   $s = M_PI_2 - $t;
 
@@ -1055,11 +1074,11 @@ function nodes_for_ohol( array $dwy_by_yl )
 
 function radius( Context $ct, Node $node )
 {
-  $sf = ($node->yli - $ct->neutral_yli) * spiral_factor();
+  $f = ($node->yli - $ct->neutral_yli) * falloff();
 
-  $spiral = 1 + $sf * $node->dwy() / $ct->dpc;
+  $s = $ct->spiral->spiral ? yf( $ct, $node ) : 1;
 
-  return $spiral;
+  return 1 + $s * $f;
 }
 
 function cluster_nodes( array $nodes )
@@ -1082,7 +1101,7 @@ function reduce_nodes( array $nodes )
 
   $all_equal = count_unique_sr( $ds ) === 1;
 
-  return $all_equal ? array( $nodes[0] ) : $nodes;
+  return $all_equal ? neutral( $nodes ) : $nodes; // XXX HACK
 }
 
 function reduce_edges( array $edges )
@@ -1091,7 +1110,14 @@ function reduce_edges( array $edges )
 
   $all_equal = count_unique_sr( $ds ) === 1;
 
-  return $all_equal ? array( $edges[0] ) : $edges;
+  return $all_equal ? neutral( $edges ) : $edges; // XXX HACK
+}
+
+function neutral( array $x )
+{
+  $y = count( $x ) == 6 ? $x[2] : $x[0];
+
+  return array( $y );
 }
 
 function edge_dwys( Edge $edge )
@@ -1244,6 +1270,9 @@ function the_drawing( Context $ct, $nodes_broadly )
 function fadet() { return new Fade( true ); }
 function fadef() { return new Fade( false ); }
 
+function spiralt() { return new Spiral( true ); }
+function spiralf() { return new Spiral( false ); }
+
 function snlo_null()   { return new Snlo( NULL ); }
 function snlo_shm_ar() { return new Snlo( shm_ar() ); }
 
@@ -1251,9 +1280,9 @@ function calendar_types()
 {
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $ct_maj = new Context( $dpc, snlo_null(),    2, fadef() );
-  $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef() );
-  $ct_sha = new Context( $dpc, snlo_null(),   -2, fadet() );
+  $ct_maj = new Context( $dpc, snlo_null(),    2, fadef(), spiralf() );
+  $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef(), spiralf() );
+  $ct_sha = new Context( $dpc, snlo_null(),   -2, fadet(), spiralt() );
 
   return array
     (
