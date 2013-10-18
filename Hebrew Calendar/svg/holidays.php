@@ -6,8 +6,6 @@
     *
     * fix label location when 6-furcation happens
     *
-    * fix neutral hack?
-    *
     * Move Shabbat major ticks labels out of the way of 7s.
     *
     * Show seasonal spread.
@@ -92,28 +90,20 @@ class Nyli
   public $nyli;
 }
 
-class Fade
-{
-  function __construct( $fade ) { $this->fade = $fade; }
-  public $fade;
-}
-
 class Context
 {
   // snlo: string [for] node label [that should be] outside
   // nyli: neutral yli, i.e. neutral year length index
   //
-  function __construct( $dpc, Snlo $snlo, Nyli $nyli, Fade $fade )
+  function __construct( $dpc, Snlo $snlo, Nyli $nyli )
   {
     $this->dpc = $dpc;
     $this->snlo = $snlo;
     $this->nyli = $nyli;
-    $this->fade = $fade;
   }
   public $dpc;
   public $snlo;
   public $nyli;
-  public $fade;
 }
 
 class Node
@@ -243,7 +233,6 @@ function falloff() { return 0.05; }
 function node_label_font_size() { return 0.07; }
 function edcl_label_font_size() { return 0.05; }
 function node_stroke_width() { return 0.01; }
-function edge_stroke_width() { return 0.01; }
 function circle_stroke_width() { return 0.01; }
 function label_rect_stroke_width() { return 0.05; }
 function label_pads() { return [ 0.084, 0.2 ]; }
@@ -456,11 +445,12 @@ function sum_of_days_per_month( YearLen $oyl, array $mns )
   return array_sum( array_map_pa( 'days_per_month', $oyl, $mns ) );
 }
 
-function min_shabbat() { return 1; }
+function min_shabbat() { return  1; }
+function max_shabbat() { return 53; }
 
 function shabbats()
 {
-  return array_map( 'shabbat', range( min_shabbat(), 60 ) );
+  return array_map( 'shabbat', range( min_shabbat(), max_shabbat() ) );
 }
 
 function shabbat( $n )
@@ -587,24 +577,24 @@ function svg_for_edcl_label( Context $ct, $min_dwy, $edcl, $string )
 
   $outside = $max_dwy_of_cluster - $min_dwy > $ct->dpc;
 
-  // rei: representative edge index (index within cluster)
-  //
-  $rei = $outside ? $c-1 : 0;
-
   // redge: representative edge (representative of cluster)
+  // redgei: redge index (index within cluster)
   //
-  $redge = $edcl[$rei];
+  $redgei = $outside ? $c-1 : 0;
 
-  $dwy1 = $redge->node1->dwy();
-  $dwy2 = $redge->node2->dwy();
+  //
+  $redge = $edcl[ $redgei ];
+
+  $redge_dwy1 = $redge->node1->dwy();
+  $redge_dwy2 = $redge->node2->dwy();
 
   $r_ofs = $outside ? 1 : -1;
 
   $where = array
     (
-     'r' => radius( $ct, $redge->node2 ),
+     'r' => 1,
      'r ofs' => $r_ofs,
-     'dwy' => ($dwy1 + $dwy2) * 0.5,
+     'dwy' => ($redge_dwy1 + $redge_dwy2) * 0.5,
      );
 
   $what = array
@@ -615,35 +605,6 @@ function svg_for_edcl_label( Context $ct, $min_dwy, $edcl, $string )
      );
 
   return svg_for_label( $ct, $where, $what );
-}
-
-function color_for_edge( Context $ct, Edge $edge )
-{
-  return color_for_node( $ct, $edge->node1 );
-}
-
-function color_for_node( Context $ct, Node $node )
-{
-  return color_for_dwy( $ct, $node->dwy() );
-}
-
-function color_for_dwy( Context $ct, $dwy )
-{
-  if ( ! $ct->fade->fade ) { return 'black'; }
-
-  $frac = $dwy / $ct->dpc;
-
-  if ( $frac < 1 ) { return 'black'; }
-
-  $n = ($frac-1) / 0.125;
-
-  $gray_level = 100*$n . '%';
-
-  // glt: gray level triple
-  //
-  $glt = array( $gray_level, $gray_level, $gray_level );
-
-  return 'rgb(' . implode( ', ', $glt ) . ')';
 }
 
 function edge_lens_string( array $edge_lens )
@@ -657,14 +618,6 @@ function edge_lens_string( array $edge_lens )
   if ( $cu === 1 )
     {
       return $edge_lens[0] . times() . count( $edge_lens );
-    }
-
-
-  if ( halves_equal( $edge_lens ) )
-    {
-      $h = first_half( $edge_lens );
-
-      return '('.edge_lens_string( $h ).')'.times().'2';
     }
 
   return implode( ', ', $edge_lens );
@@ -695,15 +648,13 @@ function halves( array $a )
 
 function svg_for_edcl( Context $ct, $min_dwy, $key, $edcl )
 {
-  $reedcl = reduce_edges( $edcl );
+  $reedcl = reduce_edges( $ct->nyli, $edcl );
 
   $edge_lens = array_map( 'edge_len', $reedcl );
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
-  $svg_for_edcl_label = svg_for_edcl_label( $ct, $min_dwy, $reedcl, $edge_lens_string );
-
-  return $svg_for_edcl_label;
+  return svg_for_edcl_label( $ct, $min_dwy, $reedcl, $edge_lens_string );
 }
 
 function edge_len( Edge $edge )
@@ -726,7 +677,7 @@ function svg_for_node( Context $ct, Node $node )
     (
      'y1' => -$r,
      'y2' => -$r + falloff(),
-     'stroke' => color_for_node( $ct, $node ),
+     'stroke' => 'black',
      'stroke-width' => node_stroke_width(),
      'transform' => svg_tr1( 360 * yf( $ct, $node ) ),
      );
@@ -760,7 +711,7 @@ function svg_for_nocl( Context $ct, $min_dwy, $dl_pair )
 {
   list ( $nocl, $ohol ) = $dl_pair;
 
-  $renocl = reduce_nodes( $nocl );
+  $renocl = reduce_nodes( $ct->nyli, $nocl );
 
   $pa_svg_for_node = pa( 'svg_for_node', $ct );
 
@@ -799,6 +750,16 @@ function svg_for_nocl( Context $ct, $min_dwy, $dl_pair )
   return xml_seq( $c );
 }
 
+/* Below, t is the angle, using mathematical conventions, i.e. zero at
+ * "3 o'clock" and proceeding counter-clockwise. But we'd like to use
+ * clock conventions, i.e zero at "12 o'clock" and proceeding
+ * clockwise. So we make s by adding M_PI_2 and negating t.
+ *
+ * Below, we negate the sin() since SVG puts greater y values further
+ * down. (This is the convention in most computer graphics systems,
+ * but is not the mathematical convention.)
+ */
+
 function svg_for_label( Context $ct, $where, $what )
 {
   $r         = $where['r'];
@@ -825,8 +786,8 @@ function svg_for_label( Context $ct, $where, $what )
 
   if ( $r_ofs === 1 ) { $s+=M_PI; }
 
-  $rectx = 0.5 * $width  * -( 1 + cos(  $s ) );
-  $recty = 0.5 * $height * -( 1 + sin( -$s ) );
+  $rectx = 0.5 * $width  * -( 1 + cos( $s ) );
+  $recty = 0.5 * $height * -( 1 - sin( $s ) );
 
   $transforms = array
     (
@@ -839,7 +800,7 @@ function svg_for_label( Context $ct, $where, $what )
   list ( $xpad, $ypad ) = scale( $font_size, label_pads() );
 
   $text_attr = array( 'font-size' => $font_size,
-                      'fill' => color_for_dwy( $ct, $dwy ),
+                      'fill' => 'black',
                       'x' => $xpad,
                       'y' => $height - $ypad );
 
@@ -848,7 +809,7 @@ function svg_for_label( Context $ct, $where, $what )
   $rect = svg_rect( array(
                           'width' => $width,
                           'height' => $height,
-                          'stroke' => color_for_dwy( $ct, $dwy ),
+                          'stroke' => 'black',
                           'stroke-width' => $font_size * label_rect_stroke_width(),
                           'fill' => 'none',
                           ) );
@@ -861,9 +822,7 @@ function svg_for_label( Context $ct, $where, $what )
 
   $elements = append( $mrect, $text );
 
-  $g = svg_g( $g_attr, xml_seq( $elements ) );
-
-  return $g;
+  return svg_g( $g_attr, xml_seq( $elements ) );
 }
 
 function scale( $k, array $a )
@@ -959,33 +918,6 @@ function ubbox_char_lookup2( $char )
     : NULL;
 }
 
-function ss()
-{
-  return implode( ' ', func_get_args() );
-}
-
-/* Below, r is the angle, using mathematical conventions, i.e. zero at
- * "3 o'clock" and proceeding counter-clockwise. But we'd like to use
- * clock conventions, i.e zero at "12 o'clock" and proceeding
- * clockwise. So we make s by adding M_PI_2 and negating r.
- *
- * Below, we negate the sin() since SVG puts greater y values further
- * down. (This is the convention in most computer graphics systems,
- * but is not the mathematical convention.)
- */
-function node_to_xy( Context $ct, Node $node )
-{
-  $t = 2 * M_PI * yf( $ct, $node );
-
-  $s = M_PI_2 - $t;
-
-  $x = cos( $s );
-
-  $y = -sin( $s );
-
-  return scale( radius( $ct, $node ), [ $x, $y ] );
-}
-
 // sr: sorting (comparing) regularly (not by string conversion)
 //
 function count_unique_sr( array $a )
@@ -1045,9 +977,9 @@ function nodes_for_ohol( array $dwy_by_yl )
 
 function radius( Context $ct, Node $node )
 {
-  $f = ($node->yli - $ct->nyli->nyli) * falloff();
+  $f = $node->yli - $ct->nyli->nyli;
 
-  return 1 + $f;
+  return 1 + $f * falloff();
 }
 
 function cluster_nodes( array $nodes )
@@ -1060,7 +992,7 @@ function cluster_edges( array $edges )
   return cluster( $edges, 'partition_edges' );
 }
 
-function reduce_nodes_or_edges( array $nodes_or_edges, $cf )
+function reduce_nodes_or_edges( Nyli $nyli, $cf, array $nodes_or_edges )
 {
   $ds = array_map( $cf, $nodes_or_edges );
 
@@ -1068,7 +1000,7 @@ function reduce_nodes_or_edges( array $nodes_or_edges, $cf )
 
   if ( $all_equal && count( $ds ) === 6 )
     {
-      return array( $nodes_or_edges[2] ); // XXX HACK
+      return array( $nodes_or_edges[ $nyli->nyli ] ); // XXX HACK
     }
 
   if ( halves_equal( $ds ) )
@@ -1079,14 +1011,14 @@ function reduce_nodes_or_edges( array $nodes_or_edges, $cf )
   return $nodes_or_edges;
 }
 
-function reduce_nodes( array $nodes )
+function reduce_nodes( Nyli $nyli, array $nodes )
 {
-  return reduce_nodes_or_edges( $nodes, 'node_dwy' );
+  return reduce_nodes_or_edges( $nyli, 'node_dwy', $nodes );
 }
 
-function reduce_edges( array $edges )
+function reduce_edges( Nyli $nyli, array $edges )
 {
-  return reduce_nodes_or_edges( $edges, 'edge_dwys' );
+  return reduce_nodes_or_edges( $nyli, 'edge_dwys', $edges );
 }
 
 function edge_dwys( Edge $edge )
@@ -1247,16 +1179,13 @@ function snlo_shm_ar() { return new Snlo( shm_ar() ); }
 function nyli_p2() { return new Nyli( 2 ); }
 function nyli_ze() { return new Nyli( 0 ); }
 
-function fadet() { return new Fade( true ); }
-function fadef() { return new Fade( false ); }
-
 function calendar_types()
 {
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $ct_maj = new Context( $dpc, snlo_null(),   nyli_p2(), fadef() );
-  $ct_rch = new Context( $dpc, snlo_shm_ar(), nyli_p2(), fadef() );
-  $ct_sha = new Context( $dpc, snlo_null(),   nyli_ze(), fadet() );
+  $ct_maj = new Context( $dpc, snlo_null(),   nyli_p2() );
+  $ct_rch = new Context( $dpc, snlo_shm_ar(), nyli_p2() );
+  $ct_sha = new Context( $dpc, snlo_null(),   nyli_ze() );
 
   return array
     (
