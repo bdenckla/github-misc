@@ -4,6 +4,12 @@
    /* Rescuscitate leap/nonleap. Use "figure 8" or "wheel within
     * wheel" view.
     *
+    * Move Shabbat major ticks labels out of the way of 7s.
+    *
+    * cluster edges themselves, not just labels
+    *
+    * don't spiral other than shabbat: use concentric instead
+    *
     * Show seasonal spread.
     *
     * Show units (360 degrees = 1 tropical year (365.25...)).
@@ -90,29 +96,29 @@ class Context
 {
   // snlo: string [for] node label [that should be] outside
   //
-  function __construct( $dpc, Snlo $snlo, $ndwyi, Fade $fade )
+  function __construct( $dpc, Snlo $snlo, $nyli, Fade $fade )
   {
     $this->dpc = $dpc;
     $this->snlo = $snlo;
-    $this->neutral_dwyi = $ndwyi;
+    $this->neutral_yli = $nyli;
     $this->fade = $fade;
   }
   public $dpc;
   public $snlo;
-  public $neutral_dwyi;
+  public $neutral_yli;
   public $fade;
 }
 
 class Node
 {
-  function __construct( array $dwys, $dwyi )
+  function __construct( array $dwy_by_yl, $yli )
   {
-    $this->dwys = $dwys;
-    $this->dwyi = $dwyi;
+    $this->dwy_by_yl = $dwy_by_yl;
+    $this->yli = $yli;
   }
-  function dwy() { return $this->dwys[ $this->dwyi ]; }
-  public $dwys;
-  public $dwyi;
+  function dwy() { return $this->dwy_by_yl[ $this->yli ]; }
+  public $dwy_by_yl;
+  public $yli;
 }
 
 class Edge
@@ -497,19 +503,19 @@ function dwy_for_myl_mhol( array $myl, array $mhol )
   return array_map_pa( 'dwy_for_myl_ohol', $myl, $mhol );
 }
 
-function make_node( $dwys, $dwyi )
+function make_node( $dwy_by_yl, $yli )
 {
-  return new Node( $dwys, $dwyi );
+  return new Node( $dwy_by_yl, $yli );
 }
 
-function node_dwyi_lt( Node $node1, Node $node2 )
+function node_yli_lt( Node $node1, Node $node2 )
 {
-  return $node1->dwyi < $node2->dwyi;
+  return $node1->yli < $node2->yli;
 }
 
-function node_dwyi_gt( Node $node1, Node $node2 )
+function node_yli_gt( Node $node1, Node $node2 )
 {
-  return $node1->dwyi > $node2->dwyi;
+  return $node1->yli > $node2->yli;
 }
 
 function node_dwy_lt( Node $node1, Node $node2 )
@@ -549,6 +555,11 @@ function max_dwy_of_edges( $edges )
 function max_dwy_of_edge( Edge $edge )
 {
   return max( $edge->node1->dwy(), $edge->node2->dwy() );
+}
+
+function max_dwy_of_nodes( $nodes )
+{
+  return max( array_map( 'node_dwy', $nodes ) );
 }
 
 function min_dwy_of_nodes( $nodes )
@@ -731,19 +742,45 @@ function svg_for_node( Context $ct, Node $node )
   return xml_sc_tag( 'line', $line_attr );
 }
 
-function svg_for_node_label( Context $ct, $dl_pair )
+function put_node_label_outside( Context $ct,
+                                 $min_dwy,
+                                 $node_cluster,
+                                 $string )
+{
+  $max_dwy_of_cluster = max_dwy_of_nodes( $node_cluster );
+
+  /* wrap_margin is particularly put in for Shabbat 53; it doesn't
+     wrap, but is so close to Shabbat 1 that it needs to go
+     outside. */
+
+  $wrap_margin = 10; // units of days
+
+  $diff = $max_dwy_of_cluster - $min_dwy;
+
+  $thresh = $ct->dpc - $wrap_margin;
+
+  $max_dwy_is_wrapped = $diff > $thresh;
+
+  return $string === $ct->snlo->snlo || $max_dwy_is_wrapped;
+}
+
+function svg_for_node_label( Context $ct, $min_dwy, $dl_pair )
 {
   list ( $node_cluster, $ohol ) = $dl_pair;
 
+  $pa_svg_for_node = pa( 'svg_for_node', $ct );
+
+  $svg_for_nodes = array_map( $pa_svg_for_node, $node_cluster );
+
   $string = $ohol->name_using_hebrew_chars;
 
-  $outside = $string === $ct->snlo->snlo;
+  $outside = put_node_label_outside( $ct, $min_dwy, $node_cluster, $string );
 
   // rnode: representative node (representative of cluster)
   //
   $rnode = $outside
-    ? max_of_nodes_dwyi( $node_cluster )
-    : min_of_nodes_dwyi( $node_cluster );
+    ? max_of_nodes_yli( $node_cluster )
+    : min_of_nodes_yli( $node_cluster );
 
   $r_ofs = $outside ? 1 : -1;
 
@@ -761,7 +798,9 @@ function svg_for_node_label( Context $ct, $dl_pair )
      'show rect' => false,
      );
 
-  return svg_for_label( $ct, $where, $what );
+  $svg_for_label = svg_for_label( $ct, $where, $what );
+
+  return xml_seq( append( $svg_for_nodes, $svg_for_label ) );
 }
 
 function svg_for_label( Context $ct, $where, $what )
@@ -965,13 +1004,13 @@ function nodes_for_all_da( $mhol, $myl )
   //
   $pb_nodes_bh = array_map( 'nodes_for_ohol', $dwy_for_myl_mhol );
 
-  $nb_nodes_bh = array_map( 'nb_nodes', $pb_nodes_bh );
+  $nb_nodes_bh = array_map( 'non_bogus_nodes', $pb_nodes_bh );
 
   $dl_pairs_bh = array_map( 'dl_pairs_for_ohol', $nb_nodes_bh, $mhol );
 
-  $pb_nodes_by = transpose( $pb_nodes_bh );
+  $pb_nodes_by_yli = transpose( $pb_nodes_bh );
 
-  $edges = flatten( array_map( 'edges_for_oyl', $pb_nodes_by ) );
+  $edges = flatten( array_map( 'edges_for_oyl', $pb_nodes_by_yli ) );
 
   $cedges = cluster_edges( $edges );
 
@@ -996,19 +1035,19 @@ function transpose( array $a )
 
 function edges_for_oyl( array $nodes_for_oyl )
 {
-  $nb_nodes = nb_nodes( $nodes_for_oyl );
+  $nb_nodes = non_bogus_nodes( $nodes_for_oyl );
 
   return array_map_wn( 'make_edge', $nb_nodes );
 }
 
-function nodes_for_ohol( array $dwys )
+function nodes_for_ohol( array $dwy_by_yl )
 {
-  return array_map_pa( 'make_node', $dwys, array_keys( $dwys ) );
+  return array_map_pa( 'make_node', $dwy_by_yl, array_keys( $dwy_by_yl ) );
 }
 
 function radius( Context $ct, Node $node )
 {
-  $sf = ($node->dwyi - $ct->neutral_dwyi) * spiral_factor();
+  $sf = ($node->yli - $ct->neutral_yli) * spiral_factor();
 
   $spiral = 1 + $sf * $node->dwy() / $ct->dpc;
 
@@ -1017,12 +1056,32 @@ function radius( Context $ct, Node $node )
 
 function cluster_nodes( array $nodes )
 {
-  return cluster( $nodes, 'partition_nodes' );
+  $c = cluster( $nodes, 'partition_nodes' );
+
+  return array_map( 'reduce_nodes', $c );
 }
 
 function cluster_edges( array $edges )
 {
-  return cluster( $edges, 'partition_edges' );
+  $c = cluster( $edges, 'partition_edges', 'reduce_edges' );
+
+  return array_map( 'reduce_edges', $c );
+}
+
+function reduce_nodes( array $nodes )
+{
+  $ds = array_map( 'node_dwy', $nodes );
+
+  $all_equal = count( array_unique( $ds ) ) === 1;
+
+  //var_export( array( $ds, $all_equal ) );
+
+  return $all_equal ? array( $nodes[0] ) : $nodes;
+}
+
+function reduce_edges( array $edges )
+{
+  return $edges;
 }
 
 // w2m: within 2 of min
@@ -1058,14 +1117,14 @@ function edges_are_within_2( Edge $edge1, Edge $edge2 )
     nodes_are_within_2( $edge1->node2, $edge2->node2 );
 }
 
-function min_of_nodes_dwyi( array $nodes )
+function min_of_nodes_yli( array $nodes )
 {
-  return amina( $nodes, 'node_dwyi_lt' );
+  return amina( $nodes, 'node_yli_lt' );
 }
 
-function max_of_nodes_dwyi( array $nodes )
+function max_of_nodes_yli( array $nodes )
 {
-  return amina( $nodes, 'node_dwyi_gt' );
+  return amina( $nodes, 'node_yli_gt' );
 }
 
 function min_of_nodes_dwy( array $nodes )
@@ -1080,13 +1139,15 @@ function min_of_edges( array $edges )
 
 // pf: partition function
 //
-function cluster( array $a, $pf )
+function cluster( array $a, $partition_fn )
 {
   if ( empty( $a ) ) { return $a; }
 
-  $p = $pf( $a );
+  $p = $partition_fn( $a );
 
-  return prepend( cluster( $p[1], $pf ), $p[0] );
+  $recursion_result = cluster( $p[1], $partition_fn );
+
+  return prepend( $recursion_result, $p[0] );
 }
 
 function partition( $f, array $a )
@@ -1129,7 +1190,7 @@ function node_not_bogus( Node $node )
 
 // nb: non-bogus
 //
-function nb_nodes( array $nodes )
+function non_bogus_nodes( array $nodes )
 {
   return array_filter( $nodes, 'node_not_bogus' );
 }
@@ -1144,13 +1205,16 @@ function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
 function the_drawing( Context $ct, $nodes_broadly )
 {
   $nodes = $nodes_broadly['nodes'];
+
   $dl_pairs = $nodes_broadly['dl_pairs'];
+
+  $min_dwy = min_dwy_of_nodes( $nodes );
 
   $pa_svg_for_node = pa( 'svg_for_node', $ct );
 
-  $svg_for_nodes = array_map( $pa_svg_for_node, $nodes );
+  $svg_for_nodes = array();//array_map( $pa_svg_for_node, $nodes );
 
-  $pa_svg_for_node_label = pa( 'svg_for_node_label', $ct );
+  $pa_svg_for_node_label = pa( 'svg_for_node_label', $ct, $min_dwy );
 
   $svg_for_node_labels = array_map( $pa_svg_for_node_label, $dl_pairs );
 
@@ -1159,8 +1223,6 @@ function the_drawing( Context $ct, $nodes_broadly )
   $svg_for_edges = array_map( $pa_svg_for_edge, $nodes_broadly['edges'] );
 
   $nbc = $nodes_broadly['cedges'];
-
-  $min_dwy = min_dwy_of_nodes( $nodes );
 
   $pa_svg_for_edge_cluster = pa( 'svg_for_edge_cluster', $ct, $min_dwy );
 
@@ -1186,7 +1248,7 @@ function calendar_types()
 
   $ct_maj = new Context( $dpc, snlo_null(),    2, fadef() );
   $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef() );
-  $ct_sha = new Context( $dpc, snlo_null(),   -3, fadet() );
+  $ct_sha = new Context( $dpc, snlo_null(),   -2, fadet() );
 
   return array
     (
