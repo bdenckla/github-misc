@@ -6,8 +6,6 @@
     *
     * fix label location when 6-furcation happens
     *
-    * couple spiral to fade?
-    *
     * fix neutral hack?
     *
     * Move Shabbat major ticks labels out of the way of 7s.
@@ -94,29 +92,21 @@ class Fade
   public $fade;
 }
 
-class Spiral
-{
-  function __construct( $spiral ) { $this->spiral = $spiral; }
-  public $spiral;
-}
-
 class Context
 {
   // snlo: string [for] node label [that should be] outside
   //
-  function __construct( $dpc, Snlo $snlo, $nyli, Fade $fade, Spiral $spiral )
+  function __construct( $dpc, Snlo $snlo, $nyli, Fade $fade )
   {
     $this->dpc = $dpc;
     $this->snlo = $snlo;
     $this->neutral_yli = $nyli;
     $this->fade = $fade;
-    $this->spiral = $spiral;
   }
   public $dpc;
   public $snlo;
   public $neutral_yli;
   public $fade;
-  public $spiral;
 }
 
 class Node
@@ -244,9 +234,9 @@ function node_label_font_size() { return 0.07; }
 function ec_label_font_size() { return 0.05; }
 function node_stroke_width() { return 0.01; }
 function edge_stroke_width() { return 0.01; }
+function circle_stroke_width() { return 0.01; }
 function label_rect_stroke_width() { return 0.05; }
 function label_pads() { return [ 0.084, 0.2 ]; }
-function spiral_factor() { return 0.05; }
 
 function all_rosh_chodesh()
 {
@@ -617,46 +607,6 @@ function svg_for_ec_label( Context $ct, $min_dwy, $edge_cluster, $string )
   return svg_for_label( $ct, $where, $what );
 }
 
-function svg_for_edge( Context $ct, Edge $edge )
-{
-  list( $x1, $y1 ) = node_to_xy( $ct, $edge->node1 );
-  list( $x2, $y2 ) = node_to_xy( $ct, $edge->node2 );
-
-  $r1 = radius( $ct, $edge->node1 );
-  $r2 = radius( $ct, $edge->node2 );
-
-  $r = 0.5 * ( $r1 + $r2 );
-
-  $rx = $r;
-
-  $ry = $r;
-
-  $x_axis_rotation = 0;
-
-  $large_arc_flag = 0;
-
-  $sweep_flag = 1;
-
-  $path_attr = array
-    (
-     'd' => ss( 'M',
-                $x1, $y1,
-                'A',
-                $rx, $ry,
-                $x_axis_rotation,
-                $large_arc_flag,
-                $sweep_flag,
-                $x2, $y2 ),
-     'fill' => 'none',
-     'stroke' => color_for_edge( $ct, $edge ),
-     'stroke-width' => edge_stroke_width(),
-     );
-
-  $path = xml_sc_tag( 'path', $path_attr );
-
-  return $path;
-}
-
 function color_for_edge( Context $ct, Edge $edge )
 {
   return color_for_node( $ct, $edge->node1 );
@@ -722,19 +672,13 @@ function halves_equal( array $a )
 
 function svg_for_edge_cluster( Context $ct, $min_dwy, $key, $edge_cluster )
 {
-  $pa_svg_for_edge = pa( 'svg_for_edge', $ct );
-
-  $svg_for_edges = array_map( $pa_svg_for_edge, $edge_cluster );
-
   $edge_lens = array_map( 'edge_len', $edge_cluster );
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
   $svg_for_ec_label = svg_for_ec_label( $ct, $min_dwy, $edge_cluster, $edge_lens_string );
 
-  $c = append( $svg_for_edges, $svg_for_ec_label );
-
-  return xml_seq( $c );
+  return $svg_for_ec_label;
 }
 
 function edge_len( Edge $edge )
@@ -1076,9 +1020,7 @@ function radius( Context $ct, Node $node )
 {
   $f = ($node->yli - $ct->neutral_yli) * falloff();
 
-  $s = $ct->spiral->spiral ? yf( $ct, $node ) : 1;
-
-  return 1 + $s * $f;
+  return 1 + $f;
 }
 
 function cluster_nodes( array $nodes )
@@ -1249,29 +1191,33 @@ function the_drawing( Context $ct, $nodes_broadly )
 
   $dl_pairs = $nodes_broadly['dl_pairs'];
 
+  $nbc = $nodes_broadly['cedges'];
+
   $min_dwy = min_dwy_of_nodes( $nodes );
 
   $pa_svg_for_node_cluster = pa( 'svg_for_node_cluster', $ct, $min_dwy );
 
   $svg_for_node_clusters = array_map( $pa_svg_for_node_cluster, $dl_pairs );
 
-  $nbc = $nodes_broadly['cedges'];
-
   $pa_svg_for_edge_cluster = pa( 'svg_for_edge_cluster', $ct, $min_dwy );
 
-  $svg_for_cedges = array_map_wk( $pa_svg_for_edge_cluster, $nbc );
+  $svg_for_edge_clusters = array_map_wk( $pa_svg_for_edge_cluster, $nbc );
 
-  $ne = array_merge( $svg_for_cedges,
+  $c = svg_circle( array(
+                         'r' => 1,
+                         'stroke' => 'black',
+                         'stroke-width' => circle_stroke_width(),
+                         'fill' => 'none',
+                         ) );
+
+  $ne = array_merge( $svg_for_edge_clusters,
                      $svg_for_node_clusters );
 
-  return xml_seq( $ne );
+  return xml_seq( append( $ne, $c ) );
 }
 
 function fadet() { return new Fade( true ); }
 function fadef() { return new Fade( false ); }
-
-function spiralt() { return new Spiral( true ); }
-function spiralf() { return new Spiral( false ); }
 
 function snlo_null()   { return new Snlo( NULL ); }
 function snlo_shm_ar() { return new Snlo( shm_ar() ); }
@@ -1280,9 +1226,9 @@ function calendar_types()
 {
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $ct_maj = new Context( $dpc, snlo_null(),    2, fadef(), spiralf() );
-  $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef(), spiralf() );
-  $ct_sha = new Context( $dpc, snlo_null(),   -2, fadet(), spiralt() );
+  $ct_maj = new Context( $dpc, snlo_null(),    2, fadef() );
+  $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef() );
+  $ct_sha = new Context( $dpc, snlo_null(),   -2, fadet() );
 
   return array
     (
