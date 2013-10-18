@@ -86,6 +86,12 @@ class Snlo
   public $snlo;
 }
 
+class Nyli
+{
+  function __construct( $nyli ) { $this->nyli = $nyli; }
+  public $nyli;
+}
+
 class Fade
 {
   function __construct( $fade ) { $this->fade = $fade; }
@@ -95,17 +101,18 @@ class Fade
 class Context
 {
   // snlo: string [for] node label [that should be] outside
+  // nyli: neutral yli, i.e. neutral year length index
   //
-  function __construct( $dpc, Snlo $snlo, $nyli, Fade $fade )
+  function __construct( $dpc, Snlo $snlo, Nyli $nyli, Fade $fade )
   {
     $this->dpc = $dpc;
     $this->snlo = $snlo;
-    $this->neutral_yli = $nyli;
+    $this->nyli = $nyli;
     $this->fade = $fade;
   }
   public $dpc;
   public $snlo;
-  public $neutral_yli;
+  public $nyli;
   public $fade;
 }
 
@@ -141,7 +148,7 @@ function shh_su() { return 'סוכות'; }
 function shh_ch() { return 'חנוכה'; }
 function shh_tu() { return 'טו בשבט'; }
 
-// shh: string, Hebrew, month, i.e. string [in] Hebrew [characters for a ] month [name]
+// shm: string, Hebrew, month, i.e. string [in] Hebrew [characters for a ] month [name]
 //
 function shm_ad() { return 'אדר'; } // and Adar Sheni
 function shm_ni() { return 'ניסן'; }
@@ -229,9 +236,12 @@ function all_yearlen()
      );
 }
 
+// edcl: edge cluster
+// nocl: node cluster
+
 function falloff() { return 0.05; }
 function node_label_font_size() { return 0.07; }
-function ec_label_font_size() { return 0.05; }
+function edcl_label_font_size() { return 0.05; }
 function node_stroke_width() { return 0.01; }
 function edge_stroke_width() { return 0.01; }
 function circle_stroke_width() { return 0.01; }
@@ -569,11 +579,11 @@ function min_dwy_of_nodes( $nodes )
 
 function node_dwy( Node $node ) { return $node->dwy(); }
 
-function svg_for_ec_label( Context $ct, $min_dwy, $edge_cluster, $string )
+function svg_for_edcl_label( Context $ct, $min_dwy, $edcl, $string )
 {
-  $c = count( $edge_cluster );
+  $c = count( $edcl );
 
-  $max_dwy_of_cluster = max_dwy_of_edges( $edge_cluster );
+  $max_dwy_of_cluster = max_dwy_of_edges( $edcl );
 
   $outside = $max_dwy_of_cluster - $min_dwy > $ct->dpc;
 
@@ -583,7 +593,7 @@ function svg_for_ec_label( Context $ct, $min_dwy, $edge_cluster, $string )
 
   // redge: representative edge (representative of cluster)
   //
-  $redge = $edge_cluster[$rei];
+  $redge = $edcl[$rei];
 
   $dwy1 = $redge->node1->dwy();
   $dwy2 = $redge->node2->dwy();
@@ -600,7 +610,7 @@ function svg_for_ec_label( Context $ct, $min_dwy, $edge_cluster, $string )
   $what = array
     (
      'string' => $string,
-     'font size' => ec_label_font_size(),
+     'font size' => edcl_label_font_size(),
      'show rect' => false,
      );
 
@@ -649,10 +659,11 @@ function edge_lens_string( array $edge_lens )
       return $edge_lens[0] . times() . count( $edge_lens );
     }
 
-  $h = halves_equal( $edge_lens );
 
-  if ( $h !== FALSE )
+  if ( halves_equal( $edge_lens ) )
     {
+      $h = first_half( $edge_lens );
+
       return '('.edge_lens_string( $h ).')'.times().'2';
     }
 
@@ -661,24 +672,38 @@ function edge_lens_string( array $edge_lens )
 
 function halves_equal( array $a )
 {
-  $c = count( $a );
+  list( $b, $c ) = halves( $a );
 
-  if ( $c % 2 === 1 ) { return FALSE; }
-
-  list( $b, $c ) = array_chunk( $a, $c / 2 );
-
-  return $b === $c ? $b : FALSE;
+  return $b === $c;
 }
 
-function svg_for_edge_cluster( Context $ct, $min_dwy, $key, $edge_cluster )
+function first_half( array $a )
 {
-  $edge_lens = array_map( 'edge_len', $edge_cluster );
+  $halves = halves( $a );
+
+  return $halves[0];
+}
+
+function halves( array $a )
+{
+  $c = count( $a );
+
+  if ( $c === 0 || $c % 2 === 1 ) { return [ NULL, 1 ]; }
+
+  return array_chunk( $a, $c / 2 );
+}
+
+function svg_for_edcl( Context $ct, $min_dwy, $key, $edcl )
+{
+  $reedcl = reduce_edges( $edcl );
+
+  $edge_lens = array_map( 'edge_len', $reedcl );
 
   $edge_lens_string = edge_lens_string( $edge_lens );
 
-  $svg_for_ec_label = svg_for_ec_label( $ct, $min_dwy, $edge_cluster, $edge_lens_string );
+  $svg_for_edcl_label = svg_for_edcl_label( $ct, $min_dwy, $reedcl, $edge_lens_string );
 
-  return $svg_for_ec_label;
+  return $svg_for_edcl_label;
 }
 
 function edge_len( Edge $edge )
@@ -711,10 +736,10 @@ function svg_for_node( Context $ct, Node $node )
 
 function put_node_label_outside( Context $ct,
                                  $min_dwy,
-                                 $node_cluster,
+                                 $nocl,
                                  $string )
 {
-  $max_dwy_of_cluster = max_dwy_of_nodes( $node_cluster );
+  $max_dwy_of_cluster = max_dwy_of_nodes( $nocl );
 
   /* wrap_margin is particularly put in for Shabbat 53; it doesn't
      wrap, but is so close to Shabbat 1 that it needs to go
@@ -731,23 +756,25 @@ function put_node_label_outside( Context $ct,
   return $string === $ct->snlo->snlo || $max_dwy_is_wrapped;
 }
 
-function svg_for_node_cluster( Context $ct, $min_dwy, $dl_pair )
+function svg_for_nocl( Context $ct, $min_dwy, $dl_pair )
 {
-  list ( $node_cluster, $ohol ) = $dl_pair;
+  list ( $nocl, $ohol ) = $dl_pair;
+
+  $renocl = reduce_nodes( $nocl );
 
   $pa_svg_for_node = pa( 'svg_for_node', $ct );
 
-  $svg_for_nodes = array_map( $pa_svg_for_node, $node_cluster );
+  $svg_for_nodes = array_map( $pa_svg_for_node, $renocl );
 
   $string = $ohol->name_using_hebrew_chars;
 
-  $outside = put_node_label_outside( $ct, $min_dwy, $node_cluster, $string );
+  $outside = put_node_label_outside( $ct, $min_dwy, $renocl, $string );
 
   // rnode: representative node (representative of cluster)
   //
   $rnode = $outside
-    ? max_of_nodes_yli( $node_cluster )
-    : min_of_nodes_yli( $node_cluster );
+    ? max_of_nodes_yli( $renocl )
+    : min_of_nodes_yli( $renocl );
 
   $r_ofs = $outside ? 1 : -1;
 
@@ -959,14 +986,14 @@ function node_to_xy( Context $ct, Node $node )
   return scale( radius( $ct, $node ), [ $x, $y ] );
 }
 
-// sr: count unique, sorting (comparing) regularly (not by string conversion)
+// sr: sorting (comparing) regularly (not by string conversion)
 //
 function count_unique_sr( array $a )
 {
   return count( array_unique( $a, SORT_REGULAR ) );
 }
 
-function nodes_for_all_da( $mhol, $myl )
+function nodes_and_edges( $mhol, $myl )
 {
   $dwy_for_myl_mhol = dwy_for_myl_mhol( $myl, $mhol );
 
@@ -1018,48 +1045,48 @@ function nodes_for_ohol( array $dwy_by_yl )
 
 function radius( Context $ct, Node $node )
 {
-  $f = ($node->yli - $ct->neutral_yli) * falloff();
+  $f = ($node->yli - $ct->nyli->nyli) * falloff();
 
   return 1 + $f;
 }
 
 function cluster_nodes( array $nodes )
 {
-  $c = cluster( $nodes, 'partition_nodes' );
-
-  return array_map( 'reduce_nodes', $c );
+  return cluster( $nodes, 'partition_nodes' );
 }
 
 function cluster_edges( array $edges )
 {
-  $c = cluster( $edges, 'partition_edges', 'reduce_edges' );
+  return cluster( $edges, 'partition_edges' );
+}
 
-  return array_map( 'reduce_edges', $c );
+function reduce_nodes_or_edges( array $nodes_or_edges, $cf )
+{
+  $ds = array_map( $cf, $nodes_or_edges );
+
+  $all_equal = count_unique_sr( $ds ) === 1;
+
+  if ( $all_equal && count( $ds ) === 6 )
+    {
+      return array( $nodes_or_edges[2] ); // XXX HACK
+    }
+
+  if ( halves_equal( $ds ) )
+    {
+      return first_half( $nodes_or_edges );
+    }
+
+  return $nodes_or_edges;
 }
 
 function reduce_nodes( array $nodes )
 {
-  $ds = array_map( 'node_dwy', $nodes );
-
-  $all_equal = count_unique_sr( $ds ) === 1;
-
-  return $all_equal ? neutral( $nodes ) : $nodes; // XXX HACK
+  return reduce_nodes_or_edges( $nodes, 'node_dwy' );
 }
 
 function reduce_edges( array $edges )
 {
-  $ds = array_map( 'edge_dwys', $edges );
-
-  $all_equal = count_unique_sr( $ds ) === 1;
-
-  return $all_equal ? neutral( $edges ) : $edges; // XXX HACK
-}
-
-function neutral( array $x )
-{
-  $y = count( $x ) == 6 ? $x[2] : $x[0];
-
-  return array( $y );
+  return reduce_nodes_or_edges( $edges, 'edge_dwys' );
 }
 
 function edge_dwys( Edge $edge )
@@ -1120,8 +1147,6 @@ function min_of_edges( array $edges )
   return amina( $edges, 'edge_lt' );
 }
 
-// pf: partition function
-//
 function cluster( array $a, $partition_fn )
 {
   if ( empty( $a ) ) { return $a; }
@@ -1180,28 +1205,28 @@ function non_bogus_nodes( array $nodes )
 
 function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
 {
-  $node_clusters = cluster_nodes( $nodes );
+  $nocls = cluster_nodes( $nodes );
 
-  return array_map_pa( 'flipped_make_pair', $ohol, $node_clusters );
+  return array_map_pa( 'flipped_make_pair', $ohol, $nocls );
 }
 
-function the_drawing( Context $ct, $nodes_broadly )
+function the_drawing( Context $ct, $nodes_and_edges )
 {
-  $nodes = $nodes_broadly['nodes'];
+  $nodes = $nodes_and_edges['nodes'];
 
-  $dl_pairs = $nodes_broadly['dl_pairs'];
+  $dl_pairs = $nodes_and_edges['dl_pairs'];
 
-  $nbc = $nodes_broadly['cedges'];
+  $nbc = $nodes_and_edges['cedges'];
 
   $min_dwy = min_dwy_of_nodes( $nodes );
 
-  $pa_svg_for_node_cluster = pa( 'svg_for_node_cluster', $ct, $min_dwy );
+  $pa_svg_for_nocl = pa( 'svg_for_nocl', $ct, $min_dwy );
 
-  $svg_for_node_clusters = array_map( $pa_svg_for_node_cluster, $dl_pairs );
+  $svg_for_nocls = array_map( $pa_svg_for_nocl, $dl_pairs );
 
-  $pa_svg_for_edge_cluster = pa( 'svg_for_edge_cluster', $ct, $min_dwy );
+  $pa_svg_for_edcl = pa( 'svg_for_edcl', $ct, $min_dwy );
 
-  $svg_for_edge_clusters = array_map_wk( $pa_svg_for_edge_cluster, $nbc );
+  $svg_for_edcls = array_map_wk( $pa_svg_for_edcl, $nbc );
 
   $c = svg_circle( array(
                          'r' => 1,
@@ -1210,25 +1235,28 @@ function the_drawing( Context $ct, $nodes_broadly )
                          'fill' => 'none',
                          ) );
 
-  $ne = array_merge( $svg_for_edge_clusters,
-                     $svg_for_node_clusters );
+  $ne = array_merge( $svg_for_edcls,
+                     $svg_for_nocls );
 
   return xml_seq( append( $ne, $c ) );
 }
 
-function fadet() { return new Fade( true ); }
-function fadef() { return new Fade( false ); }
-
 function snlo_null()   { return new Snlo( NULL ); }
 function snlo_shm_ar() { return new Snlo( shm_ar() ); }
+
+function nyli_p2() { return new Nyli( 2 ); }
+function nyli_ze() { return new Nyli( 0 ); }
+
+function fadet() { return new Fade( true ); }
+function fadef() { return new Fade( false ); }
 
 function calendar_types()
 {
   $dpc = 365.2421897; // mean tropical year (as of Jan 1 2000)
 
-  $ct_maj = new Context( $dpc, snlo_null(),    2, fadef() );
-  $ct_rch = new Context( $dpc, snlo_shm_ar(),  2, fadef() );
-  $ct_sha = new Context( $dpc, snlo_null(),   -2, fadet() );
+  $ct_maj = new Context( $dpc, snlo_null(),   nyli_p2(), fadef() );
+  $ct_rch = new Context( $dpc, snlo_shm_ar(), nyli_p2(), fadef() );
+  $ct_sha = new Context( $dpc, snlo_null(),   nyli_ze(), fadet() );
 
   return array
     (
@@ -1246,9 +1274,9 @@ function main( $calendar_type )
 
   list( $mhol, $myl, $ct ) = $calendar_types[ $calendar_type ];
 
-  $nodes_broadly = nodes_for_all_da( $mhol, $myl );
+  $nodes_and_edges = nodes_and_edges( $mhol, $myl );
 
-  $drawing = the_drawing( $ct, $nodes_broadly );
+  $drawing = the_drawing( $ct, $nodes_and_edges );
 
   $width = 700;
 
