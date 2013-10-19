@@ -808,20 +808,20 @@ function svg_for_label( Context $ct, $where, $what )
 
   list ( $xpad, $ypad ) = scale( $font_size, label_pads() );
 
-  $text_attr = array( 'font-size' => $font_size,
-                      'fill' => 'black',
-                      'x' => $xpad,
-                      'y' => $height - $ypad );
+  $text_attr = [ 'font-size' => $font_size,
+                 'fill' => 'black',
+                 'x' => $xpad,
+                 'y' => $height - $ypad ];
 
   $text = svg_text( $text_attr, $string );
 
-  $rect = svg_rect( array(
-                          'width' => $width,
-                          'height' => $height,
-                          'stroke' => 'black',
-                          'stroke-width' => $font_size * label_rect_stroke_width(),
-                          'fill' => 'none',
-                          ) );
+  $rect = svg_rect( [
+                     'width' => $width,
+                     'height' => $height,
+                     'stroke' => 'black',
+                     'stroke-width' => $font_size * label_rect_stroke_width(),
+                     'fill' => 'none',
+                     ] );
 
   $g_attr = [ 'transform' => implode( ' ', $transforms ) ];
 
@@ -1009,7 +1009,7 @@ function reduce_nodes_or_edges( Nyli $nyli, $cf, array $nodes_or_edges )
 
   if ( $all_equal && count( $ds ) === 6 )
     {
-      return array( $nodes_or_edges[ $nyli->nyli ] ); // XXX HACK
+      return [ $nodes_or_edges[ $nyli->nyli ] ]; // XXX HACK
     }
 
   if ( halves_equal( $ds ) )
@@ -1032,7 +1032,7 @@ function reduce_edges( Nyli $nyli, array $edges )
 
 function edge_dwys( Edge $edge )
 {
-  return array( $edge->node1->dwy(), $edge->node2->dwy() );
+  return [ $edge->node1->dwy(), $edge->node2->dwy() ];
 }
 
 // w2m: within 2 of min
@@ -1102,8 +1102,8 @@ function cluster( array $a, $partition_fn )
 function partition( $f, array $a )
 {
   $n = pa( 'not', $f );
-  return array( array_values( array_filter( $a, $f ) ),
-                array_values( array_filter( $a, $n ) ) );
+  return [ array_values( array_filter( $a, $f ) ),
+           array_values( array_filter( $a, $n ) ) ];
 }
 
 function not( $f, $a ) { return ! $f( $a ); }
@@ -1169,12 +1169,12 @@ function the_drawing( Context $ct, $nodes_and_edges )
 
   $svg_for_edcls = array_map_wk( $pa_svg_for_edcl, $nbc );
 
-  $c = svg_circle( array(
-                         'r' => 1,
-                         'stroke' => 'black',
-                         'stroke-width' => circle_stroke_width(),
-                         'fill' => 'none',
-                         ) );
+  $c = svg_circle( [
+                    'r' => 1,
+                    'stroke' => 'black',
+                    'stroke-width' => circle_stroke_width(),
+                    'fill' => 'none',
+                    ] );
 
   $ne = array_merge( $svg_for_edcls,
                      $svg_for_nocls );
@@ -1242,12 +1242,12 @@ function html_for_dl_pair( $dl_pair )
 
   $name = $ohol->name_using_hebrew_chars;
 
-  return xml_wrap( 'p', [], var_export( array( $dwys, $name) , 1 ) );
+  return xml_wrap( 'p', [], var_export( [ $dwys, $name ] , 1 ) );
 }
 
 function action_html( $argv )
 {
-  $head = '';
+  $head = html_head_meta();
   $body = html_body();
 
   $html = html_document( $head, $body );
@@ -1271,13 +1271,13 @@ function action_svg( $argv )
 
   $height = 800;
 
-  $bounding_box = svg_rect( array(
-                                  'width' => $width,
-                                  'height' => $height,
-                                  'stroke' => 'black',
-                                  'stroke-width' => 3,
-                                  'fill' => 'none',
-                                  ) );
+  $bounding_box = svg_rect( [
+                             'width' => $width,
+                             'height' => $height,
+                             'stroke' => 'black',
+                             'stroke-width' => 3,
+                             'fill' => 'none',
+                             ] );
 
   $scale = 0.425 * min( $width, $height );
 

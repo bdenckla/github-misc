@@ -19,7 +19,7 @@ function xml_open_tag( $name, $attr )
 
 function xml_close_tag( $name )
 {
-  return xml_tag( $name, array(), '/', '' );
+  return xml_tag( $name, [], '/', '' );
 }
 
 // sc: self-close
@@ -37,9 +37,9 @@ function xml_tag( $name, array $attr, $bs, $es )
 
   // nap: name as pair
   //
-  $nap = array( $name, NULL ); // treat as a key with NULL value
+  $nap = [ $name, NULL ]; // treat as a key with NULL value
 
-  $aapwn = array_merge( array( $nap ), $aap );
+  $aapwn = array_merge( [ $nap ], $aap );
 
   return xml_gtag( $aapwn, $bs, $es );
 }
@@ -68,7 +68,7 @@ function xml_gtag( array $attr, $bs, $es )
 
 function xml_duple( $key, $value )
 {
-  return array( $key, $value );
+  return [ $key, $value ];
 }
 
 // keqv: key equals quoted value
@@ -120,17 +120,17 @@ class xml_raw
 
 function svg_document( $width, $height, $i )
 {
-  $xml_decl_attr = array( 'version' => '1.0', 'standalone' => 'no' );
+  $xml_decl_attr = [ 'version' => '1.0', 'standalone' => 'no' ];
 
   $xml_decl = xml_tag( 'xml', $xml_decl_attr, '?', '?' );
 
   $doctype_decl_attr = array
     (
-     array( 'DOCTYPE', NULL ),
-     array( 'svg', NULL ),
-     array( 'PUBLIC', NULL ),
-     array( NULL, '-//W3C//DTD SVG 1.1//EN' ),
-     array( NULL, 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd' ),
+     [ 'DOCTYPE', NULL ],
+     [ 'svg', NULL ],
+     [ 'PUBLIC', NULL ],
+     [ NULL, '-//W3C//DTD SVG 1.1//EN' ],
+     [ NULL, 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd' ],
      );
 
   $doctype_decl = xml_gtag( $doctype_decl_attr, '!', '' );
@@ -149,22 +149,38 @@ function svg_document( $width, $height, $i )
   return xml_seqa( $xml_decl, $doctype_decl, $svg );
 }
 
+function html_head_meta()
+{
+  $attr =
+    [
+     'http-equiv' => 'Content-type',
+     'content' => 'text/html;charset=UTF-8',
+     ];
+  return xml_sc_tag( 'meta', $attr );
+}
+
 function html_document( $head, $body )
 {
   $doctype_decl_attr = array
     (
-     array( 'DOCTYPE', NULL ),
-     array( 'html', NULL ),
+     [ 'DOCTYPE', NULL ],
+     [ 'html', NULL ],
+     [ 'PUBLIC', NULL ],
+     [ NULL, '-//W3C//DTD XHTML 1.0 Transitional//EN' ],
+     [ NULL, 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd' ],
      );
 
   $doctype_decl = xml_gtag( $doctype_decl_attr, '!', '' );
 
   $html_attr = array
     (
+     'xmlns' => 'http://www.w3.org/1999/xhtml',
+     'lang' => 'en',
+     'xml:lang' => 'en',
      );
 
-  $hb = xml_seqa( xml_wrap( 'head', array(), $head ),
-                  xml_wrap( 'body', array(), $body ) );
+  $hb = xml_seqa( xml_wrap( 'head', [], $head ),
+                  xml_wrap( 'body', [], $body ) );
 
   $html = xml_wrap( 'html', $html_attr, $hb );
 
@@ -206,7 +222,7 @@ function svg_transf1( $fn, array $args )
 //
 function svg_tt1( $x, $y )
 {
-  return svg_transf1( 'translate', array( $x, $y ) );
+  return svg_transf1( 'translate', [ $x, $y ] );
 }
 
 // ts: transform scale
@@ -217,14 +233,14 @@ function svg_ts1( $sx_or_sxy, $in_sy = NULL )
 
   $sy = is_null( $in_sy ) ? $sx_or_sxy : $in_sy;
 
-  return svg_transf1( 'scale', array( $sx, $sy ) );
+  return svg_transf1( 'scale', [ $sx, $sy ] );
 }
 
 // tr: transform rotate
 //
 function svg_tr1( $d )
 {
-  return svg_transf1( 'rotate', array( $d ) );
+  return svg_transf1( 'rotate', [ $d ] );
 }
 
 ?>
