@@ -955,7 +955,8 @@ function nodes_and_edges( $mhol, $myl )
 
   return array
     (
-     'nodes'    => flatten( $nb_nodes_bh ),
+     'pb_nodes_bh'    => $pb_nodes_bh,
+     'nb_nodes_bh'    => $nb_nodes_bh,
      'dl_pairs' => flatten( $dl_pairs_bh ),
      'edges'    => $edges,
      'cedges'   => $cedges,
@@ -1153,13 +1154,13 @@ function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
 
 function the_drawing( Context $ct, $nodes_and_edges )
 {
-  $nodes = $nodes_and_edges['nodes'];
+  $nb_nodes_bh = $nodes_and_edges['nb_nodes_bh'];
 
   $dl_pairs = $nodes_and_edges['dl_pairs'];
 
   $nbc = $nodes_and_edges['cedges'];
 
-  $min_dwy = min_dwy_of_nodes( $nodes );
+  $min_dwy = min_dwy_of_nodes( flatten( $nb_nodes_bh ) );
 
   $pa_svg_for_nocl = pa( 'svg_for_nocl', $ct, $min_dwy );
 
@@ -1219,35 +1220,43 @@ function main( $argv )
   return $f( $argv );
 }
 
-function html_body()
+function html_body_for_calty( $calty )
 {
-  $calendar_type = 'major';
-
-  $calendar_spec = lubt( 'calendar type', $calendar_type, calendar_specs() );
+  $calendar_spec = lubt( 'calendar type', $calty, calendar_specs() );
 
   list( $mhol, $myl, $ct ) = $calendar_spec;
 
   $nodes_and_edges = nodes_and_edges( $mhol, $myl );
 
-  $dl_pairs = $nodes_and_edges['dl_pairs'];
+  $pb_nodes_bh = $nodes_and_edges['pb_nodes_bh'];
 
-  return xml_seq( array_map( 'html_for_dl_pair', $dl_pairs ) );
+  $mhtml = array_map( 'html_for_pb_nodes_for_ohol', $pb_nodes_bh, $mhol );
+
+  return xml_seq( $mhtml );
 }
 
-function html_for_dl_pair( $dl_pair )
+function html_for_pb_nodes_for_ohol( $pb_nodes_for_ohol, $ohol )
 {
-  list ( $nocl, $ohol ) = $dl_pair;
-
-  $dwys = array_map( 'node_dwy', $nocl );
+  $dwys = array_map( 'node_dwy', $pb_nodes_for_ohol );
 
   $name = $ohol->name_using_hebrew_chars;
 
-  return xml_wrap( 'p', [], var_export( [ $dwys, $name ] , 1 ) );
+  return xml_wrap( 'p', [], var_export( [ $dwys, $name ], 1 ) );
+}
+
+function html_body()
+{
+  $mcalty = array_keys( calendar_specs() );
+
+  $mhtmls = array_map( 'html_body_for_calty', $mcalty );
+
+  return xml_seq( $mhtmls );
 }
 
 function action_html( $argv )
 {
   $head = html_head_meta();
+
   $body = html_body();
 
   $html = html_document( $head, $body );
@@ -1255,11 +1264,13 @@ function action_html( $argv )
   return $html->s;
 }
 
+// calty: calendar type, e.g. 'major'
+
 function action_svg( $argv )
 {
-  $calendar_type = $argv[2];
+  $calty = $argv[2];
 
-  $calendar_spec = lubt( 'calendar type', $calendar_type, calendar_specs() );
+  $calendar_spec = lubt( 'calendar type', $calty, calendar_specs() );
 
   list( $mhol, $myl, $ct ) = $calendar_spec;
 
