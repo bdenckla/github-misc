@@ -161,24 +161,35 @@ function html_head_meta()
   return xml_sc_tag( 'meta', $attr );
 }
 
+function html_head_contents( $title )
+{
+  $meta = html_head_meta();
+
+  $title = xml_wrap( 'title', [], $title );
+
+  $integer = '.integer { text-align: right; }';
+  $hebrew = '.hebrew { text-align: right; }';
+
+  $css = $integer . "\n" . $hebrew;
+
+  $style = xml_wrap( 'style', [ 'type' => 'text/css' ], $css );
+
+  return xml_seqa( $meta, $title, $style );
+}
+
 function html_document( $head, $body )
 {
   $doctype_decl_attr = array
     (
      [ 'DOCTYPE', NULL ],
      [ 'html', NULL ],
-     [ 'PUBLIC', NULL ],
-     [ NULL, '-//W3C//DTD XHTML 1.0 Transitional//EN' ],
-     [ NULL, 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd' ],
      );
 
   $doctype_decl = xml_gtag( $doctype_decl_attr, '!', '' );
 
   $html_attr = array
     (
-     'xmlns' => 'http://www.w3.org/1999/xhtml',
      'lang' => 'en',
-     'xml:lang' => 'en',
      );
 
   $hb = xml_seqa( xml_wrap( 'head', [], $head ),
@@ -202,6 +213,23 @@ function html_tr( $attr, $i )
 function html_table( $attr, $i )
 {
   return xml_wrap( 'table', $attr, $i );
+}
+
+function html_div( $attr, $i )
+{
+  return xml_wrap( 'div', $attr, $i );
+}
+
+function html_object( $attr )
+{
+  // self-closing only allowed in XHTML
+  //
+  return xml_wrap( 'object', $attr, '' );
+}
+
+function html_div_object( $attr )
+{
+  return html_div( [], html_object( $attr ) );
 }
 
 // g: group

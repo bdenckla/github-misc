@@ -1232,7 +1232,16 @@ function html_body_for_calty( $calty )
 
   $trs = array_map( 'tr_for_pb_nodes_for_hol', $pb_nodes_bh, $hols );
 
-  return html_table( [], xml_seq( $trs ) );
+  $table = html_table( [], xml_seq( $trs ) );
+
+  $filename = 'holidays.' . $calty . '.novc.svg';
+
+  $svg_object_attr = [ 'data' => $filename,
+                       'type' => 'image/svg+xml' ];
+
+  $svg_object = html_div_object( $svg_object_attr );
+
+  return xml_seqa( $table, $svg_object );
 }
 
 function tr_for_pb_nodes_for_hol( $pb_nodes_for_hol, $hol )
@@ -1243,7 +1252,7 @@ function tr_for_pb_nodes_for_hol( $pb_nodes_for_hol, $hol )
 
   $dwy_tds = array_map( 'td_for_dwy', $dwys );
 
-  $name_td = html_td( attr_align_right(), $name );
+  $name_td = html_td( class_hebrew(), $name );
 
   $dn = append( $dwy_tds, $name_td );
 
@@ -1254,10 +1263,11 @@ function td_for_dwy( $dwy )
 {
   $contents = dwy_not_bogus( $dwy ) ? $dwy : '*';
 
-  return html_td( attr_align_right(), $contents );
+  return html_td( class_integer(), $contents );
 }
 
-function attr_align_right() { return [ 'align' => 'right' ]; }
+function class_integer() { return [ 'class' => 'integer' ]; }
+function class_hebrew() { return [ 'class' => 'hebrew' ]; }
 
 function html_body()
 {
@@ -1270,7 +1280,7 @@ function html_body()
 
 function action_html( $argv )
 {
-  $head = html_head_meta();
+  $head = html_head_contents( 'Viewing the Hebrew Calendar' );
 
   $body = html_body();
 
