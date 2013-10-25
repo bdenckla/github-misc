@@ -215,6 +215,11 @@ function html_table( $attr, $i )
   return xml_wrap( 'table', $attr, $i );
 }
 
+function html_p_na( $i )
+{
+  return xml_wrap( 'p', [], $i );
+}
+
 function html_div( $attr, $i )
 {
   return xml_wrap( 'div', $attr, $i );

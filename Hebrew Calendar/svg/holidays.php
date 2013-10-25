@@ -1220,7 +1220,7 @@ function main( $argv )
   return $f( $argv );
 }
 
-function html_body_for_calty( $calty )
+function table_and_graph_for_calty( $calty )
 {
   $calendar_spec = lubt( 'calendar type', $calty, calendar_specs() );
 
@@ -1232,7 +1232,7 @@ function html_body_for_calty( $calty )
 
   $trs = array_map( 'tr_for_pb_nodes_for_hol', $pb_nodes_bh, $hols );
 
-  $table = html_table( [], xml_seq( $trs ) );
+  $table = html_table( [ 'border' => '' ], xml_seq( $trs ) );
 
   $filename = 'holidays.' . $calty . '.novc.svg';
 
@@ -1271,11 +1271,42 @@ function class_hebrew() { return [ 'class' => 'hebrew' ]; }
 
 function html_body()
 {
-  $caltys = array_keys( calendar_specs() );
+  $paragraphs =
+    [
+     'The following table shows where several major holidays fall, for each of the six year lengths.',
 
-  $htmls = array_map( 'html_body_for_calty', $caltys );
+     'It shows where they fall as a day count where one is the first day of Latest-Adar.',
 
-  return xml_seq( $htmls );
+     'So, for example, Purim is always on the 14th of Latest-Adar, so it appears as a row of six values of 14.',
+
+     'Pesach is always on the 15th of Nisan, and Latest-Adar always has 29 days, so it appears as a row of six values of 44 (15+29).',
+
+     'It is ritually significant that Shavuot is the fiftieth day (Pentecost) after Pesach.',
+
+     'So, since Pesach is 44, it will come as no surprise that Shavuot appears as a row of six values of 94 (44+50).',
+
+     'Where things get interesting is Chanukah.',
+
+     'Where it falls depends on whether Cheshvan is long or not.',
+
+     'In the two year lengths in which Cheshvan is long, Chanukah is day 291.',
+
+     'Otherwise, i.e. in the other four year lengths, it is day 290.',
+
+     'Things get more interesting for Tu B\'Shevat, since where it falls depends on whether Cheshvan is long and whether Kislev is short.',
+
+     'In the two year lengths when Kislev is short, it is day 338.',
+
+     'In the two year lengths when Cheshvan is long, it is day 340.',
+
+     'Otherwise, i.e. in the other two year lengths, it is day 339.',
+     ];
+
+  $intro = array_map( 'html_p_na', $paragraphs );
+
+  $table_and_graph_for_major = table_and_graph_for_calty( 'major' );
+
+  return xml_seq( append( $intro, $table_and_graph_for_major ) );
 }
 
 function action_html( $argv )
