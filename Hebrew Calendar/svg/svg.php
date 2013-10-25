@@ -109,7 +109,9 @@ function xml_me( $i )
 
   if ( $is_raw ) { return $i->s; }
 
-  return htmlspecialchars( $i );
+  $s = is_string( $i ) ? $i : var_export( $i, 1 );
+
+  return htmlspecialchars( $s );
 }
 
 class xml_raw
@@ -185,6 +187,21 @@ function html_document( $head, $body )
   $html = xml_wrap( 'html', $html_attr, $hb );
 
   return xml_seqa( $doctype_decl, $html );
+}
+
+function html_td( $attr, $i )
+{
+  return xml_wrap( 'td', $attr, $i );
+}
+
+function html_tr( $attr, $i )
+{
+  return xml_wrap( 'tr', $attr, $i );
+}
+
+function html_table( $attr, $i )
+{
+  return xml_wrap( 'table', $attr, $i );
 }
 
 // g: group

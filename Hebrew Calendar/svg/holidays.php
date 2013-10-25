@@ -379,9 +379,9 @@ function array_map_pa( $f, $a, array $b )
   return array_map( pa( $f, $a ), $b );
 }
 
-function days_per_month( YearLen $oyl, $month_number )
+function days_per_month( YearLen $yl, $month_number )
 {
-  list( $day_adj, $month_adj ) = [ $oyl->day_adj, $oyl->month_adj ];
+  list( $day_adj, $month_adj ) = [ $yl->day_adj, $yl->month_adj ];
 
   tiu( 'month_number', $month_number, array_keys( month_names() ) );
 
@@ -414,7 +414,7 @@ function previous_month( $month_number )
 
 // dwy of rc: day within year of Rosh Chodesh (first of the month)
 //
-function dwy_of_rc( YearLen $oyl, $month_number )
+function dwy_of_rc( YearLen $yl, $month_number )
 {
   if ( $month_number === mn_start() )
     {
@@ -436,7 +436,7 @@ function dwy_of_rc( YearLen $oyl, $month_number )
     $mns = range( mn_start(), $p );
   }
 
-  return sum_of_days_per_month( $oyl, $mns );
+  return sum_of_days_per_month( $yl, $mns );
 }
 
 function all_mns()
@@ -444,14 +444,14 @@ function all_mns()
   return range( mn_min(), mn_max() );
 }
 
-function days_per_year( YearLen $oyl )
+function days_per_year( YearLen $yl )
 {
-  return sum_of_days_per_month( $oyl, all_mns() );
+  return sum_of_days_per_month( $yl, all_mns() );
 }
 
-function sum_of_days_per_month( YearLen $oyl, array $mns )
+function sum_of_days_per_month( YearLen $yl, array $mns )
 {
-  return array_sum( array_map_pa( 'days_per_month', $oyl, $mns ) );
+  return array_sum( array_map_pa( 'days_per_month', $yl, $mns ) );
 }
 
 function min_shabbat() { return  1; }
@@ -486,30 +486,30 @@ function shabbat( $n )
   return new Holiday( $month_number, $day_offset, $lc_name, $hc_name );
 }
 
-function dwy_for_ohol_oyl( Holiday $ohol, YearLen $oyl )
+function dwy_for_hol_yl( Holiday $hol, YearLen $yl )
 {
-  if ( days_per_month( $oyl, $ohol->month_number ) === 0 )
+  if ( days_per_month( $yl, $hol->month_number ) === 0 )
     {
       return new Bogus;
     }
 
-  $dwyom = dwy_of_rc( $oyl, $ohol->month_number );
+  $dwyom = dwy_of_rc( $yl, $hol->month_number );
 
   // mdpy: maybe_days_per_year
   //
-  $mdpy = $ohol->add_year ? days_per_year( $oyl ) : 0;
+  $mdpy = $hol->add_year ? days_per_year( $yl ) : 0;
 
-  return $mdpy + $dwyom + $ohol->day_offset;
+  return $mdpy + $dwyom + $hol->day_offset;
 }
 
-function dwy_for_myl_ohol( array $myl, Holiday $ohol )
+function dwy_for_yls_hol( array $yls, Holiday $hol )
 {
-  return array_map_pa( 'dwy_for_ohol_oyl', $ohol, $myl );
+  return array_map_pa( 'dwy_for_hol_yl', $hol, $yls );
 }
 
-function dwy_for_myl_mhol( array $myl, array $mhol )
+function dwy_for_yls_hols( array $yls, array $hols )
 {
-  return array_map_pa( 'dwy_for_myl_ohol', $myl, $mhol );
+  return array_map_pa( 'dwy_for_yls_hol', $yls, $hols );
 }
 
 function make_node( $dwy_by_yl, $yli )
@@ -718,7 +718,7 @@ function put_node_label_outside( Context $ct,
 
 function svg_for_nocl( Context $ct, $min_dwy, $dl_pair )
 {
-  list ( $nocl, $ohol ) = $dl_pair;
+  list ( $nocl, $hol ) = $dl_pair;
 
   $renocl = reduce_nodes( $ct->nyli, $nocl );
 
@@ -726,7 +726,7 @@ function svg_for_nocl( Context $ct, $min_dwy, $dl_pair )
 
   $svg_for_nodes = array_map( $pa_svg_for_node, $renocl );
 
-  $string = $ohol->name_using_hebrew_chars;
+  $string = $hol->name_using_hebrew_chars;
 
   $outside = put_node_label_outside( $ct, $min_dwy, $renocl, $string );
 
@@ -934,22 +934,22 @@ function count_unique_sr( array $a )
   return count( array_unique( $a, SORT_REGULAR ) );
 }
 
-function nodes_and_edges( $mhol, $myl )
+function nodes_and_edges( $hols, $yls )
 {
-  $dwy_for_myl_mhol = dwy_for_myl_mhol( $myl, $mhol );
+  $dwy_for_yls_hols = dwy_for_yls_hols( $yls, $hols );
 
   // bh: by holiday, i.e. indexed by integer holiday index
   // pb: possibly-bogus
   //
-  $pb_nodes_bh = array_map( 'nodes_for_ohol', $dwy_for_myl_mhol );
+  $pb_nodes_bh = array_map( 'nodes_for_hol', $dwy_for_yls_hols );
 
   $nb_nodes_bh = array_map( 'non_bogus_nodes', $pb_nodes_bh );
 
-  $dl_pairs_bh = array_map( 'dl_pairs_for_ohol', $nb_nodes_bh, $mhol );
+  $dl_pairs_bh = array_map( 'dl_pairs_for_hol', $nb_nodes_bh, $hols );
 
   $pb_nodes_by_yli = transpose( $pb_nodes_bh );
 
-  $edges = flatten( array_map( 'edges_for_oyl', $pb_nodes_by_yli ) );
+  $edges = flatten( array_map( 'edges_for_yl', $pb_nodes_by_yli ) );
 
   $cedges = cluster_edges( $edges );
 
@@ -973,14 +973,14 @@ function transpose( array $a )
   return call_user_func_array( 'array_map', $a );
 }
 
-function edges_for_oyl( array $nodes_for_oyl )
+function edges_for_yl( array $nodes_for_yl )
 {
-  $nb_nodes = non_bogus_nodes( $nodes_for_oyl );
+  $nb_nodes = non_bogus_nodes( $nodes_for_yl );
 
   return array_map_wn( 'make_edge', $nb_nodes );
 }
 
-function nodes_for_ohol( array $dwy_by_yl )
+function nodes_for_hol( array $dwy_by_yl )
 {
   return array_map_pa( 'make_node', $dwy_by_yl, array_keys( $dwy_by_yl ) );
 }
@@ -1128,14 +1128,14 @@ function min_of_2_using_lt( $lt, $a, $b )
   return $lt( $a, $b ) ? $a : $b;
 }
 
-function not_bogus( $x )
+function dwy_not_bogus( $x )
 {
   return ! is_object( $x ) || get_class( $x ) !== 'Bogus';
 }
 
 function node_not_bogus( Node $node )
 {
-  return not_bogus( $node->dwy() );
+  return dwy_not_bogus( $node->dwy() );
 }
 
 // nb: non-bogus
@@ -1145,11 +1145,11 @@ function non_bogus_nodes( array $nodes )
   return array_filter( $nodes, 'node_not_bogus' );
 }
 
-function dl_pairs_for_ohol( array $nodes, Holiday $ohol )
+function dl_pairs_for_hol( array $nodes, Holiday $hol )
 {
   $nocls = cluster_nodes( $nodes );
 
-  return array_map_pa( 'flipped_make_pair', $ohol, $nocls );
+  return array_map_pa( 'flipped_make_pair', $hol, $nocls );
 }
 
 function the_drawing( Context $ct, $nodes_and_edges )
@@ -1224,33 +1224,48 @@ function html_body_for_calty( $calty )
 {
   $calendar_spec = lubt( 'calendar type', $calty, calendar_specs() );
 
-  list( $mhol, $myl, $ct ) = $calendar_spec;
+  list( $hols, $yls, $ct ) = $calendar_spec;
 
-  $nodes_and_edges = nodes_and_edges( $mhol, $myl );
+  $nodes_and_edges = nodes_and_edges( $hols, $yls );
 
   $pb_nodes_bh = $nodes_and_edges['pb_nodes_bh'];
 
-  $mhtml = array_map( 'html_for_pb_nodes_for_ohol', $pb_nodes_bh, $mhol );
+  $trs = array_map( 'tr_for_pb_nodes_for_hol', $pb_nodes_bh, $hols );
 
-  return xml_seq( $mhtml );
+  return html_table( [], xml_seq( $trs ) );
 }
 
-function html_for_pb_nodes_for_ohol( $pb_nodes_for_ohol, $ohol )
+function tr_for_pb_nodes_for_hol( $pb_nodes_for_hol, $hol )
 {
-  $dwys = array_map( 'node_dwy', $pb_nodes_for_ohol );
+  $dwys = array_map( 'node_dwy', $pb_nodes_for_hol );
 
-  $name = $ohol->name_using_hebrew_chars;
+  $name = $hol->name_using_hebrew_chars;
 
-  return xml_wrap( 'p', [], var_export( [ $dwys, $name ], 1 ) );
+  $dwy_tds = array_map( 'td_for_dwy', $dwys );
+
+  $name_td = html_td( attr_align_right(), $name );
+
+  $dn = append( $dwy_tds, $name_td );
+
+  return html_tr( [], xml_seq( $dn ) );
 }
+
+function td_for_dwy( $dwy )
+{
+  $contents = dwy_not_bogus( $dwy ) ? $dwy : '*';
+
+  return html_td( attr_align_right(), $contents );
+}
+
+function attr_align_right() { return [ 'align' => 'right' ]; }
 
 function html_body()
 {
-  $mcalty = array_keys( calendar_specs() );
+  $caltys = array_keys( calendar_specs() );
 
-  $mhtmls = array_map( 'html_body_for_calty', $mcalty );
+  $htmls = array_map( 'html_body_for_calty', $caltys );
 
-  return xml_seq( $mhtmls );
+  return xml_seq( $htmls );
 }
 
 function action_html( $argv )
@@ -1272,9 +1287,9 @@ function action_svg( $argv )
 
   $calendar_spec = lubt( 'calendar type', $calty, calendar_specs() );
 
-  list( $mhol, $myl, $ct ) = $calendar_spec;
+  list( $hols, $yls, $ct ) = $calendar_spec;
 
-  $nodes_and_edges = nodes_and_edges( $mhol, $myl );
+  $nodes_and_edges = nodes_and_edges( $hols, $yls );
 
   $drawing = the_drawing( $ct, $nodes_and_edges );
 
