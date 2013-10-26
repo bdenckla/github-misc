@@ -1273,17 +1273,35 @@ function html_body()
 {
   $paragraphs =
     [
-     'The following table shows where several major holidays fall, for each of the six year lengths.',
+     'The following table shows where several major Jewish holidays fall,'.
+     ' for each of the six possible year lengths.',
 
-     'It shows where they fall as a day count where one is the first day of Latest-Adar.',
+     '(The six possible year lengths in the Hebrew calendar are'.
+     ' 353, 354, 355, 383, 384, and 385 days.)',
 
-     'So, for example, Purim is always on the 14th of Latest-Adar, so it appears as a row of six values of 14.',
+     'The table shows where its holidays fall as a day count'.
+     ' starting from the first day of Latest-Adar.',
 
-     'Pesach is always on the 15th of Nisan, and Latest-Adar always has 29 days, so it appears as a row of six values of 44 (15+29).',
+     'I.e. a day count of 1 (one) indicates the first day of Latest-Adar.',
 
-     'It is ritually significant that Shavuot is the fiftieth day (Pentecost) after Pesach.',
+     '(We use "Latest-Adar" to refer to either Adar'.
+     ' or its equivalent in leap years, Adar Sheni.'.
+     ' (Adar Sheni is sometimes written as "Adar II,"'.
+     ' but we prefer to avoid the abomination of Roman numerals'.
+     ' whenever possible.))',
 
-     'So, since Pesach is 44, it will come as no surprise that Shavuot appears as a row of six values of 94 (44+50).',
+     'So, for example, Purim is always on the 14th of Latest-Adar,'.
+     ' so it appears as a row of six values of 14.',
+
+     'Pesach is always on the 15th of Nisan,'.
+     ' and Latest-Adar always has 29 days,'.
+     ' so it appears as a row of six values of 44 (15+29).',
+
+     'It is ritually significant that Shavuot'.
+     ' is the fiftieth day (Pentecost) after Pesach.',
+
+     'So, since Pesach is 44, it will come as no surprise'.
+     ' that Shavuot appears as a row of six values of 94 (44+50).',
 
      'Where things get interesting is Chanukah.',
 
@@ -1293,7 +1311,9 @@ function html_body()
 
      'Otherwise, i.e. in the other four year lengths, it is day 290.',
 
-     'Things get more interesting for Tu B\'Shevat, since where it falls depends on whether Cheshvan is long and whether Kislev is short.',
+     'Things get more interesting for Tu B\'Shevat.',
+
+     'Where it falls depends on whether Cheshvan is long and whether Kislev is short.',
 
      'In the two year lengths when Kislev is short, it is day 338.',
 
