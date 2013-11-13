@@ -1273,27 +1273,139 @@ function html_body()
 {
   $paragraphs =
     [
-     'The following table shows where several major holidays fall, for each of the six year lengths.',
+     'Have you ever noticed the long holiday-less stretch of days between '
+     .' Simchat Torah and Chanukah?',
 
-     'It shows where they fall as a day count where one is the first day of Latest-Adar.',
+     [
+      'It includes the whole month of Cheshvan.',
 
-     'So, for example, Purim is always on the 14th of Latest-Adar, so it appears as a row of six values of 14.',
+      'This holiday-less stretch follows a rather holiday-full stretch of days in '
+      .'Tishrei.',
 
-     'Pesach is always on the 15th of Nisan, and Latest-Adar always has 29 days, so it appears as a row of six values of 44 (15+29).',
+      'As such, this empty stretch can come as a bit of a relief, as well '
+      .'as a bit of a dissapointment.',
+      [
 
-     'It is ritually significant that Shavuot is the fiftieth day (Pentecost) after Pesach.',
+     'Thus it raises questions of a subjective nature. '
+     .'How do we feel about this empty stretch? '
+     .'How should we feel about it?',
 
-     'So, since Pesach is 44, it will come as no surprise that Shavuot appears as a row of six values of 94 (44+50).',
+     'Should we feel guilty for feeling relief? '
+     .'Aren\'t holidays a good thing?',
+
+     'Should we feel guilty for feeling disappointment? '
+     .'What makes us think we deserve more holidays?',
+
+     'Let\'s leave these subjective, value-laden questions aside.',
+
+     'Instead, let\'s explore an objective, seemingly-simple question:',
+
+       ],
+
+      'how long is this stretch, anyway?',
+
+      [
+      'Actually, why ask a simple question when it suggests a more complex one?',
+
+      'So, let\'s first "soup up" the question a little.',
+
+     'Instead of asking, "How long is it between Simchat Torah '
+     .'and Chanukah?" '
+      .'let\'s ask,',
+       ],
+      ],
+
+     '"How long is it between various Jewish holidays?" To answer that,',
+     [
+
+     'first we need to decide what these "various" holidays should be.',
+
+     [
+
+     'The choice is somewhat arbitrary.',
+
+     'To keep the number and density of holidays down, we\'ll only '
+     .'consider the first day of Pesach, Sukkot, and Chanukah.',
+
+     'For the same reasons, we will also let Sukkot "stand for" Shemini '
+     .'Atzeret and Simchat Torah.',
+
+     'So, we\'re not even going to answer the original question we posed, '
+     .' regarding how many days there are between Simchat Torah and '
+     .' Chanukah!',
+
+     'What a tease we are!',
+
+     'That question gets too complicated, anyway, since Simchat Torah may '
+     .'be celebrated on Tishrei 22 or 23. It depends on whether you are in '
+     .'Israel or not, and even outside of Israel, practices differ.',
+
+     '(Though above we claimed we weren\'t content to ask a simple question '
+     .' when it suggests a more complex one, our love of complexity only '
+     .' extends so far.)',
+
+     'Perhaps surprisingly, we\'ll further overload Sukkot by making it '
+     .'"stand for" Yom Kippur and Rosh Hashanah.',
+
+     'Again, the goal is to have only a few, widely-spaced holidays.',
+
+     'We feel it best suits our purposes to let a single holiday like '
+     .'Sukkot "stand for" a cluster of holidays with fixed relationships '
+     .'to it (e.g. Yom Kippur is always 5 days before Sukkot).',
+
+     'To be fair, we haven\'t really stated our purposes. '
+     .'So what best suits our purposes is not yet clear.',
+      ],
+
+     'Our purposes are',
+     [
+
+      'to get a general sense of the rhythm of the '
+     .'Jewish Year and',
+
+     'to see how this rhythm is modulated by the six '
+     .'different lengths of the Jewish Year.',
+
+      ],
+
+     'So, you see, it really isn\'t about finding how long it is from '
+     .'Simchat Torah to Chanukah.',
+
+     'Or, that\'s not all it is about.',
+      ],
+
+     'The following table shows where several holidays fall, '
+     .'for each of the six year lengths.',
+
+     'It shows where they fall as a day number '
+     .'starting from the first day of Latest-Adar.',
+
+     'That first day of Latest-Adar is numbered 1.',
+
+     'So, for example, Purim is always on the 14th of Latest-Adar, '
+     .'so it appears as a row of six values of 14.',
+
+     'Pesach is always on the 15th of Nisan, '
+     .'and Latest-Adar always has 29 days, '
+     .'so it appears as a row of six values of 44 (15+29).',
+
+     'It is ritually significant that Shavuot '.
+     'is the fiftieth day (Pentecost) after Pesach.',
+
+     'So, since Pesach is 44, it will come as no surprise '
+     .'that Shavuot appears as a row of six values of 94 (44+50).',
 
      'Where things get interesting is Chanukah.',
 
      'Where it falls depends on whether Cheshvan is long or not.',
 
-     'In the two year lengths in which Cheshvan is long, Chanukah is day 291.',
+     'In the two year lengths in which Cheshvan is long, '
+     .'Chanukah is day 291.',
 
      'Otherwise, i.e. in the other four year lengths, it is day 290.',
 
-     'Things get more interesting for Tu B\'Shevat, since where it falls depends on whether Cheshvan is long and whether Kislev is short.',
+     'Things get more interesting for Tu B\'Shevat, since where it falls '
+     .'depends on whether Cheshvan is long and whether Kislev is short.',
 
      'In the two year lengths when Kislev is short, it is day 338.',
 
@@ -1302,11 +1414,23 @@ function html_body()
      'Otherwise, i.e. in the other two year lengths, it is day 339.',
      ];
 
-  $intro = array_map( 'html_p_na', $paragraphs );
+  $intro = numbered_list( $paragraphs );
 
   $table_and_graph_for_major = table_and_graph_for_calty( 'major' );
 
-  return xml_seq( append( $intro, $table_and_graph_for_major ) );
+  return xml_seqa( $intro, $table_and_graph_for_major );
+}
+
+function numbered_list( $p )
+{
+  if ( is_array( $p ) )
+    {
+      $i = xml_seq( array_map( 'numbered_list', $p ) );
+
+      return xml_wrap( 'ol', [], $i );
+    }
+
+    return xml_wrap( 'li', [], $p );
 }
 
 function action_html( $argv )
