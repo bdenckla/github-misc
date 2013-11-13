@@ -1377,8 +1377,17 @@ function html_body()
      'The following table shows where several holidays fall, '
      .'for each of the six year lengths.',
 
+     '(The six possible year lengths in the Hebrew calendar are'
+     .' 353, 354, 355, 383, 384, and 385 days.)',
+
      'It shows where they fall as a day number '
      .'starting from the first day of Latest-Adar.',
+
+     '(We use "Latest-Adar" to refer to either Adar'
+     .' or its equivalent in leap years, Adar Sheni.'
+     .' (Adar Sheni is sometimes written as "Adar II,"'
+     .' but we prefer to avoid the abomination of Roman numerals'
+     .' whenever possible.))',
 
      'That first day of Latest-Adar is numbered 1.',
 
@@ -1389,8 +1398,8 @@ function html_body()
      .'and Latest-Adar always has 29 days, '
      .'so it appears as a row of six values of 44 (15+29).',
 
-     'It is ritually significant that Shavuot '.
-     'is the fiftieth day (Pentecost) after Pesach.',
+     'It is ritually significant that Shavuot '
+     .'is the fiftieth day (Pentecost) after Pesach.',
 
      'So, since Pesach is 44, it will come as no surprise '
      .'that Shavuot appears as a row of six values of 94 (44+50).',
