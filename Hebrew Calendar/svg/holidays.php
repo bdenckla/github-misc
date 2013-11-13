@@ -1372,6 +1372,20 @@ function html_body()
      .'Simchat Torah to Chanukah.',
 
      'Or, that\'s not all it is about.',
+
+     'Okay, so where were we with determining the set of holidays of interest? So far we had',
+
+     [
+      '[the first day of] Pesach,',
+      '[the first day of] Sukkot ("standing for"',
+      [
+       'Shemini Atzeret',
+       'Simchat Torah',
+       'Rosh Hashanah, and',
+       'Yom Kippur), and'
+       ],
+      '[the first day of] Chanukah.',
+      ],
       ],
 
      'The following table shows where several holidays fall, '
