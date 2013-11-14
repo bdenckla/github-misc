@@ -1,13 +1,18 @@
-~/Downloads/TMC-sample.html: ~/Downloads/TMC-sample.TXT *.php
+~/Downloads/TMC-current-output.html: ~/Downloads/TMC-sample.html Makefile
+	cp $< $@
+
+~/Downloads/TMC-sample.smaller.html: ~/Downloads/TMC-sample.smaller.TXT Makefile *.php
 	./parse-tbt.php $< > $@.tmp
 	mv $@.tmp $@
 	head -100 $@
 
-~/Downloads/TMC-sample.1000.html: ~/Downloads/TMC-sample.1000.TXT *.php
+~/Downloads/TMC-sample.html: ~/Downloads/TMC-sample.TXT Makefile *.php
 	./parse-tbt.php $< > $@.tmp
 	mv $@.tmp $@
 	head -100 $@
 
-~/Downloads/TMC-sample.1000.TXT: ~/Downloads/TMC-sample.TXT
-	head -1000 $< > $@.tmp
+~/Downloads/TMC-sample.smaller.TXT: ~/Downloads/TMC-sample.TXT Makefile
+	head -1237 $< > $@.tmp
 	mv $@.tmp $@
+
+# 1237
