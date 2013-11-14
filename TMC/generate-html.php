@@ -111,7 +111,7 @@ function xml_me( $i )
 
   $s = is_string( $i ) ? $i : var_export( $i, 1 );
 
-  return htmlspecialchars( $s );
+  return htmlspecialchars( $s, ENT_SUBSTITUTE );
 }
 
 class xml_raw

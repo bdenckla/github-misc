@@ -61,7 +61,7 @@ function parse_line( $line_number, $line_contents )
       return dollar_pline( $matches['after_dollar'], $line_number );
     }
 
-  $cpat = '/(?<command>[a-z]+)(?<after_command>.+)/';
+  $cpat = '/(?<command>[a-z]+)(?<after_command>.*)/';
 
   $r = preg_match( $cpat, $rline, $matches);
 
@@ -72,7 +72,8 @@ function parse_line( $line_number, $line_contents )
 
   if ( $r )
     {
-      $m = [ $matches['command'], $matches['after_command'] ];
+      $m = [ 'verb' => $matches['command'],
+             'arguments' => $matches['after_command'] ];
 
       return command_pline( $m, $line_number );
     }
@@ -185,6 +186,7 @@ function io_split_on_sem( array $a )
 function html_p_na_ve( $k, $v )
 {
   $s = var_export( [ $k, $v ], 1 );
+
   return html_p_na( $s );
 }
 
@@ -205,7 +207,16 @@ function dollar_pline_value( $pline )
 {
   tneve_if_ptiu( $pline, '$' );
 
-  return $pline[ 'body' ];
+  $body = $pline[ 'body' ];
+
+  $eol = substr( $body, -2 );
+
+  if ( $eol === ' \\' )
+    {
+      return substr( $body, 0, -1 );
+    }
+
+  return $body;
 }
 
 function command_pline_value( $pline )
@@ -217,16 +228,26 @@ function command_pline_value( $pline )
 
 function coalesce_block( array $block )
 {
-  if ( $block === [] )
-    {
-      return [];
-    }
-
   $vcommand = command_pline_value( $block[ 0 ] );
 
   if ( count( $block ) === 1 )
     {
-      return [ 'command' => $vcommand ];
+      return [ 'command' => $vcommand,
+               'dollars-absent-reason' => 'absent in original' ];
+    }
+
+  $v = $vcommand['verb'];
+
+  // svs: strip verbs (verbs whose dollars should be stripped)
+  //
+  $svs = [ 'fgr', 'fdi' ];
+
+  $strip_verb_found = array_search( $v, $svs ) !== FALSE;
+
+  if ( $strip_verb_found )
+    {
+      return [ 'command' => $vcommand,
+               'dollars-absent-reason' => 'stripped' ];
     }
 
   $dollars = array_slice( $block, 1 );
@@ -234,15 +255,6 @@ function coalesce_block( array $block )
   $vdollars = array_map( 'dollar_pline_value', $dollars );
 
   $ivdollars = implode( $vdollars );
-
-  $limit = 16*1024;
-
-  if ( strlen( $ivdollars ) > $limit )
-    {
-      $t = substr( $ivdollars, 0, $limit - 1 );
-      return [ 'command' => $vcommand,
-               'truncated dollars' => $t ];
-    }
 
   return [ 'command' => $vcommand,
            'dollars' => $ivdollars ];
