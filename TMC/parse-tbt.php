@@ -173,13 +173,6 @@ function io_split_on_sem( array $a )
            'raw output' => $raw_output ];
 }
 
-function html_p_na_ve( $k, $v )
-{
-  $s = var_export( [ $k, $v ], 1 );
-
-  return html_p_na( $s );
-}
-
 // ptiu: pline type is unexpected
 //
 function tneve_if_ptiu( $pline, $ept )
@@ -268,13 +261,11 @@ function html_body( $input_filename, $input )
 
   $ecblocks = array_filter( $cblocks, 'is_english' );
 
-  $x = basic_parse( '<aaa><>&bbb;ccc' );
+  //$x = basic_parse( '<aaa><>&bbb;ccc&d;<ee>f' );
 
-  // $pecblocks = array_map_dollars( 'basic_parse', $ecblocks );
+  $pecblocks = array_map_dollars( 'basic_parse', $ecblocks );
 
-  $htmls = array_map_wk( 'html_p_na_ve', $x );
-
-  return xml_seq( $htmls );
+  return xml_wrap( 'pre', [], var_export( $pecblocks, 1 ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -326,6 +317,8 @@ function is_english( $cblock )
   return FALSE;
 }
 
+function paren( $x ) { return '(' . $x . ')'; }
+
 // TODO: retain line numbers
 
 function basic_parse( $dollars )
@@ -333,13 +326,26 @@ function basic_parse( $dollars )
   $x = NULL;
   $rest = NULL;
 
-  $tpat = '/^(<[^>]*>)(<[^>]*>)/';
+  $amp_pat = '&[^;]*;';
+  $ang_pat = '<[^>]*>';
+  $txt_pat = '[^&<]+';
 
-  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+  $pats = [ $amp_pat, $ang_pat, $txt_pat ];
+
+  // ppats: parenthesized pats
+  //
+  $ppats = array_map( 'paren', $pats );
+
+  // oppats: OR'ed, parenthesized pats
+  //
+  $oppats = implode( '|', $ppats );
+
+  $tpat = '/'. $oppats . '/';
+
+  $r = preg_match_all( $tpat, $dollars, $m );
 
   if ( $r )
     {
-      print_r( $m );
       return $m;
     }
 
