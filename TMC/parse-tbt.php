@@ -261,8 +261,6 @@ function html_body( $input_filename, $input )
 
   $ecblocks = array_filter( $cblocks, 'is_english' );
 
-  //$x = basic_parse( '<aaa><>&bbb;ccc&d;<ee>f' );
-
   $pecblocks = array_map_dollars( 'basic_parse', $ecblocks );
 
   return xml_wrap( 'pre', [], var_export( $pecblocks, 1 ) );
@@ -317,24 +315,47 @@ function is_english( $cblock )
   return FALSE;
 }
 
-function paren( $x ) { return '(' . $x . ')'; }
+function named_capture( $pat )
+{
+  $name = pat_name( $pat );
+
+  $raw_pattern = $pat[1];
+
+  $an = wrap( '<', '>', $name );
+
+  $qan = '?' . $an;
+
+  $body = $qan . $raw_pattern;
+
+  return wrap( '(', ')', $body );
+}
+
+function pat_name( $pat ) { return $pat[0]; }
+
+function pat_names( $pats ) { return array_map( 'pat_name', $pats ); }
+
+function wrap( $a, $c, $b )
+{
+  return $a . $b . $c;
+}
 
 // TODO: retain line numbers
 
 function basic_parse( $dollars )
 {
-  $x = NULL;
-  $rest = NULL;
+  //$x = basic_parse( '<aaa><>&bbb;ccc&d;<ee>f' );
 
-  $amp_pat = '&[^;]*;';
-  $ang_pat = '<[^>]*>';
-  $txt_pat = '[^&<]+';
-
-  $pats = [ $amp_pat, $ang_pat, $txt_pat ];
+  $pats =
+    [
+     [ 'amp', '&[^;]*;' ],
+     [ 'ang', '<[^>]*>' ],
+     [ 'car', '\^' ],
+     [ 'txt', '[^&<\^]+' ],
+     ];
 
   // ppats: parenthesized pats
   //
-  $ppats = array_map( 'paren', $pats );
+  $ppats = array_map( 'named_capture', $pats );
 
   // oppats: OR'ed, parenthesized pats
   //
@@ -342,57 +363,66 @@ function basic_parse( $dollars )
 
   $tpat = '/'. $oppats . '/';
 
-  $r = preg_match_all( $tpat, $dollars, $m );
+  $r = preg_match_all( $tpat, $dollars, $m, PREG_SET_ORDER );
 
-  if ( $r )
+  if ( $r === FALSE )
     {
-      return $m;
+      tneve( [ 'failed to basic_parse' => $dollars ] );
     }
 
-  return [ NULL ];
+  $pat_names = pat_names( $pats );
 
-  $tpat = '/^<>(?<rest>.*)$/';
+  // labelled matches, e.g. '<PAR-E>' becomes [ 'ang', 'PAR-E' ]
+  //
+  $lm = array_map_pa( 'label_match', $pat_names, $m );
 
-  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+  return $lm;
+}
 
-  if ( $r )
-    {
-      list( $x, $rest ) = [ [ 'tag', '' ], $m['rest'] ];
-    }
+/*
+  Example of $match:
+      array (
+        0 => '<PAR-E>',
+        'amp' => '',
+        1 => '',
+        'ang' => '<PAR-E>',
+        2 => '<PAR-E>',
+      ),
 
-  $tpat = '/^<(?<tag>[^>]+)>(?<rest>.*)$/';
+  Examples of $aik: (gets rid of numeric-keyed elements)
+      array (
+        'amp' => '',
+        'ang' => '<PAR-E>',
+      ),
 
-  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+  Example of $af: (gets rid of empty-string-valued elements)
+      array (
+        'ang' => '<PAR-E>',
+      ),
 
-  if ( $r )
-    {
-      list( $x, $rest ) = [ [ 'tag', $m['tag'] ], $m['rest'] ];
-    }
+  Example of $kvp:
+      array (
+        0 => 'ang',
+        1 => '<PAR-E>',
+      ),
 
-  $tpat = '/^&(?<amp>[^;]+);(?<rest>.*)$/';
+ */
 
-  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+function label_match( $pat_names, $match )
+{
+  $fpn = array_flip( $pat_names );
 
-  if ( $r )
-    {
-      list( $x, $rest ) = [ [ 'amp', $m['amp'] ], $m['rest'] ];
-    }
+  $aik = array_intersect_key( $match, $fpn );
 
-  $tpat = '/^(?<txt>[^&<]+)(?<rest>.*)$/';
+  $af = array_filter( $aik );
 
-  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+  $ks = array_keys( $af );
 
-  if ( $r )
-    {
-      list( $x, $rest ) = [ [ 'txt', $m['txt'] ], $m['rest'] ];
-    }
+  $vs = array_values( $af );
 
-  if ( $x )
-    {
-      return array_merge( [ $x ], basic_parse( $rest ) );
-    }
+  $kvp = [ $ks[0], $vs[0] ];
 
-  return [ [ 'unmatched', $dollars ] ];
+  return $kvp;
 }
 
 function array_map_dollars( $f, $cblocks )
