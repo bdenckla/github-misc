@@ -49,12 +49,7 @@ function parse_line( $line_number, $line_contents )
 
   $dpat = '/(?<dollar>\$)(?<after_dollar>.+)/';
 
-  $r = preg_match( $dpat, $rline, $matches);
-
-  if ( $r === FALSE )
-    {
-      tneve( 'preg_match error on', $rline );
-    }
+  list( $r, $matches ) = preg_match_toe( $dpat, $rline );
 
   if ( $r )
     {
@@ -63,12 +58,7 @@ function parse_line( $line_number, $line_contents )
 
   $cpat = '/(?<command>[a-z]+)(?<after_command>.*)/';
 
-  $r = preg_match( $cpat, $rline, $matches);
-
-  if ( $r === FALSE )
-    {
-      tneve( 'preg_match error on', $rline );
-    }
+  list( $r, $matches ) = preg_match_toe( $cpat, $rline );
 
   if ( $r )
     {
@@ -276,9 +266,139 @@ function html_body( $input_filename, $input )
 
   $cblocks = array_map( 'coalesce_block', $blocks );
 
-  $htmls = array_map_wk( 'html_p_na_ve', $cblocks );
+  $ecblocks = array_filter( $cblocks, 'is_english' );
+
+  $x = basic_parse( '<aaa><>&bbb;ccc' );
+
+  // $pecblocks = array_map_dollars( 'basic_parse', $ecblocks );
+
+  $htmls = array_map_wk( 'html_p_na_ve', $x );
 
   return xml_seq( $htmls );
+}
+
+// lubn: lookup, [with] behavior "null [on failure]"
+//
+function lubn( $k, array $a )
+{
+  return array_key_exists( $k, $a ) ? $a[ $k ] : NULL;
+}
+
+// toe: throw on error
+//
+function preg_match_toe( $pattern, $input )
+{
+  $output = NULL;
+
+  $r = preg_match( $pattern, $input, $output );
+
+  if ( $r === FALSE )
+    {
+      // TODO: how to provoke (i.e. test) such an error?
+
+      tneve( [ 'preg_match error', $pattern, $input ] );
+    }
+
+  return [ $r, $output ];
+}
+
+function is_english( $cblock )
+{
+  $dollars = lubn( 'dollars', $cblock );
+
+  if ( is_null( $dollars ) ) { return FALSE; }
+
+  $tpat = '/^<(?<tag>[^>]*)>/';
+
+  list( $r, $matches ) = preg_match_toe( $tpat, $dollars );
+
+  if ( $r )
+    {
+      $m = $matches['tag'];
+
+      $ts = [ 'TT', 'CT', 'PAR-E', 'COM' ];
+
+      $found = array_search( $m, $ts ) !== FALSE;
+
+      return $found;
+    }
+
+  return FALSE;
+}
+
+// TODO: retain line numbers
+
+function basic_parse( $dollars )
+{
+  $x = NULL;
+  $rest = NULL;
+
+  $tpat = '/^(<[^>]*>)(<[^>]*>)/';
+
+  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+
+  if ( $r )
+    {
+      print_r( $m );
+      return $m;
+    }
+
+  return [ NULL ];
+
+  $tpat = '/^<>(?<rest>.*)$/';
+
+  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+
+  if ( $r )
+    {
+      list( $x, $rest ) = [ [ 'tag', '' ], $m['rest'] ];
+    }
+
+  $tpat = '/^<(?<tag>[^>]+)>(?<rest>.*)$/';
+
+  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+
+  if ( $r )
+    {
+      list( $x, $rest ) = [ [ 'tag', $m['tag'] ], $m['rest'] ];
+    }
+
+  $tpat = '/^&(?<amp>[^;]+);(?<rest>.*)$/';
+
+  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+
+  if ( $r )
+    {
+      list( $x, $rest ) = [ [ 'amp', $m['amp'] ], $m['rest'] ];
+    }
+
+  $tpat = '/^(?<txt>[^&<]+)(?<rest>.*)$/';
+
+  list( $r, $m ) = preg_match_toe( $tpat, $dollars );
+
+  if ( $r )
+    {
+      list( $x, $rest ) = [ [ 'txt', $m['txt'] ], $m['rest'] ];
+    }
+
+  if ( $x )
+    {
+      return array_merge( [ $x ], basic_parse( $rest ) );
+    }
+
+  return [ [ 'unmatched', $dollars ] ];
+}
+
+function array_map_dollars( $f, $cblocks )
+{
+  return array_map( pa( 'dollars_func', $f ), $cblocks );
+}
+
+function dollars_func( $f, $cblock )
+{
+  $cblock['dollars'] = $f( $cblock['dollars'] );
+
+  return $cblock;
 }
 
 function main( $argv )
