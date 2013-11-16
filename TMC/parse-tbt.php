@@ -265,7 +265,9 @@ function html_body( $input_filename, $input )
 
   $a1_blocks = array_map_dollars( 'tree_parse', $pecblocks );
 
-  return xml_wrap( 'pre', [], var_export( $a1_blocks, 1 ) );
+  $a2_blocks = array_map_dollars( 'dropper', $a1_blocks );
+
+  return xml_wrap( 'pre', [], var_export( $a2_blocks, 1 ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -287,7 +289,9 @@ function preg_match_toe( $pattern, $input )
     {
       // TODO: how to provoke (i.e. test) such an error?
 
-      tneve( [ 'preg_match error', $pattern, $input ] );
+      tneve( [ 'preg_match error',
+               'pattern' => $pattern,
+               'input' => $input ] );
     }
 
   return [ $r, $output ];
@@ -347,6 +351,19 @@ function wrap( $a, $c, $b )
 
 function amp_sem( $x ) { return wrap( '&', ';', $x ); }
 
+function dropper( $dollars )
+{
+  return array_filter( $dollars, 'preserve' );
+}
+
+function preserve( $dollar )
+{
+  return $dollar['level'] > 0
+    ||
+    $dollar['value'][0] == 'txt'
+    ;
+}
+
 function tree_parse( $dollars )
 {
   $a = [];
@@ -359,7 +376,6 @@ function tree_parse( $dollars )
 
   foreach ($dollars as $value)
   {
-
     $is_a_pusher =
       $value[0] == 'amp'
       &&
@@ -373,23 +389,21 @@ function tree_parse( $dollars )
     if ( $is_a_pusher )
       {
         $n++;
-        $ntag = $n > 1 ? 'nyy' : 'nxx';
-        $a[$n] = [ $ntag => $n, $value ];
+        $a[$n] = [ 'level' => $n, 'value' => $value ];
       }
     elseif ( $is_a_popper )
       {
-        //$a[$n][] = $value;
         $n--;
         if ( $n < 0 )
           {
-            tneve( [ 'n < 0 at', $value ] );
+            tneve( [ 'n < 0' => $value ] );
           }
         $a[$n][] = $a[$n+1];
-        $a[$n+1] = 'trahs';
+        $a[$n+1] = [];
       }
     else
       {
-        $a[$n][] = $value;
+        $a[$n][] = [ 'level' => $n, 'value' => $value ];
       }
   }
 
