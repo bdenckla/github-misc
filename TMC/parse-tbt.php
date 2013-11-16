@@ -263,7 +263,9 @@ function html_body( $input_filename, $input )
 
   $pecblocks = array_map_dollars( 'basic_parse', $ecblocks );
 
-  return xml_wrap( 'pre', [], var_export( $pecblocks, 1 ) );
+  $a1_blocks = array_map_dollars( 'tree_parse', $pecblocks );
+
+  return xml_wrap( 'pre', [], var_export( $a1_blocks, 1 ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -339,7 +341,60 @@ function wrap( $a, $c, $b )
   return $a . $b . $c;
 }
 
-// TODO: retain line numbers
+/* TODO: retain line numbers further that we do, for diagnostic
+ * reasons?
+ */
+
+function amp_sem( $x ) { return wrap( '&', ';', $x ); }
+
+function tree_parse( $dollars )
+{
+  $a = [];
+  $n = 0;
+
+  $raw_pushers = [ 'in', 'sc', 'SC', 'scs', 'scd', 'hs8', 'ib1',
+                   'H', 'I', 'NN', 'VB', 'SCI' ];
+
+  $pushers = array_map( 'amp_sem', $raw_pushers );
+
+  foreach ($dollars as $value)
+  {
+
+    $is_a_pusher =
+      $value[0] == 'amp'
+      &&
+      array_search( $value[1], $pushers ) !== FALSE;
+
+    $is_car   = $value === [ 'car', '^' ];
+    $is_amp_d = $value === [ 'amp', '&D;' ];
+
+    $is_a_popper = $n > 0 && ( $is_car || $is_amp_d );
+
+    if ( $is_a_pusher )
+      {
+        $n++;
+        $ntag = $n > 1 ? 'nyy' : 'nxx';
+        $a[$n] = [ $ntag => $n, $value ];
+      }
+    elseif ( $is_a_popper )
+      {
+        //$a[$n][] = $value;
+        $n--;
+        if ( $n < 0 )
+          {
+            tneve( [ 'n < 0 at', $value ] );
+          }
+        $a[$n][] = $a[$n+1];
+        $a[$n+1] = 'trahs';
+      }
+    else
+      {
+        $a[$n][] = $value;
+      }
+  }
+
+  return $a[0];
+}
 
 function basic_parse( $dollars )
 {
