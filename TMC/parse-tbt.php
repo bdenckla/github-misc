@@ -267,7 +267,9 @@ function html_body( $input_filename, $input )
 
   $a2_blocks = array_map_dollars( 'dropper', $a1_blocks );
 
-  return xml_wrap( 'pre', [], var_export( $a2_blocks, 1 ) );
+  $a3_blocks = array_map_dollars( 'remove_line_breaks', $a2_blocks );
+
+  return xml_wrap( 'pre', [], var_export( $a3_blocks, 1 ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -353,7 +355,9 @@ function amp_sem( $x ) { return wrap( '&', ';', $x ); }
 
 function dropper( $dollars )
 {
-  return array_filter( $dollars['elements'], 'preserve' );
+  $dollars['elements'] = array_filter( $dollars['elements'], 'preserve' );
+
+  return $dollars;
 }
 
 function is_ang_to_drop( $d )
@@ -366,17 +370,24 @@ function is_ang_to_drop( $d )
         ||
         begins_with( $d['elval'], '<?twb' )
         ||
-        $d['elval'] === '<PAR-AT>' );
+        $d['elval'] === '<>'
+        ||
+        $d['elval'] === '<PAR-T1>'
+        ||
+        $d['elval'] === '<PAR-BT1>'
+        ||
+        $d['elval'] === '<PAR-AT>'
+        );
 }
 
 function is_amp_to_drop( $d )
 {
   return LuBn( 'eltype', $d ) === 'amp'
-    && ( $d['elval'] === '&#132;'
+    && ( $d['elval'] === amp_sem( '#132' )
          ||
-         $d['elval'] === '&#4;'
+         $d['elval'] === amp_sem( '#4' )
          ||
-         $d['elval'] === '&#6;' );
+         $d['elval'] === amp_sem( '#6' ) );
 }
 
 function begins_with($str, $sub)
@@ -390,7 +401,7 @@ function preserve( $dollar )
        ||
        is_amp_to_drop( $dollar ) )
     {
-      return false;
+      return FALSE;
     }
   return TRUE;
 }
@@ -414,7 +425,7 @@ function tree_parse( $dollars )
       array_search( $element['elval'], $pushers ) !== FALSE;
 
     $is_car   = $element === element( 'car', '^' );
-    $is_amp_d = $element === element( 'amp', '&D;' );
+    $is_amp_d = $element === element( 'amp', amp_sem( 'D' ) );
 
     $is_a_popper = $n > 0 && ( $is_car || $is_amp_d );
 
@@ -443,6 +454,104 @@ function tree_parse( $dollars )
 
   return $a[0];
 }
+
+function last_char( $x )
+{
+  return substr( $x, -1 );
+}
+
+function remove_line_breaks( $dollars )
+{
+  // lb: line break
+  //
+  $lb = element( 'amp', amp_sem( '#1' ) );
+
+  $jammers = [ '-', '/' ]; // TODO: others?
+
+  $a = [];
+  $stack = [];
+
+  foreach ($dollars['elements'] as $element)
+  {
+    $is_txt = LuBn( 'eltype', $element ) === 'txt';
+
+    $is_lb = $element === $lb;
+
+    $dumpstack = FALSE;
+
+    $c = count( $stack );
+
+    if ( $c === 0 )
+      {
+        if ( $is_txt )
+          {
+            $stack[] = $element;
+            $element['c'] = $c;
+          }
+        else
+          {
+            $dumpstack = TRUE;
+          }
+      }
+    elseif ( $c === 1 )
+      {
+        if ( $is_lb )
+          {
+            $stack[] = $element;
+            $element['c'] = $c;
+          }
+        elseif ( $is_txt )
+          {
+            $txt0 = $stack[0]['elval'];
+            $txt1 = $element['elval'];
+            $stack = [ element( 'txt', $txt0 . $txt1 ) ];
+            $element['c'] = $c;
+          }
+        else
+          {
+            $dumpstack = TRUE;
+          }
+      }
+    elseif ( $c === 2 )
+      {
+        if ( $is_txt )
+          {
+            $txt0 = $stack[0]['elval'];
+            $txt1 = $element['elval'];
+            $stack = [ element( 'txt', $txt0 . ' ' . $txt1 ) ];
+            $element['c'] = $c;
+          }
+        else
+          {
+            $dumpstack = TRUE;
+          }
+      }
+
+    if ( $dumpstack )
+      {
+        foreach ( $stack as $stack_el )
+          {
+            $a[] = $stack_el;
+          }
+        $stack = [];
+        $a[] = $element;
+      }
+  }
+
+  foreach ( $stack as $stack_el )
+    {
+      $a[] = $stack_el;
+    }
+  $stack = [];
+
+  return $a;
+}
+
+/*
+    $is_txt_jammer = $is_txt
+      &&
+      array_search( last_char( $element['elval'] ), $jammers ) !== FALSE;
+*/
 
 function basic_parse( $dollars )
 {
