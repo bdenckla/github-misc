@@ -353,57 +353,91 @@ function amp_sem( $x ) { return wrap( '&', ';', $x ); }
 
 function dropper( $dollars )
 {
-  return array_filter( $dollars, 'preserve' );
+  return array_filter( $dollars['elements'], 'preserve' );
+}
+
+function is_ang_to_drop( $d )
+{
+  return LuBn( 'eltype', $d ) === 'ang'
+    && (
+        begins_with( $d['elval'], '<?tpl=' )
+        ||
+        begins_with( $d['elval'], '<?tpt=' )
+        ||
+        begins_with( $d['elval'], '<?twb' )
+        ||
+        $d['elval'] === '<PAR-AT>' );
+}
+
+function is_amp_to_drop( $d )
+{
+  return LuBn( 'eltype', $d ) === 'amp'
+    && ( $d['elval'] === '&#132;'
+         ||
+         $d['elval'] === '&#4;'
+         ||
+         $d['elval'] === '&#6;' );
+}
+
+function begins_with($str, $sub)
+{
+    return (strncmp($str, $sub, strlen($sub)) == 0);
 }
 
 function preserve( $dollar )
 {
-  return $dollar['level'] > 0
-    ||
-    $dollar['value'][0] == 'txt'
-    ;
+  if ( is_ang_to_drop( $dollar )
+       ||
+       is_amp_to_drop( $dollar ) )
+    {
+      return false;
+    }
+  return TRUE;
 }
 
 function tree_parse( $dollars )
 {
-  $a = [];
-  $n = 0;
-
   $raw_pushers = [ 'in', 'sc', 'SC', 'scs', 'scd', 'hs8', 'ib1',
                    'H', 'I', 'NN', 'VB', 'SCI' ];
 
   $pushers = array_map( 'amp_sem', $raw_pushers );
 
-  foreach ($dollars as $value)
+  $n = 0;
+  $a[0] = [ 'level' => 0,
+            'elements' => [] ];
+
+  foreach ($dollars as $element)
   {
     $is_a_pusher =
-      $value[0] == 'amp'
+      $element['eltype'] == 'amp'
       &&
-      array_search( $value[1], $pushers ) !== FALSE;
+      array_search( $element['elval'], $pushers ) !== FALSE;
 
-    $is_car   = $value === [ 'car', '^' ];
-    $is_amp_d = $value === [ 'amp', '&D;' ];
+    $is_car   = $element === element( 'car', '^' );
+    $is_amp_d = $element === element( 'amp', '&D;' );
 
     $is_a_popper = $n > 0 && ( $is_car || $is_amp_d );
 
     if ( $is_a_pusher )
       {
         $n++;
-        $a[$n] = [ 'level' => $n, 'value' => $value ];
+
+        $a[$n] = [ 'level' => $n,
+                   'elements' => [ $element ] ];
       }
     elseif ( $is_a_popper )
       {
         $n--;
         if ( $n < 0 )
           {
-            tneve( [ 'n < 0' => $value ] );
+            tneve( [ 'n < 0' => $element ] );
           }
-        $a[$n][] = $a[$n+1];
-        $a[$n+1] = [];
+        $a[$n]['elements'][] = $a[$n+1];
+        $a[$n+1] = NULL;
       }
     else
       {
-        $a[$n][] = [ 'level' => $n, 'value' => $value ];
+        $a[$n]['elements'][] = $element;
       }
   }
 
@@ -489,9 +523,12 @@ function label_match( $pat_names, $match )
 
   $vs = array_values( $af );
 
-  $kvp = [ $ks[0], $vs[0] ];
+  return element( $ks[0], $vs[0] );
+}
 
-  return $kvp;
+function element( $type, $value )
+{
+  return [ 'eltype' => $type, 'elval' => $value ];
 }
 
 function array_map_dollars( $f, $cblocks )
