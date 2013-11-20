@@ -275,20 +275,17 @@ function html_body( $input_filename, $input )
 
   $ecblocks = array_filter( $cblocks, 'is_english' );
 
-  $pecblocks = array_map_klfa( 'dollars', 'elements',
-                               'basic_parse', $ecblocks );
+  $pecblocks = array_map_fakl( 'basic_parse', $ecblocks,
+                               'dollars', 'elements' );
 
-  $a1_blocks = array_map_klfa( 'elements', 'tree',
-                               'tree_parse', $pecblocks );
+  $a1_blocks = array_map_fakl( 'tree_parse', $pecblocks,
+                               'elements', 'tree' );
 
-  $a2_blocks = array_map_klfa( 'tree', 'tree',
-                               'dropper', $a1_blocks );
+  $a2_blocks = array_map_tree_pb( 'dropper', $a1_blocks );
 
-  $a3_blocks = array_map_klfa( 'tree', 'tree',
-                               'substituter', $a2_blocks );
+  $a3_blocks = array_map_tree_pb( 'substituter', $a2_blocks );
 
-  $a4_blocks = array_map_klfa( 'tree', 'tree',
-                               'remove_line_breaks', $a3_blocks );
+  $a4_blocks = array_map_tree_pb( 'remove_line_breaks', $a3_blocks );
 
   return xml_wrap( 'pre', [], var_export( $a4_blocks, 1 ) );
 }
@@ -368,24 +365,23 @@ function wrap( $a, $c, $b )
   return $a . $b . $c;
 }
 
-/* TODO: retain line numbers further that we do, for diagnostic
- * reasons?
- */
-
 function amp_sem( $x ) { return wrap( '&', ';', $x ); }
 
-function dropper( $tree )
+function process_branches( $f, $tree )
 {
-  $tree['branches'] = array_filter( $tree['branches'], 'preserve' );
+  $tree['branches'] = $f( $tree['branches'] );
 
   return $tree;
 }
 
-function substituter( $tree )
+function dropper( $branches )
 {
-  $tree['branches'] = array_map( 'substitute', $tree['branches'] );
+  return array_filter( $branches, 'preserve' );
+}
 
-  return $tree;
+function substituter( $branches )
+{
+  return array_map( 'substitute', $branches );
 }
 
 function substitute( $element )
@@ -504,7 +500,7 @@ function last_char( $x )
   return substr( $x, -1 );
 }
 
-function remove_line_breaks( $tree )
+function remove_line_breaks( $branches )
 {
   // lb: line break
   //
@@ -515,7 +511,7 @@ function remove_line_breaks( $tree )
   $a = [];
   $stack = [];
 
-  foreach ( $tree['branches'] as $branch )
+  foreach ( $branches as $branch )
   {
     $is_txt = LuBn( 'eltype', $branch ) === 'txt';
 
@@ -588,9 +584,7 @@ function remove_line_breaks( $tree )
     }
   $stack = [];
 
-  $tree['branches'] = $a;
-
-  return $tree;
+  return $a;
 }
 
 /*
@@ -684,12 +678,21 @@ function element( $type, $value )
   return [ 'eltype' => $type, 'elval' => $value ];
 }
 
-function array_map_klfa( $k, $l, $f, array $a )
+// pb: process_branches
+//
+function array_map_tree_pb( $f, array $a )
 {
-  return array_map( pa( 'klfa', $k, $l, $f ), $a );
+  $fpb = pa( 'process_branches', $f );
+
+  return array_map_fakl( $fpb, $a, 'tree', 'tree' );
 }
 
-function klfa( $k, $l, $f, $a )
+function array_map_fakl( $f, array $a, $k, $l )
+{
+  return array_map( pa( 'fkla', $f, $k, $l ), $a );
+}
+
+function fkla( $f, $k, $l, array $a )
 {
   $a[$l] = $f( $a[$k] );
 
