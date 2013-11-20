@@ -675,7 +675,64 @@ function label_match( $pat_names, $match )
 
 function element( $type, $value )
 {
-  return [ 'eltype' => $type, 'elval' => $value ];
+  $element = [ 'eltype' => $type, 'elval' => $value ];
+
+  $pat = '/^[^[:print:]]*$/';
+
+  list( $r, $matches ) = preg_match_toe( $pat, $value );
+
+  if ( $r )
+    {
+      $ords = array_map( 'ord', str_split( $value ) );
+      $element['char ords and names'] = array_map( 'ord_and_name', $ords );
+    }
+
+  return $element;
+}
+
+function char_map( $ord )
+{
+  $known = array
+    (
+     245 => 'shin-w-sin-dot-and-dagesh',
+     188 => 'hataf segol',
+     163 => 'patach',
+     166 => 'segol',
+     171 => 'zeire',
+     192 => 'qamats',
+     194 => 'aleph',
+     195 => 'bet',
+     197 => 'dalet',
+     198 => 'hei',
+     200 => 'zayin',
+     201 => 'chet',
+     203 => 'yod',
+     206 => 'lamed',
+     207 => 'mem-sofit',
+     208 => 'mem',
+     210 => 'gimel',
+     212 => 'ayin',
+     217 => 'qof',
+     218 => 'resh',
+     219 => 'shin',
+     220 => 'tav',
+     221 => 'hiriq',
+     222 => 'sheva',
+     224 => 'holam-haser',
+     225 => 'bet-dagesh',
+     229 => 'vav-shuruq',
+     230 => 'vav-holam-male',
+     242 => 'shin-w-shin-dot',
+     246 => 'tav-dagesh',
+     250 => 'hataf-patach',
+     );
+
+  return lubn( $ord, $known );
+}
+
+function ord_and_name( $ord )
+{
+  return [ $ord, char_map( $ord ) ];
 }
 
 // pb: process_branches
