@@ -31,7 +31,9 @@ function array_map_wk( $f, array $a )
   return array_map( $f, array_keys( $a ), $a );
 }
 
-function parse_line( $line_number, $line_contents )
+// zb_lineno: zero-based line number
+//
+function parse_line( $zb_lineno, $line_contents )
 {
   $eol = substr( $line_contents, -2 );
 
@@ -44,7 +46,7 @@ function parse_line( $line_number, $line_contents )
 
   if ( $rline === '' )
     {
-      return empty_pline( $line_number );
+      return empty_pline( $zb_lineno );
     }
 
   $dpat = '/(?<dollar>\$)(?<after_dollar>.+)/';
@@ -53,7 +55,7 @@ function parse_line( $line_number, $line_contents )
 
   if ( $r )
     {
-      return dollar_pline( $matches['after_dollar'], $line_number );
+      return dollar_pline( $matches['after_dollar'], $zb_lineno );
     }
 
   $cpat = '/(?<command>[a-z]+)(?<after_command>.*)/';
@@ -65,31 +67,31 @@ function parse_line( $line_number, $line_contents )
       $m = [ 'verb' => $matches['command'],
              'arguments' => $matches['after_command'] ];
 
-      return command_pline( $m, $line_number );
+      return command_pline( $m, $zb_lineno );
     }
 
-  return misc_pline( $rline, $line_number );
+  return misc_pline( $rline, $zb_lineno );
 }
 
-function misc_pline( $body, $line_number )
+function misc_pline( $body, $zb_lineno )
 {
   return [ 'type' => 'misc',
            'body' => $body,
-           'line number' => $line_number ];
+           'lineno' => $zb_lineno + 1 ];
 }
 
-function command_pline( $body, $line_number )
+function command_pline( $body, $zb_lineno )
 {
   return [ 'type' => 'command',
            'body' => $body,
-           'line number' => $line_number ];
+           'lineno' => $zb_lineno + 1 ];
 }
 
-function dollar_pline( $body, $line_number )
+function dollar_pline( $body, $zb_lineno )
 {
   return [ 'type' => '$',
            'body' => $body,//'...',
-           'line number' => $line_number ];
+           'lineno' => $zb_lineno + 1 ];
 }
 
 function empty_pline()
@@ -102,10 +104,10 @@ function pline_type( $pline )
   return $pline[ 'type' ];
 }
 
-function pline_is_misc( $pline )
-{
-  return pline_type( $pline ) === 'misc';
-}
+/* function pline_is_misc( $pline ) */
+/* { */
+/*   return pline_type( $pline ) === 'misc'; */
+/* } */
 
 function my_array_slice( array $a, $start, $stop )
 {
@@ -144,20 +146,20 @@ function split_on( $splitter, array $a )
   return $a3_renumbered;
 }
 
-function split_on_sem_test_inputs()
-{
-  return [ [ 'a', ';', 'b' ],
-           [      ';', 'b' ],
-           [ 'a', ';'      ],
-           [      ';'      ],
-           [],
-           [ 'a' ],
-           [ 'a', 'b' ],
-           [ 'a', ';', 'b', ';', 'c' ],
-           [ 'a', 'b', 'c', ';', 'd', ';', 'e', 'f' ],
-           [ 'a', ';', ';', 'b' ],
-           ];
-}
+/* function split_on_sem_test_inputs() */
+/* { */
+/*   return [ [ 'a', ';', 'b' ], */
+/*            [      ';', 'b' ], */
+/*            [ 'a', ';'      ], */
+/*            [      ';'      ], */
+/*            [], */
+/*            [ 'a' ], */
+/*            [ 'a', 'b' ], */
+/*            [ 'a', ';', 'b', ';', 'c' ], */
+/*            [ 'a', 'b', 'c', ';', 'd', ';', 'e', 'f' ], */
+/*            [ 'a', ';', ';', 'b' ], */
+/*            ]; */
+/* } */
 
 function io_split_on_sem( array $a )
 {
@@ -186,7 +188,7 @@ function tneve_if_ptiu( $pline, $ept )
     }
 }
 
-function dollar_pline_value( $pline )
+function dollar_pline_body( $pline )
 {
   tneve_if_ptiu( $pline, '$' );
 
@@ -202,44 +204,55 @@ function dollar_pline_value( $pline )
   return $body;
 }
 
-function command_pline_value( $pline )
+function command_pline_body( $pline )
 {
   tneve_if_ptiu( $pline, 'command' );
 
   return $pline[ 'body' ];
 }
 
+function command_pline_lineno( $pline )
+{
+  tneve_if_ptiu( $pline, 'command' );
+
+  return $pline[ 'lineno' ];
+}
+
 function coalesce_block( array $block )
 {
-  $vcommand = command_pline_value( $block[ 0 ] );
-
-  if ( count( $block ) === 1 )
-    {
-      return [ 'command' => $vcommand,
-               'dollars-absent-reason' => 'absent in original' ];
-    }
-
-  $v = $vcommand['verb'];
-
   // svs: strip verbs (verbs whose dollars should be stripped)
   //
   $svs = [ 'fgr', 'fdi' ];
 
-  $strip_verb_found = array_search( $v, $svs ) !== FALSE;
+  $command_pline = $block[0];
+
+  $command_pline_body = command_pline_body( $command_pline );
+
+  $command_pline_lineno = command_pline_lineno( $command_pline );
+
+  $verb = $command_pline_body['verb'];
+
+  if ( count( $block ) === 1 )
+    {
+      return [ 'lineno' => $command_pline_lineno,
+               'dollars-absent-reason' => 'absent in original' ];
+    }
+
+  $strip_verb_found = array_search( $verb, $svs ) !== FALSE;
 
   if ( $strip_verb_found )
     {
-      return [ 'command' => $vcommand,
+      return [ 'lineno' => $command_pline_lineno,
                'dollars-absent-reason' => 'stripped' ];
     }
 
   $dollars = array_slice( $block, 1 );
 
-  $vdollars = array_map( 'dollar_pline_value', $dollars );
+  $vdollars = array_map( 'dollar_pline_body', $dollars );
 
   $ivdollars = implode( $vdollars );
 
-  return [ 'command' => $vcommand,
+  return [ 'lineno' => $command_pline_lineno,
            'dollars' => $ivdollars ];
 }
 
@@ -247,13 +260,14 @@ function html_body( $input_filename, $input )
 {
   $plines = array_map_wk( 'parse_line', $input );
 
-  $types_of_plines = array_map( 'pline_type', $plines );
+  // $types_of_plines = array_map( 'pline_type', $plines );
 
-  $pline_type_counts = [ array_count_values( $types_of_plines ) ];
+  // $pline_type_counts = [ array_count_values( $types_of_plines ) ];
 
-  $misc_plines = array_filter( $plines, 'pline_is_misc' );
+  // $misc_plines = array_filter( $plines, 'pline_is_misc' );
 
-  $sem_test_io = array_map( 'io_split_on_sem', split_on_sem_test_inputs() );
+  /* $sem_test_io = array_map( 'io_split_on_sem', */
+  /*                           split_on_sem_test_inputs() ); */
 
   $blocks = split_on( empty_pline(), $plines );
 
@@ -261,15 +275,22 @@ function html_body( $input_filename, $input )
 
   $ecblocks = array_filter( $cblocks, 'is_english' );
 
-  $pecblocks = array_map_dollars( 'basic_parse', $ecblocks );
+  $pecblocks = array_map_klfa( 'dollars', 'elements',
+                               'basic_parse', $ecblocks );
 
-  $a1_blocks = array_map_dollars( 'tree_parse', $pecblocks );
+  $a1_blocks = array_map_klfa( 'elements', 'tree',
+                               'tree_parse', $pecblocks );
 
-  $a2_blocks = array_map_dollars( 'dropper', $a1_blocks );
+  $a2_blocks = array_map_klfa( 'tree', 'tree',
+                               'dropper', $a1_blocks );
 
-  $a3_blocks = array_map_dollars( 'remove_line_breaks', $a2_blocks );
+  $a3_blocks = array_map_klfa( 'tree', 'tree',
+                               'substituter', $a2_blocks );
 
-  return xml_wrap( 'pre', [], var_export( $a3_blocks, 1 ) );
+  $a4_blocks = array_map_klfa( 'tree', 'tree',
+                               'remove_line_breaks', $a3_blocks );
+
+  return xml_wrap( 'pre', [], var_export( $a4_blocks, 1 ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -353,11 +374,28 @@ function wrap( $a, $c, $b )
 
 function amp_sem( $x ) { return wrap( '&', ';', $x ); }
 
-function dropper( $dollars )
+function dropper( $tree )
 {
-  $dollars['elements'] = array_filter( $dollars['elements'], 'preserve' );
+  $tree['branches'] = array_filter( $tree['branches'], 'preserve' );
 
-  return $dollars;
+  return $tree;
+}
+
+function substituter( $tree )
+{
+  $tree['branches'] = array_map( 'substitute', $tree['branches'] );
+
+  return $tree;
+}
+
+function substitute( $element )
+{
+  if ( $element === element( 'amp', amp_sem( '#146' ) ) )
+    {
+      return element( 'txt', ' ' );
+    }
+
+  return $element;
 }
 
 function is_ang_to_drop( $d )
@@ -385,6 +423,12 @@ function is_amp_to_drop( $d )
   return LuBn( 'eltype', $d ) === 'amp'
     && ( $d['elval'] === amp_sem( '#132' )
          ||
+         $d['elval'] === amp_sem( '#133' )
+         ||
+         $d['elval'] === amp_sem( '#134' )
+         ||
+         $d['elval'] === amp_sem( '#135' )
+         ||
          $d['elval'] === amp_sem( '#4' )
          ||
          $d['elval'] === amp_sem( '#6' ) );
@@ -406,7 +450,7 @@ function preserve( $dollar )
   return TRUE;
 }
 
-function tree_parse( $dollars )
+function tree_parse( $elements )
 {
   $raw_pushers = [ 'in', 'sc', 'SC', 'scs', 'scd', 'hs8', 'ib1',
                    'H', 'I', 'NN', 'VB', 'SCI' ];
@@ -415,9 +459,9 @@ function tree_parse( $dollars )
 
   $n = 0;
   $a[0] = [ 'level' => 0,
-            'elements' => [] ];
+            'branches' => [] ];
 
-  foreach ($dollars as $element)
+  foreach ( $elements as $element )
   {
     $is_a_pusher =
       $element['eltype'] == 'amp'
@@ -434,7 +478,7 @@ function tree_parse( $dollars )
         $n++;
 
         $a[$n] = [ 'level' => $n,
-                   'elements' => [ $element ] ];
+                   'branches' => [ $element ] ];
       }
     elseif ( $is_a_popper )
       {
@@ -443,12 +487,12 @@ function tree_parse( $dollars )
           {
             tneve( [ 'n < 0' => $element ] );
           }
-        $a[$n]['elements'][] = $a[$n+1];
+        $a[$n]['branches'][] = $a[$n+1];
         $a[$n+1] = NULL;
       }
     else
       {
-        $a[$n]['elements'][] = $element;
+        $a[$n]['branches'][] = $element;
       }
   }
 
@@ -460,7 +504,7 @@ function last_char( $x )
   return substr( $x, -1 );
 }
 
-function remove_line_breaks( $dollars )
+function remove_line_breaks( $tree )
 {
   // lb: line break
   //
@@ -471,11 +515,11 @@ function remove_line_breaks( $dollars )
   $a = [];
   $stack = [];
 
-  foreach ($dollars['elements'] as $element)
+  foreach ( $tree['branches'] as $branch )
   {
-    $is_txt = LuBn( 'eltype', $element ) === 'txt';
+    $is_txt = LuBn( 'eltype', $branch ) === 'txt';
 
-    $is_lb = $element === $lb;
+    $is_lb = $branch === $lb;
 
     $dumpstack = FALSE;
 
@@ -485,8 +529,8 @@ function remove_line_breaks( $dollars )
       {
         if ( $is_txt )
           {
-            $stack[] = $element;
-            $element['c'] = $c;
+            $stack[] = $branch;
+            $branch['c'] = $c;
           }
         else
           {
@@ -497,15 +541,15 @@ function remove_line_breaks( $dollars )
       {
         if ( $is_lb )
           {
-            $stack[] = $element;
-            $element['c'] = $c;
+            $stack[] = $branch;
+            $branch['c'] = $c;
           }
         elseif ( $is_txt )
           {
             $txt0 = $stack[0]['elval'];
-            $txt1 = $element['elval'];
+            $txt1 = $branch['elval'];
             $stack = [ element( 'txt', $txt0 . $txt1 ) ];
-            $element['c'] = $c;
+            $branch['c'] = $c;
           }
         else
           {
@@ -517,9 +561,9 @@ function remove_line_breaks( $dollars )
         if ( $is_txt )
           {
             $txt0 = $stack[0]['elval'];
-            $txt1 = $element['elval'];
+            $txt1 = $branch['elval'];
             $stack = [ element( 'txt', $txt0 . ' ' . $txt1 ) ];
-            $element['c'] = $c;
+            $branch['c'] = $c;
           }
         else
           {
@@ -534,7 +578,7 @@ function remove_line_breaks( $dollars )
             $a[] = $stack_el;
           }
         $stack = [];
-        $a[] = $element;
+        $a[] = $branch;
       }
   }
 
@@ -544,13 +588,15 @@ function remove_line_breaks( $dollars )
     }
   $stack = [];
 
-  return $a;
+  $tree['branches'] = $a;
+
+  return $tree;
 }
 
 /*
     $is_txt_jammer = $is_txt
       &&
-      array_search( last_char( $element['elval'] ), $jammers ) !== FALSE;
+      array_search( last_char( $branch['elval'] ), $jammers ) !== FALSE;
 */
 
 function basic_parse( $dollars )
@@ -586,9 +632,7 @@ function basic_parse( $dollars )
 
   // labelled matches, e.g. '<PAR-E>' becomes [ 'ang', 'PAR-E' ]
   //
-  $lm = array_map_pa( 'label_match', $pat_names, $m );
-
-  return $lm;
+  return array_map_pa( 'label_match', $pat_names, $m );
 }
 
 /*
@@ -640,16 +684,18 @@ function element( $type, $value )
   return [ 'eltype' => $type, 'elval' => $value ];
 }
 
-function array_map_dollars( $f, $cblocks )
+function array_map_klfa( $k, $l, $f, array $a )
 {
-  return array_map( pa( 'dollars_func', $f ), $cblocks );
+  return array_map( pa( 'klfa', $k, $l, $f ), $a );
 }
 
-function dollars_func( $f, $cblock )
+function klfa( $k, $l, $f, $a )
 {
-  $cblock['dollars'] = $f( $cblock['dollars'] );
+  $a[$l] = $f( $a[$k] );
 
-  return $cblock;
+  if ( $k !== $l ) { unset( $a[$k] ); }
+
+  return $a;
 }
 
 function main( $argv )
