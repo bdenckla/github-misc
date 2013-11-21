@@ -455,6 +455,8 @@ function apply_char_map( $char_map, $element )
 
       $ords = array_map( 'ord', $nps );
 
+      $element['char map name'] = $char_map['char map name'];
+
       $element['char ords and names'] =
         array_map_pa( 'ord_and_name', $char_map, $ords );
     }
@@ -879,40 +881,40 @@ function hp_roman8()
      [ 0x7C, 0x007C, '|', 'VERTICAL LINE' ],
      [ 0x7D, 0x007D, '}', 'RIGHT CURLY BRACKET' ],
      [ 0x7E, 0x007E, '~', 'TILDE' ],
-     [ 0x7F, 0x007F, 'DELETE' ],
+     [ 0x7F, 0x007F, NULL, 'DELETE' ],
      [ 0x80, 0x0080, NULL, NULL ],
      [ 0x81, 0x0081, NULL, NULL ],
-     [ 0x82, 0x0082, 'BREAK PERMITTED HERE' ],
-     [ 0x83, 0x0083, 'NO BREAK HERE' ],
+     [ 0x82, 0x0082, NULL, 'BREAK PERMITTED HERE' ],
+     [ 0x83, 0x0083, NULL, 'NO BREAK HERE' ],
      [ 0x84, 0x0084, NULL, NULL ],
-     [ 0x85, 0x0085, 'NEXT LINE (NEL)' ],
-     [ 0x86, 0x0086, 'START OF SELECTED AREA' ],
-     [ 0x87, 0x0087, 'END OF SELECTED AREA' ],
-     [ 0x88, 0x0088, 'CHARACTER TABULATION SET' ],
-     [ 0x89, 0x0089, 'CHARACTER TABULATION WITH JUSTIFICATION' ],
-     [ 0x8A, 0x008A, 'LINE TABULATION SET' ],
-     [ 0x8B, 0x008B, 'PARTIAL LINE FORWARD' ],
-     [ 0x8C, 0x008C, 'PARTIAL LINE BACKWARD' ],
-     [ 0x8D, 0x008D, 'REVERSE LINE FEED' ],
-     [ 0x8E, 0x008E, 'SINGLE SHIFT TWO' ],
-     [ 0x8F, 0x008F, 'SINGLE SHIFT THREE' ],
-     [ 0x90, 0x0090, 'DEVICE CONTROL STRING' ],
-     [ 0x91, 0x0091, 'PRIVATE USE ONE' ],
-     [ 0x92, 0x0092, 'PRIVATE USE TWO' ],
-     [ 0x93, 0x0093, 'SET TRANSMIT STATE' ],
-     [ 0x94, 0x0094, 'CANCEL CHARACTER' ],
-     [ 0x95, 0x0095, 'MESSAGE WAITING' ],
-     [ 0x96, 0x0096, 'START OF GUARDED AREA' ],
-     [ 0x97, 0x0097, 'END OF GUARDED AREA' ],
-     [ 0x98, 0x0098, 'START OF STRING' ],
+     [ 0x85, 0x0085, NULL, 'NEXT LINE (NEL)' ],
+     [ 0x86, 0x0086, NULL, 'START OF SELECTED AREA' ],
+     [ 0x87, 0x0087, NULL, 'END OF SELECTED AREA' ],
+     [ 0x88, 0x0088, NULL, 'CHARACTER TABULATION SET' ],
+     [ 0x89, 0x0089, NULL, 'CHARACTER TABULATION WITH JUSTIFICATION' ],
+     [ 0x8A, 0x008A, NULL, 'LINE TABULATION SET' ],
+     [ 0x8B, 0x008B, NULL, 'PARTIAL LINE FORWARD' ],
+     [ 0x8C, 0x008C, NULL, 'PARTIAL LINE BACKWARD' ],
+     [ 0x8D, 0x008D, NULL, 'REVERSE LINE FEED' ],
+     [ 0x8E, 0x008E, NULL, 'SINGLE SHIFT TWO' ],
+     [ 0x8F, 0x008F, NULL, 'SINGLE SHIFT THREE' ],
+     [ 0x90, 0x0090, NULL, 'DEVICE CONTROL STRING' ],
+     [ 0x91, 0x0091, NULL, 'PRIVATE USE ONE' ],
+     [ 0x92, 0x0092, NULL, 'PRIVATE USE TWO' ],
+     [ 0x93, 0x0093, NULL, 'SET TRANSMIT STATE' ],
+     [ 0x94, 0x0094, NULL, 'CANCEL CHARACTER' ],
+     [ 0x95, 0x0095, NULL, 'MESSAGE WAITING' ],
+     [ 0x96, 0x0096, NULL, 'START OF GUARDED AREA' ],
+     [ 0x97, 0x0097, NULL, 'END OF GUARDED AREA' ],
+     [ 0x98, 0x0098, NULL, 'START OF STRING' ],
      [ 0x99, 0x0099, NULL, NULL ],
-     [ 0x9A, 0x009A, 'SINGLE CHARACTER INTRODUCER' ],
-     [ 0x9B, 0x009B, 'CONTROL SEQUENCE INTRODUCER' ],
-     [ 0x9C, 0x009C, 'STRING TERMINATOR' ],
-     [ 0x9D, 0x009D, 'OPERATING SYSTEM COMMAND' ],
-     [ 0x9E, 0x009E, 'PRIVACY MESSAGE' ],
-     [ 0x9F, 0x009F, 'APPLICATION PROGRAM COMMAND' ],
-     [ 0xA0, 0x00A0, 'NO-BREAK SPACE' ],
+     [ 0x9A, 0x009A, NULL, 'SINGLE CHARACTER INTRODUCER' ],
+     [ 0x9B, 0x009B, NULL, 'CONTROL SEQUENCE INTRODUCER' ],
+     [ 0x9C, 0x009C, NULL, 'STRING TERMINATOR' ],
+     [ 0x9D, 0x009D, NULL, 'OPERATING SYSTEM COMMAND' ],
+     [ 0x9E, 0x009E, NULL, 'PRIVACY MESSAGE' ],
+     [ 0x9F, 0x009F, NULL, 'APPLICATION PROGRAM COMMAND' ],
+     [ 0xA0, 0x00A0, NULL, 'NO-BREAK SPACE' ],
      [ 0xA1, 0x00C0, 'À', 'LATIN CAPITAL LETTER A WITH GRAVE' ],
      [ 0xA2, 0x00C2, 'Â', 'LATIN CAPITAL LETTER A WITH CIRCUMFLEX' ],
      [ 0xA3, 0x00C8, 'È', 'LATIN CAPITAL LETTER E WITH GRAVE' ],
@@ -1022,12 +1024,13 @@ function default_char_map()
 
   $a = array_combine( $hr0s, $hr3s );
 
-  return $a;
+  return [ 'char map name' => 'HP Roman8',
+           'char map itself' => $a ];
 }
 
 function hebrew_char_map()
 {
-  return
+  $raw =
     [
      209 => 'nun-sofit',
      226 => 'gimel-dagesh',
@@ -1064,11 +1067,14 @@ function hebrew_char_map()
      246 => 'tav-dagesh',
      250 => 'hataf-patach',
      ];
+
+  return [ 'char map name' => 'Hebrew',
+           'char map itself' => $raw ];
 }
 
 function ord_and_name( $char_map, $ord )
 {
-  $mapped_ord = lubn( $ord, $char_map );
+  $mapped_ord = lubn( $ord, $char_map['char map itself'] );
 
   return [ $ord, $mapped_ord ];
 }
