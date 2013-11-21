@@ -107,7 +107,7 @@ function empty_pline()
 
 function pline_type( $pline )
 {
-  return $pline[ 'type' ];
+  return $pline['type'];
 }
 
 /* function pline_is_misc( $pline ) */
@@ -198,7 +198,7 @@ function dollar_pline_body( $pline )
 {
   tneve_if_ptiu( $pline, '$' );
 
-  $body = $pline[ 'body' ];
+  $body = $pline['body'];
 
   $eol = substr( $body, -2 );
 
@@ -214,14 +214,14 @@ function command_pline_body( $pline )
 {
   tneve_if_ptiu( $pline, 'command' );
 
-  return $pline[ 'body' ];
+  return $pline['body'];
 }
 
 function command_pline_lineno( $pline )
 {
   tneve_if_ptiu( $pline, 'command' );
 
-  return $pline[ 'lineno' ];
+  return $pline['lineno'];
 }
 
 function coalesce_block( array $block )
@@ -289,11 +289,13 @@ function html_body( $input_filename, $input )
 
   $a2_blocks = array_map_tree( 'dropper', $a1_blocks );
 
-  $a3_blocks = array_map_tree( 'substitute_dcm', $a2_blocks );
+  $a3_blocks = array_map_tree( 'substitute', $a2_blocks );
 
-  /* $a4_blocks = array_map_tree( 'remove_line_breaks', $a3_blocks ); */
+  $a4_blocks = array_map_tree( 'remove_line_breaks', $a3_blocks );
 
-  return xml_wrap( 'pre', [], var_export( $a3_blocks, 1 ) );
+  $a5_blocks = array_map_tree( 'apply_char_map_d', $a4_blocks );
+
+  return xml_wrap( 'pre', [], var_export( $a5_blocks, 1 ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -375,37 +377,93 @@ function amp_sem( $x ) { return wrap( '&', ';', $x ); }
 
 // tree node: a branch or a leaf
 
-// dc: default char map
+// d: default char map
 //
-function substitute_dcm( $tree_node )
+function apply_char_map_d( $tree_node )
 {
-  return substitute( default_char_map(), $tree_node );
+  return apply_char_map( default_char_map(), $tree_node );
 }
 
-function substitute( $char_map, $tree_node )
+function is_amp( $tree_node )
 {
-  if ( $tree_node === element( 'amp', amp_sem( '#146' ) ) )
-    {
-      return element( 'txt', ' ' );
-    }
+  return eltype( $tree_node ) === 'amp';
+}
 
-  if ( lubn( 'eltype', $tree_node ) === 'txt' )
-    {
-      return apply_char_map( $char_map, $tree_node );
-    }
+function is_ang( $tree_node )
+{
+  return eltype( $tree_node ) === 'ang';
+}
 
+function is_car( $tree_node )
+{
+  return eltype( $tree_node ) === 'car';
+}
+
+function is_txt( $tree_node )
+{
+  return eltype( $tree_node ) === 'txt';
+}
+
+// p: particular
+// i.e. is not only an amp, but has a particular elval
+//
+function is_p_amp( $tree_node, $elval )
+{
+  return is_amp( $tree_node )
+    &&
+    elval( $tree_node ) === amp_sem( $elval );
+}
+
+function eltype( $tree_node )
+{
+  return lubn( 'eltype', $tree_node );
+}
+
+function elval( $tree_node )
+{
+  return lubn( 'elval', $tree_node );
+}
+
+function substitute( $tree_node )
+{
   if ( is_branch( $tree_node ) )
     {
-      $is_hebrew =
-        $tree_node['tree nodes'][0] === element( 'amp', amp_sem( 'H' ) );
+      $tree_node['tree nodes'] =
+        array_map( 'substitute',
+                   $tree_node['tree nodes'] );
+
+      return $tree_node;
+    }
+
+  if ( is_p_amp( $tree_node, '#146' ) )
+    {
+      $tree_node['elval'] = ' ';
+
+      return $tree_node;
+    }
+
+  return $tree_node;
+}
+
+function apply_char_map( $char_map, $tree_node )
+{
+  if ( is_branch( $tree_node ) )
+    {
+      $is_hebrew = is_p_amp( $tree_node['tree nodes'][0], 'H' );
 
       $char_map = $is_hebrew ? hebrew_char_map() : default_char_map();
 
       $tree_node['tree nodes'] =
-        array_map_pa( 'substitute',
+        array_map_pa( 'apply_char_map',
                       $char_map,
                       $tree_node['tree nodes'] );
 
+      return $tree_node;
+    }
+
+  if ( is_txt( $tree_node ) )
+    {
+      return apply_char_map_to_txt( $char_map, $tree_node );
     }
 
   return $tree_node;
@@ -439,9 +497,9 @@ function has_non_printable( $x )
   return $r;
 }
 
-function apply_char_map( $char_map, $element )
+function apply_char_map_to_txt( $char_map, $element )
 {
-  $elval = $element['elval'];
+  $elval = elval( $element );
 
   if ( has_non_printable( $elval ) )
     {
@@ -466,38 +524,45 @@ function apply_char_map( $char_map, $element )
 
 function is_ang_to_drop( $d )
 {
-  return LuBn( 'eltype', $d ) === 'ang'
+  $elval = elval( $d );
+
+  return is_ang( $d )
     && (
-        begins_with( $d['elval'], '<?tpl=' )
+        begins_with( $elval, '<?tpl=' )
         ||
-        begins_with( $d['elval'], '<?tpt=' )
+        begins_with( $elval, '<?tpt=' )
         ||
-        begins_with( $d['elval'], '<?twb' )
+        begins_with( $elval, '<?twb' )
         ||
-        $d['elval'] === '<>'
+        $elval === '<>'
         ||
-        $d['elval'] === '<PAR-T1>'
+        $elval === '<PAR-T1>'
         ||
-        $d['elval'] === '<PAR-BT1>'
+        $elval === '<PAR-BT1>'
         ||
-        $d['elval'] === '<PAR-AT>'
+        $elval === '<PAR-AT>'
         );
 }
 
 function is_amp_to_drop( $d )
 {
-  return LuBn( 'eltype', $d ) === 'amp'
-    && ( $d['elval'] === amp_sem( '#132' )
-         ||
-         $d['elval'] === amp_sem( '#133' )
-         ||
-         $d['elval'] === amp_sem( '#134' )
-         ||
-         $d['elval'] === amp_sem( '#135' )
-         ||
-         $d['elval'] === amp_sem( '#4' )
-         ||
-         $d['elval'] === amp_sem( '#6' ) );
+  $elval = elval( $d );
+
+  return is_amp( $d )
+    && (
+        $elval === amp_sem( '#132' )
+        ||
+        $elval === amp_sem( '#133' )
+        ||
+        $elval === amp_sem( '#134' )
+        ||
+        $elval === amp_sem( '#135' )
+        ||
+        $elval === amp_sem( '#136' )
+        ||
+        $elval === amp_sem( '#4' )
+        ||
+        $elval === amp_sem( '#6' ) );
 }
 
 function begins_with($str, $sub)
@@ -530,12 +595,12 @@ function tree_parse( $elements )
   foreach ( $elements as $element )
   {
     $is_a_pusher =
-      $element['eltype'] == 'amp'
+      is_amp( $element )
       &&
-      array_search( $element['elval'], $pushers ) !== FALSE;
+      array_search( elval( $element ), $pushers ) !== FALSE;
 
-    $is_car   = $element === element( 'car', '^' );
-    $is_amp_d = $element === element( 'amp', amp_sem( 'D' ) );
+    $is_car   = is_car( $element );
+    $is_amp_d = is_p_amp( $element, 'D' );
 
     $is_a_popper = $n > 0 && ( $is_car || $is_amp_d );
 
@@ -570,22 +635,32 @@ function last_char( $x )
   return substr( $x, -1 );
 }
 
-function remove_line_breaks( $tree_nodes )
+function remove_line_breaks( $tree_node )
 {
-  // lb: line break
-  //
-  $lb = element( 'amp', amp_sem( '#1' ) );
+  if ( is_branch( $tree_node ) )
+    {
+      return remove_line_breaks_from_branch( $tree_node );
+    }
+  return $tree_node;
+}
 
+function remove_line_breaks_from_branch( $branch )
+{
   $jammers = [ '-', '/' ]; // TODO: others?
 
   $a = [];
   $stack = [];
 
-  foreach ( $tree_nodes as $tree_node )
+  foreach ( $branch['tree nodes'] as $tree_node )
   {
-    $is_txt = LuBn( 'eltype', $tree_node ) === 'txt';
+    if ( is_branch( $tree_node ) )
+      {
+        $tree_node = remove_line_breaks_from_branch( $tree_node );
+      }
 
-    $is_lb = $tree_node === $lb;
+    $is_txt = is_txt( $tree_node );
+
+    $is_lb = is_p_amp( $tree_node, '#1' ); // lb: line break
 
     $dumpstack = FALSE;
 
@@ -596,7 +671,6 @@ function remove_line_breaks( $tree_nodes )
         if ( $is_txt )
           {
             $stack[] = $tree_node;
-            $tree_node['c'] = $c;
           }
         else
           {
@@ -608,14 +682,10 @@ function remove_line_breaks( $tree_nodes )
         if ( $is_lb )
           {
             $stack[] = $tree_node;
-            $tree_node['c'] = $c;
           }
         elseif ( $is_txt )
           {
-            $txt0 = $stack[0]['elval'];
-            $txt1 = $tree_node['elval'];
-            $stack = [ element( 'txt', $txt0 . $txt1 ) ];
-            $tree_node['c'] = $c;
+            $stack = [ melded_text( $stack[0], $tree_node, '' ) ];
           }
         else
           {
@@ -626,10 +696,7 @@ function remove_line_breaks( $tree_nodes )
       {
         if ( $is_txt )
           {
-            $txt0 = $stack[0]['elval'];
-            $txt1 = $tree_node['elval'];
-            $stack = [ element( 'txt', $txt0 . ' ' . $txt1 ) ];
-            $tree_node['c'] = $c;
+            $stack = [ melded_text( $stack[0], $tree_node, ' ' ) ];
           }
         else
           {
@@ -654,7 +721,21 @@ function remove_line_breaks( $tree_nodes )
     }
   $stack = [];
 
-  return $a;
+  $branch['tree nodes'] = $a;
+
+  return $branch;
+}
+
+function melded_text( $e0, $e1, $glue )
+{
+  $txt0 = $e0['elval'];
+  $txt1 = $e1['elval'];
+
+  $ne = element( 'txt', $txt0 . $glue . $txt1 );
+
+  $ne['melded'] = TRUE;
+
+  return $ne;
 }
 
 /*
@@ -750,7 +831,7 @@ function element( $type, $value )
   return $element;
 }
 
-function hp_roman8()
+function hp_roman_8()
 {
   return
     [
@@ -1021,9 +1102,10 @@ function default_char_map()
      0xAA => 'MODIFIER LETTER CIRCUMFLEX ACCENT',
      0xAB => 'DIAERESIS',
      0xAC => 'SMALL TILDE',
+     0xF5 => 'modifier letter caron', // differs from HP Roman-8!
      ];
 
-  return [ 'char map name' => 'HP Roman8',
+  return [ 'char map name' => 'HP Roman-8',
            'char map itself' => $a ];
 }
 
