@@ -1012,17 +1012,16 @@ function hp_roman8()
      ];
 }
 
-function get0( array $a ) { return $a[0]; }
-function get3( array $a ) { return $a[3]; }
-
 function default_char_map()
 {
-  $hr = hp_roman8();
-
-  $hr0s = array_map( 'get0', $hr );
-  $hr3s = array_map( 'get3', $hr );
-
-  $a = array_combine( $hr0s, $hr3s );
+  $a =
+    [
+     0xA8 => 'ACUTE ACCENT',
+     0xA9 => 'MODIFIER LETTER GRAVE ACCENT',
+     0xAA => 'MODIFIER LETTER CIRCUMFLEX ACCENT',
+     0xAB => 'DIAERESIS',
+     0xAC => 'SMALL TILDE',
+     ];
 
   return [ 'char map name' => 'HP Roman8',
            'char map itself' => $a ];
