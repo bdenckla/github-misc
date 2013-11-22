@@ -3,6 +3,14 @@
 
    // investigate seemingly-erroneous space before --- in 'moral freedom ---a gift'
 
+   // combine lines again after numeric formatting removal? (see Psalm 29:10a split)
+
+   // footnotes: &SS;n&xS;
+
+   // opening (``) and closing (") double quote substitution
+   // double-dash substitution
+   // triple-dash substitution
+
    // PAR-H should be recognized as Hebrew char map
 
    // Handle ellipsis as &#128 . &#128 . &#128 . &#128 ( 4 128s with 3 .s in between)
