@@ -1,14 +1,12 @@
 #!/usr/bin/php -q
 <?php
 
+   // investigate seemingly-erroneous space before --- in 'moral freedom ---a gift'
+
    // PAR-H should be recognized as Hebrew char map
 
-   // branch of &scs; followed by number goes to just number
-   // branch of &scd; followed by number goes to just number
-   // branch of &sc;  followed by number goes to just number
-   // branch of &SC;  followed by number goes to just number
-   // branch of &NN;  followed by number goes to just number
-   // branch of &NN;  followed by number range (A--B) to just number range
+   // Handle ellipsis as &#128 . &#128 . &#128 . &#128 ( 4 128s with 3 .s in between)
+
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
 
@@ -19,6 +17,8 @@
    // PI-21 special characters:
    //    xm for circumflex over x
    //    xl for acute accent over x
+
+   // inconsistent paren/italic handling
 
 require_once 'generate-html.php';
 
@@ -263,7 +263,7 @@ function coalesce_block( array $block )
                'dollars-absent-reason' => 'absent in original' ];
     }
 
-  $strip_verb_found = array_search( $verb, $svs ) !== FALSE;
+  $strip_verb_found = is_in( $verb, $svs );
 
   if ( $strip_verb_found )
     {
@@ -279,6 +279,11 @@ function coalesce_block( array $block )
 
   return [ 'lineno' => $command_pline_lineno,
            'dollars' => $ivdollars ];
+}
+
+function is_in( $needle, array $haystack )
+{
+  return array_search( $needle, $haystack ) !== FALSE;
 }
 
 function html_body( $input_filename, $input )
@@ -308,15 +313,17 @@ function html_body( $input_filename, $input )
 
   $a2_blocks = array_map_tree( 'dropper', $a1_blocks );
 
-  $a3_blocks = array_map_tree( 'substitute', $a2_blocks );
+  $a3_blocks = array_map_tree( 'substitute1', $a2_blocks );
 
   $a4_blocks = array_map_tree( 'remove_line_breaks', $a3_blocks );
 
   $a5_blocks = array_map_tree( 'apply_char_map_d', $a4_blocks );
 
+  $a6_blocks = array_map_tree( 'substitute2', $a5_blocks );
+
   //return xml_wrap( 'pre', [], var_export( $a5_blocks, 1 ) );
 
-  return table_for_lined_trees( $a5_blocks );
+  return table_for_lined_trees( $a6_blocks );
 }
 
 function table_for_lined_trees( $lined_trees )
@@ -457,6 +464,24 @@ function preg_match_toe( $pattern, $input )
   return [ $r, $output ];
 }
 
+// toe: throw on error
+//
+function preg_match_toe2( $pattern, $input )
+{
+  $r = preg_match( $pattern, $input );
+
+  if ( $r === FALSE )
+    {
+      // TODO: how to provoke (i.e. test) such an error?
+
+      tneve( [ 'preg_match error',
+               'pattern' => $pattern,
+               'input' => $input ] );
+    }
+
+  return $r; // 0 or 1
+}
+
 function is_english( $cblock )
 {
   $dollars = lubn( 'dollars', $cblock );
@@ -473,7 +498,7 @@ function is_english( $cblock )
 
       $ts = [ 'TT', 'CT', 'PAR-E', 'COM' ];
 
-      $found = array_search( $m, $ts ) !== FALSE;
+      $found = is_in( $m, $ts );
 
       return $found;
     }
@@ -556,22 +581,12 @@ function elval( $tree_node )
   return lubn( 'elval', $tree_node );
 }
 
-function substitute( $tree_node )
+function substitute1( $tree_node )
 {
   if ( is_branch( $tree_node ) )
     {
-      $is_scs = is_p_amp( $tree_node['tree nodes'][0], 'scs' );
-
-      $second_is_num = elval( $tree_node['tree nodes'][1] ) === '1';
-
-      if ( $is_scs && $second_is_num )
-        {
-          return $tree_node['tree nodes'][1];
-        }
-
-
       $tree_node['tree nodes'] =
-        array_map( 'substitute',
+        array_map( 'substitute1',
                    $tree_node['tree nodes'] );
 
       return $tree_node;
@@ -599,6 +614,42 @@ function substitute( $tree_node )
     {
       $tree_node['eltype'] = 'txt';
       $tree_node['elval'] = '-';
+
+      return $tree_node;
+    }
+
+  return $tree_node;
+}
+
+function substitute2( $tree_node )
+{
+  if ( is_branch( $tree_node ) )
+    {
+      // TODO: unify code below with "pushers" code
+
+      $raw_number_styles = [ 'SC', 'SCI', 'sc', 'scs', 'scd', 'NN' ];
+
+      $number_styles = array_map( 'amp_sem', $raw_number_styles );
+
+      $is_scs = is_amp( $tree_node['tree nodes'][0] )
+        && is_in( elval( $tree_node['tree nodes'][0] ), $number_styles );
+
+      $second = elval( $tree_node['tree nodes'][1] );
+
+      $num_pat = '/^[[:digit:] ,\/\-]+$/';
+
+      // Examples: '1', '12', '12--13', '12, 13, 14', '1,234', '1/2'
+
+      $second_is_num = preg_match_toe2( $num_pat, $second );
+
+      if ( $is_scs && $second_is_num )
+        {
+          return $tree_node['tree nodes'][1];
+        }
+
+      $tree_node['tree nodes'] =
+        array_map( 'substitute2',
+                   $tree_node['tree nodes'] );
 
       return $tree_node;
     }
@@ -653,9 +704,7 @@ function has_non_printable( $x )
 {
   $pat = '/[^[:print:]]/';
 
-  list( $r, $matches ) = preg_match_toe( $pat, $x );
-
-  return $r;
+  return preg_match_toe2( $pat, $x );
 }
 
 function apply_char_map_to_txt( $char_map, $element )
@@ -758,7 +807,7 @@ function tree_parse( $elements )
     $is_a_pusher =
       is_amp( $element )
       &&
-      array_search( elval( $element ), $pushers ) !== FALSE;
+      is_in( elval( $element ), $pushers );
 
     $is_car   = is_car( $element );
     $is_amp_d = is_p_amp( $element, 'D' );
@@ -902,7 +951,7 @@ function melded_text( $e0, $e1, $glue )
 /*
     $is_txt_jammer = $is_txt
       &&
-      array_search( last_char( $tree_node['elval'] ), $jammers ) !== FALSE;
+      is_in( last_char( $tree_node['elval'] ), $jammers );
 */
 
 function basic_parse( $dollars )
