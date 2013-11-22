@@ -1,6 +1,32 @@
 #!/usr/bin/php -q
 <?php
 
+   // PI-21 special characters:
+   //    xm for circumflex over x
+   //    xl for acute accent over x
+
+   // PAR-H should be recognized as Hebrew char map
+
+   // &nk; goes to :
+
+   // &mk; goes to -
+
+   // branch of &scs; followed by number goes to just number
+   // branch of &scd; followed by number goes to just number
+   // branch of &sc;  followed by number goes to just number
+   // branch of &SC;  followed by number goes to just number
+   // branch of &NN;  followed by number goes to just number
+   // branch of &NN;  followed by number range (A--B) to just number range
+
+   // branch of &scs; followed by single char goes to just single char
+
+   // don't put space after any kind of dash (incl. hypen)
+
+   // eliminate hypen before line break when appropriate
+
+   // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
+   // branch of &VB; followed by 'v]' goes to verse
+
 require_once 'generate-html.php';
 
 // tneve: throw new ErrorException of var_export
@@ -295,7 +321,120 @@ function html_body( $input_filename, $input )
 
   $a5_blocks = array_map_tree( 'apply_char_map_d', $a4_blocks );
 
-  return xml_wrap( 'pre', [], var_export( $a5_blocks, 1 ) );
+  //return xml_wrap( 'pre', [], var_export( $a5_blocks, 1 ) );
+
+  return table_for_lined_trees( $a5_blocks );
+}
+
+function table_for_lined_trees( $lined_trees )
+{
+  $trs = array_map( 'tr_for_lined_tree', $lined_trees );
+
+  return table_b1( $trs );
+}
+
+function tr_for_lined_tree( $lined_tree )
+{
+  $lineno = $lined_tree['lineno'];
+
+  $tree = $lined_tree['tree'];
+
+  $td_lineno = 'lineno: ' . $lineno;
+
+  $td_tree = table_for_branch( $tree );
+
+  $tds = [ $td_lineno, $td_tree ];
+
+  return tr_of_tds( $tds );
+}
+
+function table_for_branch( $branch )
+{
+  $trs = array_map( 'tr_for_tree_node', $branch['tree nodes'] );
+
+  return table_b1( $trs );
+}
+
+function tr_for_tree_node( $tree_node )
+{
+  if ( is_branch( $tree_node ) )
+    {
+      $node_type = 'branch';
+      $node_value = table_for_branch( $tree_node );
+      $tds = [ $node_type, $node_value ];
+    }
+  else
+    {
+      $node_type = 'leaf';
+      $elval = elval( $tree_node );
+      $coan = lubn( 'char ords and names', $tree_node );
+
+      if ( is_null( $coan ) )
+        {
+          $node_value = elval( $tree_node );
+        }
+      else
+        {
+          $node_value = table_for_elval_and_coan( $elval, $coan );
+        }
+
+      $tds = [ $node_type, $node_value ];
+    }
+
+  return tr_of_tds( $tds );
+}
+
+function table_for_elval_and_coan( $elval, $coan )
+{
+  $trs = [
+          tr_of_tds( [ $elval ] ),
+          tr_of_tds( [ table_for_coan( $coan ) ] ),
+          ];
+
+  return table_b1( $trs );
+}
+
+function firsts( array $a )
+{
+  return array_column( $a, 0 );
+}
+
+function seconds( array $a )
+{
+  return array_column( $a, 1 );
+}
+
+function table_for_coan( $coan )
+{
+  $trs = [
+          tr_of_tds( firsts( $coan ) ),
+          tr_of_tds( seconds( $coan ) ),
+          ];
+
+  return table_b1( $trs );
+}
+
+function tr_of_tds( $td_bodies )
+{
+  $tds = array_map( 'td_na', $td_bodies );
+
+  return xml_wrap( 'tr', [], xml_seq( $tds ) );
+}
+
+// na: no attributes
+//
+function td_na( $body )
+{
+  return xml_wrap( 'td', [], $body );
+}
+
+// b1: no attributes except "border"=1
+//
+function table_b1( $trs )
+{
+  $table_attr = [ 'border' => 1 ];
+
+  return xml_wrap( 'table', $table_attr, xml_seq( $trs ) );
 }
 
 // lubn: lookup, [with] behavior "null [on failure]"
@@ -437,6 +576,7 @@ function substitute( $tree_node )
 
   if ( is_p_amp( $tree_node, '#146' ) )
     {
+      $tree_node['eltype'] = 'txt';
       $tree_node['elval'] = ' ';
 
       return $tree_node;
@@ -731,11 +871,11 @@ function melded_text( $e0, $e1, $glue )
   $txt0 = $e0['elval'];
   $txt1 = $e1['elval'];
 
-  $ne = element( 'txt', $txt0 . $glue . $txt1 );
+  $element = element( 'txt', $txt0 . $glue . $txt1 );
 
-  $ne['melded'] = TRUE;
+  $element['melded'] = TRUE;
 
-  return $ne;
+  return $element;
 }
 
 /*
