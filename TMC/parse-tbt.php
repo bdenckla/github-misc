@@ -1,13 +1,9 @@
 #!/usr/bin/php -q
 <?php
 
-   // expectancy.&#4;<PAR-E>\
-   //   why not showing up in output
-   // unbalanced
+   // allow search for places where char maps (coans) are used
 
    // investigate seemingly-erroneous space before --- in 'moral freedom ---a gift'
-
-   // combine lines again after numeric formatting removal? (see Psalm 29:10a split)
 
    // footnote references (i.e. in body text):          &SS;  &xS;
    // footnote labels (i.e. labelling footnote itself): &SSN; &XSN;
@@ -16,8 +12,6 @@
    // opening (``) and closing (") double quote substitution
    // double-dash substitution
    // triple-dash substitution
-
-   // PAR-H should be recognized as Hebrew char map
 
    // Handle ellipsis represented as &#128 . &#128 . &#128 . &#128
    // ( 4 128s with 3 .s in between)
@@ -238,9 +232,9 @@ function dollar_pline_body( $pline )
 
   $body = $pline['body'];
 
-  $eol = substr( $body, -2 );
+  $eol = substr( $body, -1 );
 
-  if ( $eol === ' \\' )
+  if ( $eol === '\\' )
     {
       return substr( $body, 0, -1 );
     }
@@ -374,13 +368,23 @@ function table_for_branch( $branch )
   return table_b1( $trs );
 }
 
+function table_for_stranded_branch( $branch )
+{
+  $tr = tr_of_tds( [ stranded_key(),
+                     table_for_branch( $branch ) ] );
+
+  return table_b1( [ $tr ] );
+}
+
 function tr_for_node( $node )
 {
   if ( is_branch( $node ) )
     {
-      $node_type = 'branch';
-      $node_value = table_for_branch( $node );
-      $tds = [ $node_type, $node_value ];
+      $tds[] = 'branch';
+
+      $tds[] = lubn( stranded_key(), $node )
+        ? table_for_stranded_branch( $node )
+        : table_for_branch( $node );
     }
   else
     {
@@ -605,6 +609,16 @@ function is_p_amp( $node, $elval )
     elval( $node ) === amp_sem( $elval );
 }
 
+// p: particular
+// i.e. is not only an ang, but has a particular elval
+//
+function is_p_ang( $node, $elval )
+{
+  return is_ang( $node )
+    &&
+    elval( $node ) === oab_cab( $elval );
+}
+
 function is_amp_in( $node, array $elvals )
 {
   return
@@ -731,7 +745,12 @@ function apply_char_map( $char_map, $node )
 {
   if ( is_branch( $node ) )
     {
-      $is_hebrew = is_p_amp( $node['nodes'][0], 'H' );
+      $first = $node['nodes'][0];
+
+      $is_hebrew =
+        is_p_amp( $first, 'H' )
+        ||
+        is_p_ang( $first, 'PAR-H' );
 
       $char_map = $is_hebrew ? hebrew_char_map() : default_char_map();
 
@@ -884,7 +903,7 @@ function tree_parse( $elements )
       {
         if ( $n === 0 )
           {
-            $element['XXX unbalanced popper'] = TRUE;
+            $element['XXX excess popper'] = TRUE;
             $a[$n]['nodes'][] = $element;
           }
         else
@@ -900,7 +919,20 @@ function tree_parse( $elements )
       }
   }
 
+  while ( $n !== 0 )
+    {
+      $n--;
+      $a[$n+1][stranded_key()] = TRUE;
+      $a[$n]['nodes'][] = $a[$n+1];
+      $a[$n+1] = NULL;
+    }
+
   return $a[0];
+}
+
+function stranded_key()
+{
+  return 'XXX stranded due to missing popper';
 }
 
 function last_char( $x )
