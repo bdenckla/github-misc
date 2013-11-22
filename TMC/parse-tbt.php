@@ -1,15 +1,7 @@
 #!/usr/bin/php -q
 <?php
 
-   // PI-21 special characters:
-   //    xm for circumflex over x
-   //    xl for acute accent over x
-
    // PAR-H should be recognized as Hebrew char map
-
-   // &nk; goes to :
-
-   // &mk; goes to -
 
    // branch of &scs; followed by number goes to just number
    // branch of &scd; followed by number goes to just number
@@ -17,15 +9,16 @@
    // branch of &SC;  followed by number goes to just number
    // branch of &NN;  followed by number goes to just number
    // branch of &NN;  followed by number range (A--B) to just number range
-
-   // branch of &scs; followed by single char goes to just single char
+   // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
+   // branch of &VB; followed by 'v]' goes to verse
 
    // don't put space after any kind of dash (incl. hypen)
 
    // eliminate hypen before line break when appropriate
 
-   // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
-   // branch of &VB; followed by 'v]' goes to verse
+   // PI-21 special characters:
+   //    xm for circumflex over x
+   //    xl for acute accent over x
 
 require_once 'generate-html.php';
 
@@ -567,6 +560,16 @@ function substitute( $tree_node )
 {
   if ( is_branch( $tree_node ) )
     {
+      $is_scs = is_p_amp( $tree_node['tree nodes'][0], 'scs' );
+
+      $second_is_num = elval( $tree_node['tree nodes'][1] ) === '1';
+
+      if ( $is_scs && $second_is_num )
+        {
+          return $tree_node['tree nodes'][1];
+        }
+
+
       $tree_node['tree nodes'] =
         array_map( 'substitute',
                    $tree_node['tree nodes'] );
@@ -574,10 +577,28 @@ function substitute( $tree_node )
       return $tree_node;
     }
 
+  // TODO: clean this up: all three "ifs" have similar form
+
   if ( is_p_amp( $tree_node, '#146' ) )
     {
       $tree_node['eltype'] = 'txt';
       $tree_node['elval'] = ' ';
+
+      return $tree_node;
+    }
+
+  if ( is_p_amp( $tree_node, 'nk' ) )
+    {
+      $tree_node['eltype'] = 'txt';
+      $tree_node['elval'] = ':';
+
+      return $tree_node;
+    }
+
+  if ( is_p_amp( $tree_node, 'mk' ) )
+    {
+      $tree_node['eltype'] = 'txt';
+      $tree_node['elval'] = '-';
 
       return $tree_node;
     }
