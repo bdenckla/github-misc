@@ -1,11 +1,17 @@
 #!/usr/bin/php -q
 <?php
 
+   // expectancy.&#4;<PAR-E>\
+   //   why not showing up in output
+   // unbalanced
+
    // investigate seemingly-erroneous space before --- in 'moral freedom ---a gift'
 
    // combine lines again after numeric formatting removal? (see Psalm 29:10a split)
 
-   // footnotes: &SS;n&xS;
+   // footnote references (i.e. in body text):          &SS;  &xS;
+   // footnote labels (i.e. labelling footnote itself): &SSN; &XSN;
+   // footnote labels (i.e. labelling footnote itself): &SSN; &xSN;
 
    // opening (``) and closing (") double quote substitution
    // double-dash substitution
@@ -13,7 +19,8 @@
 
    // PAR-H should be recognized as Hebrew char map
 
-   // Handle ellipsis as &#128 . &#128 . &#128 . &#128 ( 4 128s with 3 .s in between)
+   // Handle ellipsis represented as &#128 . &#128 . &#128 . &#128
+   // ( 4 128s with 3 .s in between)
 
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
@@ -25,6 +32,10 @@
    // PI-21 special characters:
    //    xm for circumflex over x
    //    xl for acute accent over x
+
+   // normally we ignore &#6; but it is needed here in a title:
+   //
+   //    Genesis&#6;and
 
    // inconsistent paren/italic handling
 
@@ -319,15 +330,15 @@ function html_body( $input_filename, $input )
   $a1_blocks = array_map_fakl( 'tree_parse', $pecblocks,
                                'elements', 'tree' );
 
-  $a2_blocks = array_map_tree( 'dropper', $a1_blocks );
+  $f = [
+        'dropper',
+        'substitute1',
+        'substitute2',
+        'remove_line_breaks',
+        'apply_char_map_d',
+        ];
 
-  $a3_blocks = array_map_tree( 'substitute1', $a2_blocks );
-
-  $a4_blocks = array_map_tree( 'remove_line_breaks', $a3_blocks );
-
-  $a5_blocks = array_map_tree( 'apply_char_map_d', $a4_blocks );
-
-  $a6_blocks = array_map_tree( 'substitute2', $a5_blocks );
+  $a6_blocks = array_reduce( $f, 'fl_array_map_tree', $a1_blocks );
 
   //return xml_wrap( 'pre', [], var_export( $a5_blocks, 1 ) );
 
@@ -358,32 +369,36 @@ function tr_for_lined_tree( $lined_tree )
 
 function table_for_branch( $branch )
 {
-  $trs = array_map( 'tr_for_tree_node', $branch['tree nodes'] );
+  $trs = array_map( 'tr_for_node', $branch['nodes'] );
 
   return table_b1( $trs );
 }
 
-function tr_for_tree_node( $tree_node )
+function tr_for_node( $node )
 {
-  if ( is_branch( $tree_node ) )
+  if ( is_branch( $node ) )
     {
       $node_type = 'branch';
-      $node_value = table_for_branch( $tree_node );
+      $node_value = table_for_branch( $node );
       $tds = [ $node_type, $node_value ];
     }
   else
     {
       $node_type = 'leaf';
-      $elval = elval( $tree_node );
-      $coan = lubn( 'char ords and names', $tree_node );
+      $elval = elval( $node );
+      $coan = lubn( 'char ords and names', $node );
 
-      if ( is_null( $coan ) )
+      if ( ! is_null( $coan ) )
         {
-          $node_value = elval( $tree_node );
+          $node_value = table_for_elval_and_coan( $elval, $coan );
+        }
+      elseif( array_keys( $node ) !== [ 'eltype', 'elval' ] )
+        {
+          $node_value = var_export( $node, 1 );
         }
       else
         {
-          $node_value = table_for_elval_and_coan( $elval, $coan );
+          $node_value = elval( $node );
         }
 
       $tds = [ $node_type, $node_value ];
@@ -539,173 +554,220 @@ function wrap( $a, $c, $b )
 }
 
 function amp_sem( $x ) { return wrap( '&', ';', $x ); }
+// oab: opening angle bracket
+// cab: opening angle bracket
+function oab_cab( $x ) { return wrap( '<', '>', $x ); }
 
-// tree node: a branch or a leaf
+// amas: array_map amp_sem
+//
+function amas( array $a ) { return array_map( 'amp_sem', $a ); }
+
+// amoc: array_map oab_cab
+//
+function amoc( array $a ) { return array_map( 'oab_cab', $a ); }
+
+// node: a branch or a leaf
 
 // d: default char map
 //
-function apply_char_map_d( $tree_node )
+function apply_char_map_d( $node )
 {
-  return apply_char_map( default_char_map(), $tree_node );
+  return apply_char_map( default_char_map(), $node );
 }
 
-function is_amp( $tree_node )
+function is_amp( $node )
 {
-  return eltype( $tree_node ) === 'amp';
+  return eltype( $node ) === 'amp';
 }
 
-function is_ang( $tree_node )
+function is_ang( $node )
 {
-  return eltype( $tree_node ) === 'ang';
+  return eltype( $node ) === 'ang';
 }
 
-function is_car( $tree_node )
+function is_car( $node )
 {
-  return eltype( $tree_node ) === 'car';
+  return eltype( $node ) === 'car';
 }
 
-function is_txt( $tree_node )
+function is_txt( $node )
 {
-  return eltype( $tree_node ) === 'txt';
+  return eltype( $node ) === 'txt';
 }
 
 // p: particular
 // i.e. is not only an amp, but has a particular elval
 //
-function is_p_amp( $tree_node, $elval )
+function is_p_amp( $node, $elval )
 {
-  return is_amp( $tree_node )
+  return is_amp( $node )
     &&
-    elval( $tree_node ) === amp_sem( $elval );
+    elval( $node ) === amp_sem( $elval );
 }
 
-function eltype( $tree_node )
+function is_amp_in( $node, array $elvals )
 {
-  return lubn( 'eltype', $tree_node );
+  return
+    is_amp( $node )
+    &&
+    is_in( elval( $node ), amas( $elvals ) );
 }
 
-function elval( $tree_node )
+function is_ang_in( $node, array $elvals )
 {
-  return lubn( 'elval', $tree_node );
+  return
+    is_ang( $node )
+    &&
+    is_in( elval( $node ), amoc( $elvals ) );
 }
 
-function substitute1( $tree_node )
+function eltype( $node )
 {
-  if ( is_branch( $tree_node ) )
+  return lubn( 'eltype', $node );
+}
+
+function elval( $node )
+{
+  return lubn( 'elval', $node );
+}
+
+function substitute1( $node )
+{
+  if ( is_branch( $node ) )
     {
-      $tree_node['tree nodes'] =
-        array_map( 'substitute1',
-                   $tree_node['tree nodes'] );
+      $node['nodes'] = array_map( 'substitute1', $node['nodes'] );
 
-      return $tree_node;
+      return $node;
     }
 
   // TODO: clean this up: all three "ifs" have similar form
 
-  if ( is_p_amp( $tree_node, '#146' ) )
+  if ( is_p_amp( $node, '#146' ) )
     {
-      $tree_node['eltype'] = 'txt';
-      $tree_node['elval'] = ' ';
+      $node['eltype'] = 'txt';
+      $node['elval'] = ' ';
 
-      return $tree_node;
+      return $node;
     }
 
-  if ( is_p_amp( $tree_node, 'nk' ) )
+  if ( is_p_amp( $node, 'nk' ) )
     {
-      $tree_node['eltype'] = 'txt';
-      $tree_node['elval'] = ':';
+      $node['eltype'] = 'txt';
+      $node['elval'] = ':';
 
-      return $tree_node;
+      return $node;
     }
 
-  if ( is_p_amp( $tree_node, 'mk' ) )
+  if ( is_p_amp( $node, 'mk' ) )
     {
-      $tree_node['eltype'] = 'txt';
-      $tree_node['elval'] = '-';
+      $node['eltype'] = 'txt';
+      $node['elval'] = '-';
 
-      return $tree_node;
+      return $node;
     }
 
-  return $tree_node;
+  return $node;
 }
 
-function substitute2( $tree_node )
+function branch_is_numeric( $branch )
 {
-  if ( is_branch( $tree_node ) )
-    {
-      // TODO: unify code below with "pushers" code
+  $nodes = $branch['nodes'];
 
-      $raw_number_styles = [ 'SC', 'SCI', 'sc', 'scs', 'scd', 'NN' ];
+  if ( count( $nodes ) !== 2 ) { return FALSE; }
 
-      $number_styles = array_map( 'amp_sem', $raw_number_styles );
+  $number_styles = [ 'SC', 'SCI', 'sc', 'scs', 'scd', 'NN' ];
 
-      $is_scs = is_amp( $tree_node['tree nodes'][0] )
-        && is_in( elval( $tree_node['tree nodes'][0] ), $number_styles );
+  $num_pat = '/^[[:digit:] ,\/\-]+$/';
 
-      $second = elval( $tree_node['tree nodes'][1] );
+  // Examples: '1', '12', '12--13', '12, 13, 14', '1,234', '1/2'
 
-      $num_pat = '/^[[:digit:] ,\/\-]+$/';
+  $first = $nodes[0];
 
-      // Examples: '1', '12', '12--13', '12, 13, 14', '1,234', '1/2'
+  if ( ! is_amp_in( $first, $number_styles ) ) { return FALSE; }
 
-      $second_is_num = preg_match_toe2( $num_pat, $second );
+  // evs: elval of second
+  //
+  $evs = elval( $nodes[1] );
 
-      if ( $is_scs && $second_is_num )
-        {
-          return $tree_node['tree nodes'][1];
-        }
+  if ( ! preg_match_toe2( $num_pat, $evs ) ) { return FALSE; }
 
-      $tree_node['tree nodes'] =
-        array_map( 'substitute2',
-                   $tree_node['tree nodes'] );
-
-      return $tree_node;
-    }
-
-  return $tree_node;
+  return $nodes[1];
 }
 
-function apply_char_map( $char_map, $tree_node )
+function branch_is_initial_drop_cap( $branch )
 {
-  if ( is_branch( $tree_node ) )
+  $nodes = $branch['nodes'];
+
+  if ( count( $nodes ) !== 2 ) { return FALSE; }
+
+  $first = $nodes[0];
+
+  if ( ! is_p_amp( $first, 'in' ) ) { return FALSE; }
+
+  return $nodes[1];
+}
+
+function substitute2( $node )
+{
+  if ( is_branch( $node ) )
     {
-      $is_hebrew = is_p_amp( $tree_node['tree nodes'][0], 'H' );
+      $r = branch_is_numeric( $node );
+
+      if ( $r !== FALSE ) { return $r; }
+
+      $r = branch_is_initial_drop_cap( $node );
+
+      if ( $r !== FALSE ) { return $r; }
+
+      $node['nodes'] = array_map( 'substitute2', $node['nodes'] );
+
+      return $node;
+    }
+
+  return $node;
+}
+
+function apply_char_map( $char_map, $node )
+{
+  if ( is_branch( $node ) )
+    {
+      $is_hebrew = is_p_amp( $node['nodes'][0], 'H' );
 
       $char_map = $is_hebrew ? hebrew_char_map() : default_char_map();
 
-      $tree_node['tree nodes'] =
+      $node['nodes'] =
         array_map_pa( 'apply_char_map',
                       $char_map,
-                      $tree_node['tree nodes'] );
+                      $node['nodes'] );
 
-      return $tree_node;
+      return $node;
     }
 
-  if ( is_txt( $tree_node ) )
+  if ( is_txt( $node ) )
     {
-      return apply_char_map_to_txt( $char_map, $tree_node );
+      return apply_char_map_to_txt( $char_map, $node );
     }
 
-  return $tree_node;
+  return $node;
 }
 
-function dropper( $tree_node )
+function dropper( $node )
 {
-  if ( is_branch( $tree_node ) )
+  if ( is_branch( $node ) )
     {
-      $tree_nodes = $tree_node['tree nodes'];
+      $nodes = $node['nodes'];
 
-      $filtered = array_filter( $tree_nodes, 'preserve' );
+      $filtered = array_filter( $nodes, 'preserve' );
 
-      $tree_node['tree nodes'] = array_map( 'dropper', $filtered );
+      $node['nodes'] = array_map( 'dropper', $filtered );
     }
 
-  return $tree_node;
+  return $node;
 }
 
-function is_branch( $tree_node )
+function is_branch( $node )
 {
-  return array_key_exists( 'tree nodes', $tree_node );
+  return array_key_exists( 'nodes', $node );
 }
 
 function has_non_printable( $x )
@@ -762,25 +824,11 @@ function is_ang_to_drop( $d )
         );
 }
 
-function is_amp_to_drop( $d )
+function is_amp_to_drop( $node )
 {
-  $elval = elval( $d );
+  $droppers = [ '#132','#133','#134','#135','#136','#4','#6' ];
 
-  return is_amp( $d )
-    && (
-        $elval === amp_sem( '#132' )
-        ||
-        $elval === amp_sem( '#133' )
-        ||
-        $elval === amp_sem( '#134' )
-        ||
-        $elval === amp_sem( '#135' )
-        ||
-        $elval === amp_sem( '#136' )
-        ||
-        $elval === amp_sem( '#4' )
-        ||
-        $elval === amp_sem( '#6' ) );
+  return is_amp_in( $node, $droppers );
 }
 
 function begins_with($str, $sub)
@@ -788,11 +836,11 @@ function begins_with($str, $sub)
     return (strncmp($str, $sub, strlen($sub)) == 0);
 }
 
-function preserve( $tree_node )
+function preserve( $node )
 {
-  if ( is_ang_to_drop( $tree_node )
+  if ( is_ang_to_drop( $node )
        ||
-       is_amp_to_drop( $tree_node ) )
+       is_amp_to_drop( $node ) )
     {
       return FALSE;
     }
@@ -801,47 +849,54 @@ function preserve( $tree_node )
 
 function tree_parse( $elements )
 {
-  $raw_pushers = [ 'in', 'sc', 'SC', 'scs', 'scd', 'hs8', 'ib1',
-                   'H', 'I', 'NN', 'VB', 'SCI' ];
+  $amp_pushers = [ 'in', 'sc', 'SC', 'scs', 'scd', 'hs8', 'ib1',
+               'H', 'I', 'NN', 'VB', 'SCI' ];
 
-  $pushers = array_map( 'amp_sem', $raw_pushers );
+  $ang_pushers = [ 'PAR-E', 'PAR-H', 'PAR-S', 'PAR-A', 'PAR-B', 'CT',
+                   'IAU', 'IAH' ];
+
+  //$ang_pushers = [];
 
   $n = 0;
   $a[0] = [ 'level' => 0,
-            'tree nodes' => [] ];
+            'nodes' => [] ];
 
   foreach ( $elements as $element )
   {
     $is_a_pusher =
-      is_amp( $element )
-      &&
-      is_in( elval( $element ), $pushers );
+      is_amp_in( $element, $amp_pushers )
+      ||
+      is_ang_in( $element, $ang_pushers );
 
     $is_car   = is_car( $element );
     $is_amp_d = is_p_amp( $element, 'D' );
 
-    $is_a_popper = $n > 0 && ( $is_car || $is_amp_d );
+    $is_a_popper = $is_car || $is_amp_d;
 
     if ( $is_a_pusher )
       {
         $n++;
 
         $a[$n] = [ 'level' => $n,
-                   'tree nodes' => [ $element ] ];
+                   'nodes' => [ $element ] ];
       }
     elseif ( $is_a_popper )
       {
-        $n--;
-        if ( $n < 0 )
+        if ( $n === 0 )
           {
-            tneve( [ 'n < 0' => $element ] );
+            $element['XXX unbalanced popper'] = TRUE;
+            $a[$n]['nodes'][] = $element;
           }
-        $a[$n]['tree nodes'][] = $a[$n+1];
-        $a[$n+1] = NULL;
+        else
+          {
+            $n--;
+            $a[$n]['nodes'][] = $a[$n+1];
+            $a[$n+1] = NULL;
+          }
       }
     else
       {
-        $a[$n]['tree nodes'][] = $element;
+        $a[$n]['nodes'][] = $element;
       }
   }
 
@@ -853,13 +908,13 @@ function last_char( $x )
   return substr( $x, -1 );
 }
 
-function remove_line_breaks( $tree_node )
+function remove_line_breaks( $node )
 {
-  if ( is_branch( $tree_node ) )
+  if ( is_branch( $node ) )
     {
-      return remove_line_breaks_from_branch( $tree_node );
+      return remove_line_breaks_from_branch( $node );
     }
-  return $tree_node;
+  return $node;
 }
 
 function remove_line_breaks_from_branch( $branch )
@@ -869,16 +924,16 @@ function remove_line_breaks_from_branch( $branch )
   $a = [];
   $stack = [];
 
-  foreach ( $branch['tree nodes'] as $tree_node )
+  foreach ( $branch['nodes'] as $node )
   {
-    if ( is_branch( $tree_node ) )
+    if ( is_branch( $node ) )
       {
-        $tree_node = remove_line_breaks_from_branch( $tree_node );
+        $node = remove_line_breaks_from_branch( $node );
       }
 
-    $is_txt = is_txt( $tree_node );
+    $is_txt = is_txt( $node );
 
-    $is_lb = is_p_amp( $tree_node, '#1' ); // lb: line break
+    $is_lb = is_p_amp( $node, '#1' ); // lb: line break
 
     $dumpstack = FALSE;
 
@@ -888,7 +943,7 @@ function remove_line_breaks_from_branch( $branch )
       {
         if ( $is_txt )
           {
-            $stack[] = $tree_node;
+            $stack[] = $node;
           }
         else
           {
@@ -899,11 +954,11 @@ function remove_line_breaks_from_branch( $branch )
       {
         if ( $is_lb )
           {
-            $stack[] = $tree_node;
+            $stack[] = $node;
           }
         elseif ( $is_txt )
           {
-            $stack = [ melded_text( $stack[0], $tree_node, '' ) ];
+            $stack = [ melded_text( $stack[0], $node, '' ) ];
           }
         else
           {
@@ -914,7 +969,7 @@ function remove_line_breaks_from_branch( $branch )
       {
         if ( $is_txt )
           {
-            $stack = [ melded_text( $stack[0], $tree_node, ' ' ) ];
+            $stack = [ melded_text( $stack[0], $node, ' ' ) ];
           }
         else
           {
@@ -929,7 +984,7 @@ function remove_line_breaks_from_branch( $branch )
             $a[] = $stack_el;
           }
         $stack = [];
-        $a[] = $tree_node;
+        $a[] = $node;
       }
   }
 
@@ -939,7 +994,7 @@ function remove_line_breaks_from_branch( $branch )
     }
   $stack = [];
 
-  $branch['tree nodes'] = $a;
+  $branch['nodes'] = $a;
 
   return $branch;
 }
@@ -951,7 +1006,7 @@ function melded_text( $e0, $e1, $glue )
 
   $element = element( 'txt', $txt0 . $glue . $txt1 );
 
-  $element['melded'] = TRUE;
+  //$element['melded'] = TRUE;
 
   return $element;
 }
@@ -959,7 +1014,7 @@ function melded_text( $e0, $e1, $glue )
 /*
     $is_txt_jammer = $is_txt
       &&
-      is_in( last_char( $tree_node['elval'] ), $jammers );
+      is_in( last_char( $node['elval'] ), $jammers );
 */
 
 function basic_parse( $dollars )
@@ -988,7 +1043,9 @@ function basic_parse( $dollars )
 
   if ( $r === FALSE )
     {
-      tneve( [ 'failed to basic_parse' => $dollars ] );
+      tneve( [ 'preg_match_all error',
+               'pattern' => $tpat,
+               'input' => $dollars ] );
     }
 
   $pat_names = pat_names( $pats );
@@ -1381,6 +1438,13 @@ function ord_and_name( $char_map, $ord )
 function array_map_tree( $f, array $a )
 {
   return array_map_fakl( $f, $a, 'tree', 'tree' );
+}
+
+// fl: flipped, i.e. arg order flipped
+//
+function fl_array_map_tree( array $a, $f )
+{
+  return array_map_tree( $f, $a );
 }
 
 function array_map_fakl( $f, array $a, $k, $l )
