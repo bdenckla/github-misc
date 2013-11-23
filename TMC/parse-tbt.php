@@ -1043,17 +1043,14 @@ function remove_line_breaks_from_branch( $branch )
                melder( $stack[0], $node, 'PAR-T', 'PAR-T1' )
                ||
                melder( $stack[0], $node, 'PAR-BT', 'PAR-BT1' )
+               ||
+               melder( $stack[0], $node, 'ITX', 'ITX1' )
                )
               {
                 $stack = [ meld_branches( $stack[0], $node ) ];
               }
             else
               {
-                fprintf( STDERR, 'fail: '
-                         . elval( $stack[0]['pusher' ] )
-                         . ' '
-                         . elval( $node['pusher'] )
-                         . "\n" );
                 $a[] = $stack[0];
                 $stack = [ $node ];
               }
