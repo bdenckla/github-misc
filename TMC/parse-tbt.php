@@ -1,13 +1,15 @@
 #!/usr/bin/php -q
 <?php
 
+   // remove superfluous terminal carets (e.g. of headings)
+
    // allow search for places where char maps (coans) are used
 
    // investigate seemingly-erroneous space before --- in 'moral freedom ---a gift'
 
-   // footnote references (i.e. in body text):          &SS;  &xS;
-   // footnote labels (i.e. labelling footnote itself): &SSN; &XSN;
-   // footnote labels (i.e. labelling footnote itself): &SSN; &xSN;
+   // make footnotes (numbered and asterisk) into hyperlinks
+
+   // indentify chaper/verse references.
 
    // opening (``) and closing (") double quote substitution
    // double-dash substitution
