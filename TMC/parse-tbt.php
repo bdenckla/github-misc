@@ -13,8 +13,7 @@
    // double-dash substitution
    // triple-dash substitution
 
-   // Handle ellipsis represented as &#128 . &#128 . &#128 . &#128
-   // ( 4 128s with 3 .s in between)
+   // handle &mul;
 
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
@@ -33,6 +32,12 @@
    // normally we ignore &#6; but it is needed here in a title:
    //
    //    Genesis&#6;and
+
+   // extra close angle bracket in "&#131>;"?
+
+   // wrong closing (xS) in "hbrk b&SSN;c&xS;"?
+
+   // extra &D; documented in email
 
    // inconsistent paren/italic handling
 
@@ -380,6 +385,10 @@ function table_for_branch( $branch )
   $trs = array_merge( [ $tr_for_pusher ],
                       [ $tr_for_popper ],
                       $trs_for_nodes );
+
+  /* TODO: have mode where pushers and poppers aren't shown so
+     literally so, for example, '&' (ampersand) can be searched for to
+     find leaves in need of special handling. */
 
   return table_b1( $trs );
 }
@@ -862,7 +871,24 @@ function is_ang_to_drop( $d )
 
 function is_amp_to_drop( $node )
 {
-  $droppers = [ '#132','#133','#134','#135','#136','#4','#6' ];
+   // do something other than just drop #128?
+
+   // do something other than just drop #131?
+
+   // Handle ellipsis represented as &#128 . &#128 . &#128 . &#128
+   // ( 4 128s with 3 .s in between)
+
+  $droppers = [
+               '#128',
+               '#131',
+               '#132',
+               '#133',
+               '#134',
+               '#135',
+               '#136',
+               '#4', // TODO: determine whether this needs to be dropped
+               '#6',
+               ];
 
   return is_amp_in( $node, $droppers );
 }
@@ -883,39 +909,87 @@ function preserve( $node )
   return TRUE;
 }
 
+function get_poppers( $element )
+{
+  /*
+    If $element is pusher, get its popper or poppers.
+
+    If $element is not a pusher, return the empty list.
+   */
+
+  $caret = element( 'car', '^' );
+
+  $amp_d = amp_element( 'D' );
+
+  // e14: empty, #1, or #4
+  //
+  $e14 = [ ang_element( '' ), amp_element( '#1' ), amp_element( '#4' ) ];
+
+  $ps =
+    [
+     'amp' =>
+     [
+      amp_sem('SS') => [ amp_element('XS'), amp_element('xS') ],
+      amp_sem('SSN') => [ amp_element('XSN'), amp_element('xSN'), amp_element('xS') ],
+      amp_sem('sc') => [ $amp_d, $caret ],
+      amp_sem('SC') => [ $amp_d, $caret ],
+      amp_sem('H') => [ $amp_d ],
+      amp_sem('I') => [ $amp_d ],
+      amp_sem('NN') => [ $amp_d ],
+      amp_sem('SCI') => [ $amp_d ],
+      amp_sem('VB') => [ $amp_d ],
+      amp_sem('hs8') => [ $amp_d ],
+      amp_sem('ib1') => [ $amp_d ],
+      amp_sem('in') => [ $caret ],
+      amp_sem('scd') => [ $amp_d ],
+      amp_sem('scs') => [ $amp_d ],
+      ],
+     'ang' =>
+     [
+      oab_cab('CT') => [ ang_element( '' ) ],
+      oab_cab('IAU') => [ ang_element( '' ) ],
+      oab_cab('IAH') => [ ang_element( '' ) ],
+      oab_cab('PAR-A') => [ ang_element( '' ) ],
+      oab_cab('PAR-B') => [ ang_element( '' ) ],
+      oab_cab('PAR-E') => [ ang_element( '' ) ],
+      oab_cab('PAR-H') => [ ang_element( '' ) ],
+      oab_cab('PAR-S') => [ ang_element( '' ) ],
+      oab_cab('l')     => [ ang_element( '' ) ],
+
+      oab_cab('TT') => $e14,
+      oab_cab('TT1') => $e14,
+      oab_cab('ITF') => $e14,
+      oab_cab('IFN') => $e14,
+      oab_cab('ITI') => $e14,
+      oab_cab('ITX') => $e14,
+      oab_cab('ITX1') => $e14,
+      oab_cab('COM') => $e14,
+      oab_cab('COM1') => $e14,
+      oab_cab('COMa') => $e14,
+      oab_cab('PAR-AT') => $e14,
+      oab_cab('PAR-BT') => $e14,
+      oab_cab('PAR-BT1') => $e14,
+      oab_cab('PAR-F') => $e14,
+      oab_cab('PAR-T') => $e14,
+      oab_cab('PAR-T1') => $e14,
+      ],
+     ];
+
+  $ps1 = lubn( eltype( $element ), $ps );
+
+  if ( is_null( $ps1 ) ) { return []; }
+
+  $ps2 = lubn( elval( $element ), $ps1 );
+
+  if ( is_null( $ps2 ) ) { return []; }
+
+  //fprintf( STDERR, var_export( $ps2, 1 ) );
+
+  return $ps2;
+}
+
 function tree_parse( $elements )
 {
-  $amp_pushers = [ 'in', 'sc', 'SC', 'scs', 'scd', 'hs8', 'ib1',
-               'H', 'I', 'NN', 'VB', 'SCI' ];
-
-  $ang_pushers = [
-                  'COM',
-                  'COM1',
-                  'COMa',
-                  'CT',
-                  'IAH',
-                  'IAU',
-                  'IFN',
-                  'ITI',
-                  'ITX',
-                  'ITX1',
-                  'ITF',
-                  'PAR-A',
-                  'PAR-AT',
-                  'PAR-B',
-                  'PAR-BT',
-                  'PAR-BT1',
-                  'PAR-E',
-                  'PAR-F',
-                  'PAR-H',
-                  'PAR-S',
-                  'PAR-T',
-                  'PAR-T1',
-                  'TT',
-                  'TT1',
-                  ];
-
-  $amp_poppers = [ 'D', '#1', '#4' ];
 
   $n = 0;
   $a[0] = [ 'level' => 0,
@@ -924,34 +998,23 @@ function tree_parse( $elements )
             'popper' => element( 'top-level popper',
                                  'top-level popper' ),
             'nodes' => [] ];
+  $poppers_saught_stack[0] = [];
 
   foreach ( $elements as $element )
   {
-    $is_a_pusher =
-      is_amp_in( $element, $amp_pushers )
-      ||
-      is_ang_in( $element, $ang_pushers );
+    $poppers_saught = get_poppers( $element );
 
-    $is_car   = is_car( $element );
-    $is_ang_empty = is_p_ang( $element, '' );
-
-    $is_a_popper =
-      $is_car
-      ||
-      is_amp_in( $element, $amp_poppers )
-      ||
-      $is_ang_empty
-      ;
-
-    if ( $is_a_pusher )
+    if ( $poppers_saught ) // i.e. $element is a pusher
       {
         $n++;
 
         $a[$n] = [ 'level' => $n,
                    'pusher' => $element,
                    'nodes' => [] ];
+
+        $poppers_saught_stack[$n] = $poppers_saught;
       }
-    elseif ( $is_a_popper )
+    elseif ( is_in( $element, $poppers_saught_stack[$n] ) )
       {
         if ( $n === 0 )
           {
@@ -963,6 +1026,7 @@ function tree_parse( $elements )
             $a[$n]['popper'] = $element;
             $a[$n-1]['nodes'][] = $a[$n];
             $a[$n] = NULL;
+            $poppers_saught_stack[$n] = NULL;
             $n--;
           }
       }
@@ -1228,6 +1292,16 @@ function element( $type, $value )
   $element = [ 'eltype' => $type, 'elval' => $value ];
 
   return $element;
+}
+
+function amp_element( $value )
+{
+  return element ( 'amp', amp_sem( $value ) );
+}
+
+function ang_element( $value )
+{
+  return element ( 'ang', oab_cab( $value ) );
 }
 
 function default_char_map()
