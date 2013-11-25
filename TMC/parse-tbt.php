@@ -342,6 +342,7 @@ function html_body( $input_filename, $input )
         'substitute1',
         'substitute2',
         'meld',
+        'unwrap',
         'apply_char_map_d',
         ];
 
@@ -1061,6 +1062,15 @@ function meld( array $node )
   return $node;
 }
 
+function unwrap( array $node )
+{
+  if ( is_branch( $node ) )
+    {
+      return unwrap_branch( $node );
+    }
+  return $node;
+}
+
 /* $pspell_link = pspell_new("en"); */
 
 /* if (pspell_check($pspell_link, "testt")) { */
@@ -1072,6 +1082,14 @@ function meld( array $node )
 function meld_branch( $branch )
 {
   $branch['nodes'] = process_pairwise( 'pairwise_meld',
+                                       $branch['nodes'] );
+
+  return $branch;
+}
+
+function unwrap_branch( $branch )
+{
+  $branch['nodes'] = process_pairwise( 'pairwise_unwrap',
                                        $branch['nodes'] );
 
   return $branch;
@@ -1116,22 +1134,29 @@ function pairwise_meld( $b0, $b1 )
     : NULL;
 }
 
-function pairwise_should_meld( $b0, $b1 )
+function pairwise_unwrap( $n0, $n1 )
 {
-  return is_branch( $b0 ) && is_branch( $b1 )
+  return pairwise_should_unwrap( $n0, $n1 )
+    ? pairwise_do_the_unwrap( $n0, $n1 )
+    : NULL;
+}
+
+function pairwise_should_meld( $n0, $n1 )
+{
+  return is_branch( $n0 ) && is_branch( $n1 )
     &&
     (
-     melder( $b0, $b1, 'PAR-AT', 'PAR-AT' )
+     melder( $n0, $n1, 'PAR-AT', 'PAR-AT' )
      ||
-     melder( $b0, $b1, 'PAR-T1', 'PAR-T1' )
+     melder( $n0, $n1, 'PAR-T1', 'PAR-T1' )
      ||
-     melder( $b0, $b1, 'PAR-T', 'PAR-T1' )
+     melder( $n0, $n1, 'PAR-T', 'PAR-T1' )
      ||
-     melder( $b0, $b1, 'PAR-BT', 'PAR-BT1' )
+     melder( $n0, $n1, 'PAR-BT', 'PAR-BT1' )
      ||
-     melder( $b0, $b1, 'ITX', 'ITX1' )
+     melder( $n0, $n1, 'ITX', 'ITX1' )
      ||
-     melder( $b0, $b1, 'ITI', 'ITX1' )
+     melder( $n0, $n1, 'ITI', 'ITX1' )
      );
 }
 
@@ -1154,7 +1179,12 @@ function pairwise_do_the_meld( $b0, $b1 )
   return $b0;
 }
 
-function meld_txt_txt( $e0, $e1 )
+function pairwise_should_unwrap( $n0, $n1 )
+{
+  return is_txt( $n0 ) && is_txt( $n1 );
+}
+
+function pairwise_do_the_unwrap( $e0, $e1 )
 {
   $txt0 = $e0['elval'];
   $txt1 = $e1['elval'];
