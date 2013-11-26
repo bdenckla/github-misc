@@ -43,6 +43,8 @@
 
    // inconsistent paren/italic handling
 
+   // transliteration inside &H; seems like mistake and is inconsistent
+
    // Why are some line wraps (incl. some with hypenation) "enforced"?
    // Is this the result of some manual process?
 
@@ -340,41 +342,32 @@ function html_body( $input_filename, $input )
                                'elements', 'tree' );
 
   $f = [
-        'dropper',
+        'footnote_sort',
+        'drop',
         'substitute1',
         'substitute2',
         'meld',
         'unwrap',
-        'apply_char_map_d',
+        'apply_char_maps',
         ];
 
   $a6_blocks = array_reduce( $f, 'fl_array_map_tree', $a1_blocks );
 
   //return xml_wrap( 'pre', [], var_export( $a1_blocks, 1 ) );
 
-  return table_for_lined_trees( $a6_blocks );
+  return tables_for_lined_trees( $a6_blocks );
 }
 
-function table_for_lined_trees( $lined_trees )
+function tables_for_lined_trees( $lined_trees )
 {
-  $trs = array_map( 'tr_for_lined_tree', $lined_trees );
+  $tables = array_map( 'table_for_lined_tree', $lined_trees );
 
-  return table_b1( $trs );
+  return xml_seq( $tables );
 }
 
-function tr_for_lined_tree( $lined_tree )
+function table_for_lined_tree( $lined_tree )
 {
-  $lineno = $lined_tree['lineno'];
-
-  $tree = $lined_tree['tree'];
-
-  $td_lineno = 'lineno: ' . $lineno;
-
-  $td_tree = table_for_branch( $tree );
-
-  $tds = [ $td_lineno, $td_tree ];
-
-  return tr_of_tds( $tds );
+  return table_for_branch( $lined_tree['tree'] );
 }
 
 function melded_trs( $branch )
@@ -399,13 +392,15 @@ function melded_trs( $branch )
 
 function table_for_branch( $branch )
 {
-  $tr_for_pusher = tr_for_pp( 'pusher', $branch );
+  $tr_for_pusher = tr_for_pp( 'pusher', 'pu', $branch );
 
-  $tr_for_popper = tr_for_pp( 'popper', $branch );
+  $tr_for_popper = tr_for_pp( 'popper', 'po', $branch );
+
+  $level = $branch['level'];
 
   $nodes = $branch['nodes'];
 
-  $trs_for_nodes = array_map( 'tr_for_node', $nodes );
+  $trs_for_nodes = array_map_pa( 'tr_for_node', $level, $nodes );
 
   $trs = array_merge( [ $tr_for_pusher ],
                       [ $tr_for_popper ],
@@ -419,28 +414,28 @@ function table_for_branch( $branch )
   return table_b1( $trs );
 }
 
-function tr_for_pp( $pusher_or_popper, array $branch )
+function tr_for_pp( $pusher_or_popper_key,
+                    $pusher_or_popper_display,
+                    array $branch )
 {
-  $tds[] = $pusher_or_popper;
+  $tds[] = $pusher_or_popper_display;
 
-  $tds[] = elval( $branch[ $pusher_or_popper ] );
+  $tds[] = elval( $branch[ $pusher_or_popper_key ] );
 
   return tr_of_tds( $tds );
 }
 
-function tr_for_node( array $node )
+function tr_for_node( $level, array $node )
 {
   if ( is_branch( $node ) )
     {
-      $level = $node['level'];
-
-      $tds[] = $level > 1 ? 'branch' . $level : 'branch';
+      $tds[] = 'b' . $level;
 
       $tds[] = table_for_branch( $node );
     }
   else
     {
-      $node_type = 'leaf';
+      $node_type = 'l' . $level;
       $elval = elval( $node );
       $coan = lubn( 'char ords and names', $node );
 
@@ -626,7 +621,7 @@ function amoc( array $a ) { return array_map( 'oab_cab', $a ); }
 
 // d: default char map
 //
-function apply_char_map_d( $node )
+function apply_char_maps( $node )
 {
   return apply_char_map( default_char_map(), $node );
 }
@@ -822,7 +817,54 @@ function apply_char_map( array $char_map, array $node )
   return $node;
 }
 
-function dropper( array $node )
+function make_pair( $a, $b ) { return [ $a, $b ]; }
+
+function footnote_sort( array $node )
+{
+  if ( is_branch( $node ) )
+    {
+      $kns = array_map_wk( 'make_pair', $node['nodes'] );
+
+      uasort( $kns, 'node_footnote_compare' );
+
+      $node['nodes'] = seconds( $kns );
+    }
+
+  return $node;
+}
+
+function node_footnote_compare( $kn0, $kn1 )
+{
+  $c0 = node_footnote_class( $kn0[1] );
+  $c1 = node_footnote_class( $kn1[1] );
+
+  $ccmp = cmp( $c0, $c1 );
+
+  return $ccmp === 0
+    ? cmp( $kn0[0], $kn1[0] )
+    : $ccmp;
+}
+
+function node_footnote_class( $node )
+{
+  // PAR-F, too
+
+  if ( is_p_ang( $node['pusher'], 'IFN' ) )
+    {
+      return 1;
+    }
+
+  return 0;
+}
+
+function cmp( $a, $b )
+{
+  if ( $a === $b ) { return 0; }
+
+  return ( $a < $b ) ? -1 : 1;
+}
+
+function drop( array $node )
 {
   if ( is_branch( $node ) )
     {
@@ -830,7 +872,7 @@ function dropper( array $node )
 
       $filtered = array_filter( $nodes, 'preserve' );
 
-      $node['nodes'] = array_map( 'dropper', $filtered );
+      $node['nodes'] = array_map( 'drop', $filtered );
     }
 
   return $node;
@@ -1026,7 +1068,6 @@ function get_poppers( $element )
 
 function tree_parse( $elements )
 {
-
   $n = 0;
   $a[0] = [ 'level' => 0,
             'pusher' => element( 'top-level pusher',
