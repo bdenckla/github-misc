@@ -9,6 +9,10 @@
 
    // make footnotes (numbered and asterisk) into hyperlinks
 
+   // footnote sort later (e.g. after meld?)
+
+   // footnotes mushed together: should be separated by CT
+
    // indentify chaper/verse references.
 
    // opening (``) and closing (") double quote substitution
@@ -847,9 +851,13 @@ function node_footnote_compare( $kn0, $kn1 )
 
 function node_footnote_class( $node )
 {
-  // PAR-F, too
+  $is_footnote =
+    is_p_ang( $node['pusher'], 'IFN' )
+    ||
+    is_p_ang( $node['pusher'], 'PAR-F' )
+    ;
 
-  if ( is_p_ang( $node['pusher'], 'IFN' ) )
+  if ( $is_footnote  )
     {
       return 1;
     }
