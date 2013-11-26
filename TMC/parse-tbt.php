@@ -309,7 +309,9 @@ function coalesce_block( array $block )
 
 function is_in( $needle, array $haystack )
 {
-  return array_search( $needle, $haystack ) !== FALSE;
+  $strict = TRUE;
+
+  return in_array( $needle, $haystack, $strict );
 }
 
 function html_body( $input_filename, $input )
@@ -375,15 +377,31 @@ function tr_for_lined_tree( $lined_tree )
   return tr_of_tds( $tds );
 }
 
+function melded_trs( $branch )
+{
+  $mpu = 'melded pushers';
+  $mpo = 'melded poppers';
+
+  $trs = [];
+
+  if ( array_key_exists( $mpu, $branch ) )
+    {
+      $trs[] = tr_of_tds( [ $mpu, var_export( $branch[ $mpu ], 1 ) ] );
+    }
+
+  if ( array_key_exists( $mpo, $branch ) )
+    {
+      $trs[] = tr_of_tds( [ $mpo, var_export( $branch[ $mpo ], 1 ) ] );
+    }
+
+  return $trs;
+}
+
 function table_for_branch( $branch )
 {
   $tr_for_pusher = tr_for_pp( 'pusher', $branch );
 
   $tr_for_popper = tr_for_pp( 'popper', $branch );
-
-  $maybe_tr_for_melded = array_key_exists( 'melded', $branch )
-    ? [ tr_of_tds( [ 'melded', 'TRUE' ] ) ]
-    : [];
 
   $nodes = $branch['nodes'];
 
@@ -391,7 +409,7 @@ function table_for_branch( $branch )
 
   $trs = array_merge( [ $tr_for_pusher ],
                       [ $tr_for_popper ],
-                      $maybe_tr_for_melded,
+                      melded_trs( $branch ),
                       $trs_for_nodes );
 
   /* TODO: have mode where pushers and poppers aren't shown so
@@ -717,7 +735,7 @@ function substitute1( array $node )
   return $node;
 }
 
-function branch_is_numeric( $branch )
+function replacement_for_numeric( $branch )
 {
   $nodes = $branch['nodes'];
 
@@ -742,7 +760,7 @@ function branch_is_numeric( $branch )
   return $nodes[0];
 }
 
-function branch_is_initial_drop_cap( $branch )
+function replacement_for_initial_drop_cap( $branch )
 {
   $nodes = $branch['nodes'];
 
@@ -759,11 +777,11 @@ function substitute2( array $node )
 {
   if ( is_branch( $node ) )
     {
-      $r = branch_is_numeric( $node );
+      $r = replacement_for_numeric( $node );
 
       if ( $r !== FALSE ) { return $r; }
 
-      $r = branch_is_initial_drop_cap( $node );
+      $r = replacement_for_initial_drop_cap( $node );
 
       if ( $r !== FALSE ) { return $r; }
 
@@ -861,6 +879,8 @@ function is_ang_to_drop( $d )
 
   return is_ang( $d )
     && (
+        begins_with( $elval, '<?tlsb=' )
+        ||
         begins_with( $elval, '<?tpl=' )
         ||
         begins_with( $elval, '<?tpt=' )
@@ -886,8 +906,6 @@ function is_amp_to_drop( $node )
                '#134',
                '#135',
                '#136',
-               '#4', // TODO: determine whether this needs to be dropped
-               '#6',
                ];
 
   return is_amp_in( $node, $droppers );
@@ -902,11 +920,29 @@ function preserve( $node )
 {
   if ( is_ang_to_drop( $node )
        ||
+       is_all_hash_6( $node )
+       ||
        is_amp_to_drop( $node ) )
     {
       return FALSE;
     }
   return TRUE;
+}
+
+function is_all_hash_6( $node )
+{
+  if ( ! is_branch( $node ) ) { return FALSE; }
+
+  if ( $node['nodes'] === [] ) { return FALSE; }
+
+  $non_hash_6s = array_filter( $node['nodes'], 'is_non_hash_6' );
+
+  return $non_hash_6s === [];
+}
+
+function is_non_hash_6( $node )
+{
+  return ! is_p_amp( $node, '#6' );
 }
 
 function get_poppers( $element )
@@ -1055,19 +1091,25 @@ function last_char( $x )
 
 function meld( array $node )
 {
-  if ( is_branch( $node ) )
-    {
-      return meld_branch( $node );
-    }
-  return $node;
+  return process_pairwise_2( 'pairwise_meld', $node );
 }
 
 function unwrap( array $node )
 {
+  return process_pairwise_2( 'pairwise_unwrap', $node );
+}
+
+function process_pairwise_2( $f, array $node )
+{
   if ( is_branch( $node ) )
     {
-      return unwrap_branch( $node );
+      $a = array_map_pa( 'process_pairwise_2', $f, $node['nodes'] );
+
+      $node['nodes'] = process_pairwise( $f, $a );
+
+      return $node;
     }
+
   return $node;
 }
 
@@ -1078,22 +1120,6 @@ function unwrap( array $node )
 /* } else { */
 /*     echo "Sorry, wrong spelling"; */
 /* } */
-
-function meld_branch( $branch )
-{
-  $branch['nodes'] = process_pairwise( 'pairwise_meld',
-                                       $branch['nodes'] );
-
-  return $branch;
-}
-
-function unwrap_branch( $branch )
-{
-  $branch['nodes'] = process_pairwise( 'pairwise_unwrap',
-                                       $branch['nodes'] );
-
-  return $branch;
-}
 
 function process_pairwise( $f, array $a )
 {
@@ -1154,9 +1180,17 @@ function pairwise_should_meld( $n0, $n1 )
      ||
      melder( $n0, $n1, 'PAR-BT', 'PAR-BT1' )
      ||
+     melder( $n0, $n1, 'ITX1', 'ITX1' )
+     ||
      melder( $n0, $n1, 'ITX', 'ITX1' )
      ||
      melder( $n0, $n1, 'ITI', 'ITX1' )
+     ||
+     melder( $n0, $n1, 'COM', 'COM' )
+     ||
+     melder( $n0, $n1, 'COMa', 'COM' )
+     ||
+     melder( $n0, $n1, 'COM1', 'COM' )
      );
 }
 
@@ -1165,6 +1199,8 @@ function melder( $b0, $b1, $ang0, $ang1 )
   return
     is_p_ang( $b0['pusher'], $ang0 )
     &&
+    ! is_p_ang( $b0['popper'], '' )
+    &&
     is_p_ang( $b1['pusher'], $ang1 );
 }
 
@@ -1172,7 +1208,10 @@ function pairwise_do_the_meld( $b0, $b1 )
 {
   $b0['nodes'] = array_merge( $b0['nodes'], $b1['nodes'] );
 
-  $b0['melded'] = TRUE;
+  // $b0['melded poppers'][] = $b0['popper'];
+  // $b0['melded pushers'][] = $b1['pusher'];
+
+  $b0['popper'] = $b1['popper'];
 
   // TODO what about other fields of $b1 than just 'nodes'?
 
