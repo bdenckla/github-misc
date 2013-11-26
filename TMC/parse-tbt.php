@@ -829,7 +829,12 @@ function footnote_sort( array $node )
     {
       $kns = array_map_wk( 'make_pair', $node['nodes'] );
 
-      uasort( $kns, 'node_footnote_compare' );
+      $success = uasort( $kns, 'node_footnote_compare' );
+
+      if ( ! $success )
+        {
+          tneve(['uasort failed']);
+        }
 
       $node['nodes'] = seconds( $kns );
     }
@@ -970,7 +975,7 @@ function preserve( $node )
 {
   if ( is_ang_to_drop( $node )
        ||
-       is_all_hash_6( $node )
+       is_irrelevant_whitespace( $node )
        ||
        is_amp_to_drop( $node ) )
     {
@@ -979,11 +984,20 @@ function preserve( $node )
   return TRUE;
 }
 
-function is_all_hash_6( $node )
+function is_irrelevant_whitespace( $node )
 {
+  /* Get rid of the following 2 types of branches:
+
+     1. empty nodes and #4 popper
+     2. non-empty nodes, all of whom are #6
+  */
+
   if ( ! is_branch( $node ) ) { return FALSE; }
 
-  if ( $node['nodes'] === [] ) { return FALSE; }
+  if ( $node['nodes'] === [] )
+    {
+      return is_p_amp( $node['popper'], '#4' );
+    }
 
   $non_hash_6s = array_filter( $node['nodes'], 'is_non_hash_6' );
 
@@ -1255,7 +1269,18 @@ function melder( $b0, $b1, $ang0, $ang1 )
 
 function pairwise_do_the_meld( $b0, $b1 )
 {
-  $b0['nodes'] = array_merge( $b0['nodes'], $b1['nodes'] );
+  $b0n = $b0['nodes'];
+  $b1n = $b1['nodes'];
+
+  $jam = jam( $b0n, $b1n );
+
+  $maybe_space = $jam
+    ? []
+    : [ element( 'txt', ' ' ) ];
+
+  $b0['nodes'] = array_merge( $b0n,
+                              $maybe_space,
+                              $b1n );
 
   // $b0['melded poppers'][] = $b0['popper'];
   // $b0['melded pushers'][] = $b1['pusher'];
@@ -1282,10 +1307,18 @@ function pairwise_do_the_unwrap( $e0, $e1 )
   return $element;
 }
 
-function meld_txt_lb_txt( $e0, $e1 )
+function jam( $nodes0, $nodes1 )
 {
-  $txt0 = $e0['elval'];
-  $txt1 = $e1['elval'];
+  if ( count( $nodes0 ) === 0 ) { return TRUE; }
+
+  $last_of_nodes0 = $nodes0[ count( $nodes0 ) - 1 ];
+  //$first_of_nodes1 = $nodes1[ 0 ];
+
+  // TODO: look deeper into what we should do if last of nodes0 is non-txt.
+
+  if ( ! is_txt( $last_of_nodes0 ) ) { return TRUE; }
+
+  $txt0 = elval( $last_of_nodes0 );
 
   $jammers = [ '-', '/' ]; // others?
 
@@ -1293,25 +1326,8 @@ function meld_txt_lb_txt( $e0, $e1 )
   //
   $lc0 = substr( $txt0, -1 );
 
-  if ( is_in( $lc0, $jammers ) )
-    {
-      $glue = 'JAM';
-    }
-  else
-    {
-      $glue = ' ';
-    }
-
-  $element = element( 'txt', $txt0 . $glue . $txt1 );
-
-  return $element;
+  return is_in( $lc0, $jammers );
 }
-
-/*
-    $is_txt_jammer = $is_txt
-      &&
-      is_in( last_char( $node['elval'] ), $jammers );
-*/
 
 function basic_parse( $dollars )
 {
