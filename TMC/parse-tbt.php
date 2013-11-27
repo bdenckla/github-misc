@@ -363,6 +363,8 @@ function html_body( $input_filename, $input )
         'brbr',
         'txttxt',
         'apply_char_maps',
+        'inline_hebrew',
+        'txttxt',
         ];
 
   $a6_blocks = array_reduce( $f, 'fl_array_map_tree', $a1_blocks );
@@ -451,13 +453,13 @@ function tr_for_node( $level, array $node )
     {
       $node_type = 'l' . $level;
       $elval = elval( $node );
-      $coan = lubn( 'char ords and names', $node );
+      $coan = lubn( 'char map', $node );
 
       if ( ! is_null( $coan ) )
         {
-          $node_value = table_for_elval_and_coan( $elval, $coan );
+          $node_value = html_for_elval_and_coan( $node, $elval, $coan );
         }
-      elseif( array_keys( $node ) !== [ 'eltype', 'elval' ] )
+      elseif ( array_keys( $node ) !== [ 'eltype', 'elval' ] )
         {
           $node_value = var_export( $node, 1 );
         }
@@ -472,11 +474,20 @@ function tr_for_node( $level, array $node )
   return tr_of_tds( $tds );
 }
 
-function table_for_elval_and_coan( $elval, $coan )
+function html_for_elval_and_coan( $node, $elval, $coan )
 {
+  if ( array_keys( $node ) !== [ 'eltype', 'elval', 'char map' ] )
+    {
+      return var_export( $node, 1 );
+    }
+
+  $show_coan = FALSE;
+
+  if ( ! $show_coan ) { return $elval; }
+
   $trs = [
           tr_of_tds( [ $elval ] ),
-          tr_of_tds( [ table_for_coan( $coan ) ] ),
+          tr_of_tds( [ table_for_coan( $coan['ords and names'] ) ] ),
           ];
 
   return table_b1( $trs );
@@ -788,25 +799,27 @@ function replacement_for_numeric( $branch )
 
 function substitute2( array $node )
 {
-  $a = substitute2h( $node );
+  $a = substitute_h( 'replacement2', $node );
 
   return $a[0];
 }
 
-function substitute2h( array $node )
+function inline_hebrew( array $node )
+{
+  $a = substitute_h( 'inline_hebrew_r', $node );
+
+  return $a[0];
+}
+
+function substitute_h( $replacement_fn, array $node )
 {
   if ( is_branch( $node ) )
     {
-      $r = replacement_for_numeric( $node );
-
-      if ( $r === FALSE )
-        {
-          $r = replacement_for_misc( $node );
-        }
+      $r = $replacement_fn( $node );
 
       $deep = $r === FALSE ? $node['nodes'] : $r;
 
-      $aa = array_map( 'substitute2h', $deep );
+      $aa = array_map_pa( 'substitute_h', $replacement_fn, $deep );
 
       $faa = flatten( $aa );
 
@@ -820,6 +833,29 @@ function substitute2h( array $node )
     }
 
   return [ $node ];
+}
+
+function replacement2( $branch )
+{
+  $r = replacement_for_numeric( $branch );
+
+  if ( $r === FALSE )
+    {
+      $r = replacement_for_misc( $branch );
+    }
+
+  return $r;
+}
+
+function inline_hebrew_r( $branch )
+{
+  $pusher = $branch['pusher'];
+
+  if ( ! is_p_amp( $pusher, 'H' ) ) { return FALSE; }
+
+  $nodes = $branch['nodes'];
+
+  return $nodes;
 }
 
 function flatten( array $a )
@@ -966,9 +1002,9 @@ function apply_char_map_to_txt( $char_map, $element )
       //
       $nps = array_filter( $eaa, 'has_non_printable' );
 
-      $element['char map name'] = $char_map['char map name'];
+      $element['char map']['name'] = $char_map['char map name'];
 
-      $element['char ords and names'] =
+      $element['char map']['ords and names'] =
         array_map_pa( 'ord_and_name', $char_map, $nps );
 
       $element['elval'] = implode( array_map_pa( 'acm', $char_map, $eaa ) );
@@ -1592,12 +1628,12 @@ function default_char_map()
 {
   $a =
     [
-     0xA8 => [ 'aa', 'ACUTE ACCENT', 'א' ],
-     0xA9 => [ 'mlga', 'MODIFIER LETTER GRAVE ACCENT', 'א' ],
-     0xAA => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', 'א' ],
-     0xAB => [ 'dia', 'DIAERESIS', 'א' ],
-     0xAC => [ 'til', 'SMALL TILDE', 'א' ],
-     0xF5 => [ 'mlcaron', 'modifier letter caron', 'א' ],
+     0xA8 => [ 'aa', 'ACUTE ACCENT', hu('301') ],
+     //0xA9 => [ 'mlga', 'MODIFIER LETTER GRAVE ACCENT', hu('300') ],
+     0xAA => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
+     0xAB => [ 'dia', 'DIAERESIS', hu('308') ],
+     0xAC => [ 'til', 'SMALL TILDE', hu('303') ],
+     0xF5 => [ 'mlcaron', 'modifier letter caron', hu('30C') ],
      // above (caron) differs from HP Roman-8!
      ];
 
@@ -1606,6 +1642,12 @@ function default_char_map()
 
   return [ 'char map name' => 'HP Roman-8-ish',
            'char map itself' => $a ];
+}
+
+
+function hu( $hex ) // hu: hex to utf-8
+{
+  return html_entity_decode('&#x'.$hex.';', ENT_COMPAT, 'UTF-8');
 }
 
 function hebrew_char_map()
@@ -1617,18 +1659,18 @@ function hebrew_char_map()
      171 => [ 'zr'  , 'zeire', 'ֵ' ],
      188 => [ 'hsg' , 'hataf segol', 'ֱ' ],
      192 => [ 'qm'  , 'qamats', 'ָ' ],
-     194 => [ 'a'   , 'aleph', 'א' ],
+     194 => [ 'al'  , 'aleph', 'א' ],
      195 => [ 'b'   , 'bet', 'ב' ],
-     // gimmel?
+     // gimmel? (g)
      197 => [ 'd', 'dalet', 'ד' ],
      198 => [ 'h', 'hei', 'ה' ],
-     // vav?
+     // vav? (v)
      200 => [ 'z'  , 'zayin', 'ז' ],
      201 => [ 'ch' , 'chet', 'ח' ],
-     // tet? (+)
+     // tet? (tt)
      203 => [ 'y', 'yod', 'י' ],
-     // kaf sofit
-     // kaf
+     // kaf sofit (ks)
+     // kaf (k)
      206 => [ 'l'  , 'lamed', 'ל' ],
      207 => [ 'ms' , 'mem-sofit', 'ם' ],
      208 => [ 'm'  , 'mem', 'מ' ],
@@ -1636,14 +1678,14 @@ function hebrew_char_map()
      210 => [ 'n'  , 'nun', 'נ' ],
      // samech?
      212 => [ 'ay', 'ayin', 'ע' ],
-     // pei sofit?
-     // pei
-     // tsadi sofit
-     // tsadi
+     // pei sofit? (ps)
+     // pei (p)
+     // tsadi sofit (tss)
+     // tsadi (ts)
      217 => [ 'q'   , 'qof', 'ק' ],
      218 => [ 'r'   , 'resh', 'ר' ],
-     219 => [ '#'   , 'shin', 'ש' ],
-     220 => [ 't'   , 'tav', 'ת' ],
+     219 => [ 'sh'   , 'shin', 'ש' ],
+     220 => [ 'tv'   , 'tav', 'ת' ],
      221 => [ 'hr'  , 'hiriq', 'ִ' ],
      222 => [ 'sv'  , 'sheva', 'ְ' ],
      224 => [ 'hh'  , 'holam-haser', 'ֹ' ],
@@ -1652,8 +1694,8 @@ function hebrew_char_map()
      229 => [ 'vs'  , 'vav-shuruq', 'וּ' ],
      230 => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
      235 => [ 'ld'  , 'lamed-dagesh', 'לּ' ],
-     242 => [ '$'   , 'shin-w-shin-dot', 'שׁ' ],
-     245 => [ 'sid' , 'shin-w-sin-dot-and-dagesh', 'שֹּ' ],
+     242 => [ 'shsh'   , 'shin-w-shin-dot', 'שׁ' ],
+     245 => [ 'shsid' , 'shin-w-sin-dot-and-dagesh', 'שֹּ' ],
      246 => [ 'td'  , 'tav-dagesh', 'תּ' ],
      250 => [ 'hpt' , 'hataf-patach', 'ֲ' ],
      ];
