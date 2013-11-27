@@ -351,7 +351,7 @@ function html_body( $input_filename, $input )
         'substitute1',
         'substitute2',
         'meld',
-        'unwrap',
+        'txttxt',
         'apply_char_maps',
         ];
 
@@ -1157,9 +1157,9 @@ function meld( array $node )
   return process_pairwise_2( 'pairwise_meld', $node );
 }
 
-function unwrap( array $node )
+function txttxt( array $node )
 {
-  return process_pairwise_2( 'pairwise_unwrap', $node );
+  return process_pairwise_2( 'pairwise_txttxt', $node );
 }
 
 function process_pairwise_2( $f, array $node )
@@ -1175,14 +1175,6 @@ function process_pairwise_2( $f, array $node )
 
   return $node;
 }
-
-/* $pspell_link = pspell_new("en"); */
-
-/* if (pspell_check($pspell_link, "testt")) { */
-/*     echo "This is a valid spelling"; */
-/* } else { */
-/*     echo "Sorry, wrong spelling"; */
-/* } */
 
 function process_pairwise( $f, array $a )
 {
@@ -1223,10 +1215,10 @@ function pairwise_meld( $b0, $b1 )
     : NULL;
 }
 
-function pairwise_unwrap( $n0, $n1 )
+function pairwise_txttxt( $n0, $n1 )
 {
-  return pairwise_should_unwrap( $n0, $n1 )
-    ? pairwise_do_the_unwrap( $n0, $n1 )
+  return pairwise_should_txttxt( $n0, $n1 )
+    ? pairwise_do_the_txttxt( $n0, $n1 )
     : NULL;
 }
 
@@ -1267,19 +1259,36 @@ function melder( $b0, $b1, $ang0, $ang1 )
     is_p_ang( $b1['pusher'], $ang1 );
 }
 
+function how_to_meld_unclear() { return 'MELD-UNCLEAR'; }
+function how_to_meld_jam()     { return 'MELD-JAM'; }
+function how_to_meld_space()   { return 'MELD-SPACE'; }
+
 function pairwise_do_the_meld( $b0, $b1 )
 {
   $b0n = $b0['nodes'];
   $b1n = $b1['nodes'];
 
-  $jam = jam( $b0n, $b1n );
+  $how_to_meld = how_to_meld( $b0n, $b1n );
 
-  $maybe_space = $jam
-    ? []
-    : [ element( 'txt', ' ' ) ];
+  if ( $how_to_meld === how_to_meld_unclear() )
+    {
+      $how_to_meld_nodes = [ element( 'txt', '(' . $how_to_meld . ')' ) ];
+    }
+  elseif ( $how_to_meld === how_to_meld_jam() )
+    {
+      $how_to_meld_nodes = [ element( 'txt', '(' . $how_to_meld . ')' ) ];
+    }
+  elseif ( $how_to_meld === how_to_meld_space() )
+    {
+      $how_to_meld_nodes = [ element( 'txt', '(' . $how_to_meld . ')' ) ];
+    }
+    else
+      {
+        tneve(['unrecognized meld instruction' => $how_to_meld]);
+      }
 
   $b0['nodes'] = array_merge( $b0n,
-                              $maybe_space,
+                              $how_to_meld_nodes,
                               $b1n );
 
   // $b0['melded poppers'][] = $b0['popper'];
@@ -1292,12 +1301,12 @@ function pairwise_do_the_meld( $b0, $b1 )
   return $b0;
 }
 
-function pairwise_should_unwrap( $n0, $n1 )
+function pairwise_should_txttxt( $n0, $n1 )
 {
   return is_txt( $n0 ) && is_txt( $n1 );
 }
 
-function pairwise_do_the_unwrap( $e0, $e1 )
+function pairwise_do_the_txttxt( $e0, $e1 )
 {
   $txt0 = $e0['elval'];
   $txt1 = $e1['elval'];
@@ -1307,16 +1316,24 @@ function pairwise_do_the_unwrap( $e0, $e1 )
   return $element;
 }
 
-function jam( $nodes0, $nodes1 )
+/* $pspell_link = pspell_new("en"); */
+
+/* if (pspell_check($pspell_link, "testt")) { */
+/*     echo "This is a valid spelling"; */
+/* } else { */
+/*     echo "Sorry, wrong spelling"; */
+/* } */
+
+function how_to_meld( $nodes0, $nodes1 )
 {
-  if ( count( $nodes0 ) === 0 ) { return TRUE; }
+  if ( count( $nodes0 ) === 0 ) { return how_to_meld_unclear(); }
 
   $last_of_nodes0 = $nodes0[ count( $nodes0 ) - 1 ];
   //$first_of_nodes1 = $nodes1[ 0 ];
 
   // TODO: look deeper into what we should do if last of nodes0 is non-txt.
 
-  if ( ! is_txt( $last_of_nodes0 ) ) { return TRUE; }
+  if ( ! is_txt( $last_of_nodes0 ) ) { return how_to_meld_unclear(); }
 
   $txt0 = elval( $last_of_nodes0 );
 
@@ -1326,7 +1343,9 @@ function jam( $nodes0, $nodes1 )
   //
   $lc0 = substr( $txt0, -1 );
 
-  return is_in( $lc0, $jammers );
+  return is_in( $lc0, $jammers )
+    ? how_to_meld_jam()
+    : how_to_meld_space();
 }
 
 function basic_parse( $dollars )
