@@ -1,8 +1,6 @@
 #!/usr/bin/php -q
 <?php
 
-   // check that TT boundaries correspond to paragraphs in printed
-
    // allow search for places where char maps (coans) are used
 
    // make footnotes (numbered and asterisk) into hyperlinks
@@ -55,8 +53,6 @@
 
 require_once 'generate-html.php';
 
-// sudo apt-get install php5-pspell
-
 // tneve: throw new ErrorException of var_export
 function tneve( $e )
 {
@@ -89,6 +85,13 @@ function array_map_pa( $f, $a, array $b )
 function array_map_wk( $f, array $a )
 {
   return array_map( $f, array_keys( $a ), $a );
+}
+
+// rn: renumber
+//
+function array_filter_rn( array $a, $f )
+{
+  return array_values( array_filter( $a, $f ) );
 }
 
 // zb_lineno: zero-based line number
@@ -738,6 +741,23 @@ function substitute1( array $node )
   return $node;
 }
 
+function replacement_for_misc( $branch )
+{
+  $nodes = $branch['nodes'];
+
+  $pusher = $branch['pusher'];
+
+  $misc = [ 'hs8', 'ib1', 'in' ];
+
+  if ( ! is_amp_in( $pusher, $misc ) ) { return FALSE; }
+
+  $leading_space = is_p_amp( $pusher, 'hs8' )
+    ? [ element( 'txt', ' ' ) ]
+    : [];
+
+  return array_merge( $leading_space, $nodes );
+}
+
 function replacement_for_numeric( $branch )
 {
   $nodes = $branch['nodes'];
@@ -750,9 +770,9 @@ function replacement_for_numeric( $branch )
 
   // Examples: '1', '12', '12--13', '12, 13, 14', '1,234', '1/2'
 
-  $first = $branch['pusher'];
+  $pusher = $branch['pusher'];
 
-  if ( ! is_amp_in( $first, $number_styles ) ) { return FALSE; }
+  if ( ! is_amp_in( $pusher, $number_styles ) ) { return FALSE; }
 
   // evs: elval of second
   //
@@ -760,52 +780,60 @@ function replacement_for_numeric( $branch )
 
   if ( ! preg_match_toe2( $num_pat, $evs ) ) { return FALSE; }
 
-  return $nodes[0];
-}
-
-function replacement_for_initial_drop_cap( $branch )
-{
-  $nodes = $branch['nodes'];
-
-  if ( count( $nodes ) !== 1 ) { return FALSE; }
-
-  $first = $branch['pusher'];
-
-  if ( ! is_p_amp( $first, 'in' ) ) { return FALSE; }
-
-  return $nodes[0];
+  return $nodes;
 }
 
 function substitute2( array $node )
+{
+  $a = substitute2h( $node );
+
+  return $a[0];
+}
+
+function substitute2h( array $node )
 {
   if ( is_branch( $node ) )
     {
       $r = replacement_for_numeric( $node );
 
-      if ( $r !== FALSE ) { return $r; }
+      if ( $r === FALSE )
+        {
+          $r = replacement_for_misc( $node );
+        }
 
-      $r = replacement_for_initial_drop_cap( $node );
+      $deep = $r === FALSE ? $node['nodes'] : $r;
 
-      if ( $r !== FALSE ) { return $r; }
+      $aa = array_map( 'substitute2h', $deep );
 
-      $node['nodes'] = array_map( 'substitute2', $node['nodes'] );
+      $faa = flatten( $aa );
 
-      return $node;
+      if ( $r === FALSE )
+        {
+          $node['nodes'] = $faa;
+          return [ $node ];
+        }
+
+      return $faa;
     }
 
-  return $node;
+  return [ $node ];
+}
+
+function flatten( array $a )
+{
+  return array_reduce( $a, 'array_merge', [] );
 }
 
 function apply_char_map( array $char_map, array $node )
 {
   if ( is_branch( $node ) )
     {
-      $first = $node['pusher'];
+      $pusher = $node['pusher'];
 
       $is_hebrew =
-        is_p_amp( $first, 'H' )
+        is_p_amp( $pusher, 'H' )
         ||
-        is_p_ang( $first, 'PAR-H' );
+        is_p_ang( $pusher, 'PAR-H' );
 
       $char_map = $is_hebrew ? hebrew_char_map() : default_char_map();
 
@@ -894,7 +922,7 @@ function drop( array $node )
           array_pop( $nodes );
         }
 
-      $filtered = array_filter( $nodes, 'do_not_drop' );
+      $filtered = array_filter_rn( $nodes, 'do_not_drop' );
 
       $node['nodes'] = array_map( 'drop', $filtered );
     }
@@ -951,7 +979,15 @@ function is_ang_to_drop( $d )
         ||
         begins_with( $elval, '<?tpt=' )
         ||
+        begins_with( $elval, '<?th=' )
+        ||
         begins_with( $elval, '<?twb' )
+        ||
+        $elval === '<?down>'
+        ||
+        $elval === '<?up>'
+        ||
+        $elval === '<?tf="DAN-R">'
         );
 }
 
@@ -1041,7 +1077,9 @@ function get_poppers( $element )
      'amp' =>
      [
       amp_sem('SS') => [ amp_element('XS'), amp_element('xS') ],
-      amp_sem('SSN') => [ amp_element('XSN'), amp_element('xSN'), amp_element('xS') ],
+      amp_sem('SSN') => [ amp_element('XSN'),
+                          amp_element('xSN'),
+                          amp_element('xS') ],
       amp_sem('sc') => [ $amp_d, $caret ],
       amp_sem('SC') => [ $amp_d, $caret ],
       amp_sem('H') => [ $amp_d ],
@@ -1057,6 +1095,8 @@ function get_poppers( $element )
       ],
      'ang' =>
      [
+      oab_cab('?tvs=-5pt') => [ ang_element( '?tvs' ) ],
+
       oab_cab('CT') => [ ang_element( '' ) ],
       oab_cab('IAU') => [ ang_element( '' ) ],
       oab_cab('IAH') => [ ang_element( '' ) ],
