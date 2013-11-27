@@ -51,6 +51,9 @@
    // Why are some line wraps (incl. some with hypenation) "enforced"?
    // Is this the result of some manual process?
 
+   // b'reishit bara elohim wraps weirdly in printed (p. 19)
+   // same with eileh tol'dot (p. 22)
+
 require_once 'generate-html.php';
 
 // tneve: throw new ErrorException of var_export
@@ -942,6 +945,13 @@ function has_non_printable( $x )
   return preg_match_toe2( $pat, $x );
 }
 
+function is_printable( $x )
+{
+  $pat = '/^[[:print:]]*$/';
+
+  return preg_match_toe2( $pat, $x );
+}
+
 function apply_char_map_to_txt( $char_map, $element )
 {
   $elval = elval( $element );
@@ -956,12 +966,12 @@ function apply_char_map_to_txt( $char_map, $element )
       //
       $nps = array_filter( $eaa, 'has_non_printable' );
 
-      $ords = array_map( 'ord', $nps );
-
       $element['char map name'] = $char_map['char map name'];
 
       $element['char ords and names'] =
-        array_map_pa( 'ord_and_name', $char_map, $ords );
+        array_map_pa( 'ord_and_name', $char_map, $nps );
+
+      $element['elval'] = implode( array_map_pa( 'acm', $char_map, $eaa ) );
     }
 
   return $element;
@@ -1582,12 +1592,13 @@ function default_char_map()
 {
   $a =
     [
-     0xA8 => 'ACUTE ACCENT',
-     0xA9 => 'MODIFIER LETTER GRAVE ACCENT',
-     0xAA => 'MODIFIER LETTER CIRCUMFLEX ACCENT',
-     0xAB => 'DIAERESIS',
-     0xAC => 'SMALL TILDE',
-     0xF5 => 'modifier letter caron', // differs from HP Roman-8!
+     0xA8 => [ 'aa', 'ACUTE ACCENT', 'א' ],
+     0xA9 => [ 'mlga', 'MODIFIER LETTER GRAVE ACCENT', 'א' ],
+     0xAA => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', 'א' ],
+     0xAB => [ 'dia', 'DIAERESIS', 'א' ],
+     0xAC => [ 'til', 'SMALL TILDE', 'א' ],
+     0xF5 => [ 'mlcaron', 'modifier letter caron', 'א' ],
+     // above (caron) differs from HP Roman-8!
      ];
 
   /* Below we use "ish" in the char map name because it is only kind
@@ -1601,51 +1612,88 @@ function hebrew_char_map()
 {
   $raw =
     [
-     209 => 'nun-sofit',
-     226 => 'gimel-dagesh',
-     235 => 'lamed-dagesh',
-     245 => 'shin-w-sin-dot-and-dagesh',
-     188 => 'hataf segol',
-     163 => 'patach',
-     166 => 'segol',
-     171 => 'zeire',
-     192 => 'qamats',
-     194 => 'aleph',
-     195 => 'bet',
-     197 => 'dalet',
-     198 => 'hei',
-     200 => 'zayin',
-     201 => 'chet',
-     203 => 'yod',
-     206 => 'lamed',
-     207 => 'mem-sofit',
-     208 => 'mem',
-     210 => 'gimel',
-     212 => 'ayin',
-     217 => 'qof',
-     218 => 'resh',
-     219 => 'shin',
-     220 => 'tav',
-     221 => 'hiriq',
-     222 => 'sheva',
-     224 => 'holam-haser',
-     225 => 'bet-dagesh',
-     229 => 'vav-shuruq',
-     230 => 'vav-holam-male',
-     242 => 'shin-w-shin-dot',
-     246 => 'tav-dagesh',
-     250 => 'hataf-patach',
+     163 => [ 'pt'  , 'patach', 'ַ' ],
+     166 => [ 'sg'  , 'segol', 'ֶ' ],
+     171 => [ 'zr'  , 'zeire', 'ֵ' ],
+     188 => [ 'hsg' , 'hataf segol', 'ֱ' ],
+     192 => [ 'qm'  , 'qamats', 'ָ' ],
+     194 => [ 'a'   , 'aleph', 'א' ],
+     195 => [ 'b'   , 'bet', 'ב' ],
+     // gimmel?
+     197 => [ 'd', 'dalet', 'ד' ],
+     198 => [ 'h', 'hei', 'ה' ],
+     // vav?
+     200 => [ 'z'  , 'zayin', 'ז' ],
+     201 => [ 'ch' , 'chet', 'ח' ],
+     // tet? (+)
+     203 => [ 'y', 'yod', 'י' ],
+     // kaf sofit
+     // kaf
+     206 => [ 'l'  , 'lamed', 'ל' ],
+     207 => [ 'ms' , 'mem-sofit', 'ם' ],
+     208 => [ 'm'  , 'mem', 'מ' ],
+     209 => [ 'ns' , 'nun-sofit', 'ן' ],
+     210 => [ 'n'  , 'nun', 'נ' ],
+     // samech?
+     212 => [ 'ay', 'ayin', 'ע' ],
+     // pei sofit?
+     // pei
+     // tsadi sofit
+     // tsadi
+     217 => [ 'q'   , 'qof', 'ק' ],
+     218 => [ 'r'   , 'resh', 'ר' ],
+     219 => [ '#'   , 'shin', 'ש' ],
+     220 => [ 't'   , 'tav', 'ת' ],
+     221 => [ 'hr'  , 'hiriq', 'ִ' ],
+     222 => [ 'sv'  , 'sheva', 'ְ' ],
+     224 => [ 'hh'  , 'holam-haser', 'ֹ' ],
+     225 => [ 'bd'  , 'bet-dagesh', 'בּ' ],
+     226 => [ 'gd'  , 'gimel-dagesh', 'גּ' ],
+     229 => [ 'vs'  , 'vav-shuruq', 'וּ' ],
+     230 => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
+     235 => [ 'ld'  , 'lamed-dagesh', 'לּ' ],
+     242 => [ '$'   , 'shin-w-shin-dot', 'שׁ' ],
+     245 => [ 'sid' , 'shin-w-sin-dot-and-dagesh', 'שֹּ' ],
+     246 => [ 'td'  , 'tav-dagesh', 'תּ' ],
+     250 => [ 'hpt' , 'hataf-patach', 'ֲ' ],
      ];
 
   return [ 'char map name' => 'Hebrew',
            'char map itself' => $raw ];
 }
 
-function ord_and_name( $char_map, $ord )
+function cm_lookup( $char_map, $ord )
 {
-  $mapped_ord = lubn( $ord, $char_map['char map itself'] );
+  $r = lubn( $ord, $char_map['char map itself'] );
 
-  return [ $ord, $mapped_ord ];
+  if ( is_null( $r ) )
+    {
+      $name = 'XXX-unknown-' . $ord;
+
+      return [ 'XXX', $name, '('.$name.')' ];
+    }
+
+  return $r;
+}
+
+function ord_and_name( $char_map, $char )
+{
+  $ord = ord( $char );
+
+  $mapped_ord = cm_lookup( $char_map, $ord );
+
+  return [ $ord, $mapped_ord[0] ];
+}
+
+function acm( $char_map, $char )
+{
+  if ( is_printable( $char ) ) { return $char; }
+
+  $ord = ord( $char );
+
+  $mapped_ord = cm_lookup( $char_map, $ord );
+
+  return $mapped_ord[2];
 }
 
 function array_map_tree( $f, array $a )
