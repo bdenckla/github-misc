@@ -1,6 +1,10 @@
 #!/usr/bin/php -q
 <?php
 
+   // brbr can't join COM1/COM due to htm/txt across the boundary
+
+   // eliminate excess space inside of parens
+
    // allow search for places where char maps (coans) are used
 
    // make footnotes (numbered and asterisk) into hyperlinks
@@ -365,6 +369,8 @@ function html_body( $input_filename, $input )
         'apply_char_maps',
         'inline_hebrew',
         'txttxt',
+        'inline_italics',
+        'txthtm',
         ];
 
   $a6_blocks = array_reduce( $f, 'fl_array_map_tree', $a1_blocks );
@@ -671,6 +677,11 @@ function is_txt( array $node )
   return eltype( $node ) === 'txt';
 }
 
+function is_htm( array $node )
+{
+  return eltype( $node ) === 'htm';
+}
+
 // p: particular
 // i.e. is not only an amp, but has a particular elval
 //
@@ -788,11 +799,11 @@ function replacement_for_numeric( $branch )
 
   if ( ! is_amp_in( $pusher, $number_styles ) ) { return FALSE; }
 
-  // evs: elval of second
+  // evfo: elval of first (and only)
   //
-  $evs = elval( $nodes[0] );
+  $evfo = elval( $nodes[0] );
 
-  if ( ! preg_match_toe2( $num_pat, $evs ) ) { return FALSE; }
+  if ( ! preg_match_toe2( $num_pat, $evfo ) ) { return FALSE; }
 
   return $nodes;
 }
@@ -807,6 +818,13 @@ function substitute2( array $node )
 function inline_hebrew( array $node )
 {
   $a = substitute_h( 'inline_hebrew_r', $node );
+
+  return $a[0];
+}
+
+function inline_italics( array $node )
+{
+  $a = substitute_h( 'inline_italics_r', $node );
 
   return $a[0];
 }
@@ -856,6 +874,25 @@ function inline_hebrew_r( $branch )
   $nodes = $branch['nodes'];
 
   return $nodes;
+}
+
+function inline_italics_r( $branch )
+{
+  $pusher = $branch['pusher'];
+
+  $nodes = $branch['nodes'];
+
+  if ( count( $nodes ) !== 1 ) { return FALSE; }
+
+  if ( ! is_p_amp( $pusher, 'I' ) ) { return FALSE; }
+
+  // evfo: elval of first (and only)
+  //
+  $evfo = elval( $nodes[0] );
+
+  $newfo = element( 'htm', xml_wrap( 'i', [], $evfo ) );
+
+  return [ $newfo ];
 }
 
 function flatten( array $a )
@@ -1259,6 +1296,11 @@ function txttxt( array $node )
   return process_pairwise_2( 'pairwise_txttxt', $node );
 }
 
+function txthtm( array $node )
+{
+  return process_pairwise_2( 'pairwise_txthtm', $node );
+}
+
 function process_pairwise_2( $f, array $node )
 {
   if ( is_branch( $node ) )
@@ -1316,6 +1358,13 @@ function pairwise_txttxt( $n0, $n1 )
 {
   return pairwise_should_txttxt( $n0, $n1 )
     ? pairwise_do_the_txttxt( $n0, $n1 )
+    : NULL;
+}
+
+function pairwise_txthtm( $n0, $n1 )
+{
+  return pairwise_should_txthtm( $n0, $n1 )
+    ? pairwise_do_the_txthtm( $n0, $n1 )
     : NULL;
 }
 
@@ -1424,6 +1473,27 @@ function pairwise_do_the_txttxt( $e0, $e1 )
   $txt1 = $e1['elval'];
 
   $element = element( 'txt', $txt0 . $txt1 );
+
+  return $element;
+}
+
+function pairwise_should_txthtm( $n0, $n1 )
+{
+  return
+    is_txt( $n0 ) && is_htm( $n1 )
+    ||
+    is_htm( $n0 ) && is_txt( $n1 )
+    ||
+    is_htm( $n0 ) && is_htm( $n1 )
+    ;
+}
+
+function pairwise_do_the_txthtm( $e0, $e1 )
+{
+  $ev0 = $e0['elval'];
+  $ev1 = $e1['elval'];
+
+  $element = element( 'htm', xml_seqa( $ev0, $ev1 ) );
 
   return $element;
 }
