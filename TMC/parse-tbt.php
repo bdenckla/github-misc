@@ -1281,6 +1281,8 @@ function pairwise_do_the_brbr( $b0, $b1 )
 
   $brbr_instr = brbr_instr( $b0n, $b1n );
 
+  $debug = FALSE;
+
   if ( $brbr_instr === brbr_instr_unclear() )
     {
       $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
@@ -1295,7 +1297,7 @@ function pairwise_do_the_brbr( $b0, $b1 )
     }
   elseif ( $brbr_instr === brbr_instr_space() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
+      $mid_nodes = mid_nodes( $debug, $brbr_instr, ' ' );
     }
     else
       {
@@ -1314,6 +1316,13 @@ function pairwise_do_the_brbr( $b0, $b1 )
   // TODO what about other fields of $b1 than just 'nodes'?
 
   return $b0;
+}
+
+function mid_nodes( $debug, $brbr_instr, $non_debug_txt )
+{
+  return $debug
+    ? [ element( 'txt', '(' . $brbr_instr . ')' ) ]
+    : [ element( 'txt', ' ' ) ];
 }
 
 function pairwise_should_txttxt( $n0, $n1 )
@@ -1337,25 +1346,21 @@ function brbr_instr( $nodes0, $nodes1 )
 
   $last_of_nodes0 = $nodes0[ count( $nodes0 ) - 1 ];
 
-  // TODO: look deeper into what we should do if last of nodes0 is non-txt.
-
+  // For instance, it might be an italic branch ending in hypen.
+  // We wouldn't know, so we better just say "unclear."
+  //
   if ( ! is_txt( $last_of_nodes0 ) ) { return brbr_instr_unclear(); }
 
   $txt0 = elval( $last_of_nodes0 );
 
-  $jammers = [ '-', '/' ]; // others?
+  $slash = preg_match_toe2( '|/$|', $txt0 ); // TODO: test
 
-  // lc; last char
-  //
-  $lc0 = substr( $txt0, -1 );
+  if ( $slash ) { return brbr_instr_normal_jam(); }
 
-  return is_in( $lc0, $jammers )
-    ? brbr_instr_given_jammer_presence( $txt0, $nodes1 )
-    : brbr_instr_space();
-}
+  $dash = preg_match_toe2( '|-$|', $txt0 );
 
-function brbr_instr_given_jammer_presence( $txt0, $nodes1 )
-{
+  if ( ! $dash ) { return brbr_instr_space(); }
+
   $w0m = preg_match_toe( '/(\w+)-$/', $txt0 );
 
   if ( is_null( $w0m ) ) { return brbr_instr_unclear(); }
