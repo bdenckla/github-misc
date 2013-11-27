@@ -1,13 +1,11 @@
 #!/usr/bin/php -q
 <?php
 
-   // remove superfluous terminal carets (e.g. of headings)
+   // check that TT boundaries correspond to paragraphs in printed
 
    // allow search for places where char maps (coans) are used
 
    // make footnotes (numbered and asterisk) into hyperlinks
-
-   // footnote sort later (e.g. after brbr?)
 
    // footnotes mushed together: should be separated by CT
 
@@ -21,10 +19,6 @@
 
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
-
-   // don't put space after any kind of dash (incl. hypen)
-
-   // eliminate hypen before line break when appropriate
 
    // Pi-3 special characters:
    //    $ for asterisk
@@ -640,22 +634,22 @@ function apply_char_maps( $node )
   return apply_char_map( default_char_map(), $node );
 }
 
-function is_amp( $node )
+function is_amp( array $node )
 {
   return eltype( $node ) === 'amp';
 }
 
-function is_ang( $node )
+function is_ang( array $node )
 {
   return eltype( $node ) === 'ang';
 }
 
-function is_car( $node )
+function is_car( array $node )
 {
   return eltype( $node ) === 'car';
 }
 
-function is_txt( $node )
+function is_txt( array $node )
 {
   return eltype( $node ) === 'txt';
 }
@@ -696,7 +690,7 @@ function is_ang_in( $node, array $elvals )
     is_in( elval( $node ), amoc( $elvals ) );
 }
 
-function eltype( $node )
+function eltype( array $node )
 {
   return lubn( 'eltype', $node );
 }
@@ -893,7 +887,14 @@ function drop( array $node )
     {
       $nodes = $node['nodes'];
 
-      $filtered = array_filter( $nodes, 'preserve' );
+      $c = count( $nodes );
+
+      if ( $c && is_car( $nodes[ $c-1 ] ) )
+        {
+          array_pop( $nodes );
+        }
+
+      $filtered = array_filter( $nodes, 'do_not_drop' );
 
       $node['nodes'] = array_map( 'drop', $filtered );
     }
@@ -981,7 +982,7 @@ function begins_with($str, $sub)
     return (strncmp($str, $sub, strlen($sub)) == 0);
 }
 
-function preserve( $node )
+function do_not_drop( $node )
 {
   if ( is_ang_to_drop( $node )
        ||
@@ -1255,7 +1256,7 @@ function pairwise_should_brbr( $n0, $n1 )
      ||
      brbrer( $n0, $n1, 'COMa', 'COM' )
      ||
-     brbrer( $n0, $n1, 'COM1', 'COM' )
+     brbrer( $n0, $n1, 'TT', 'TT1' )
      );
 }
 
@@ -1285,7 +1286,7 @@ function pairwise_do_the_brbr( $b0, $b1 )
 
   if ( $brbr_instr === brbr_instr_unclear() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . 'XXX-' . $brbr_instr . ')' ) ];
     }
   elseif ( $brbr_instr === brbr_instr_normal_jam() )
     {
@@ -1293,16 +1294,17 @@ function pairwise_do_the_brbr( $b0, $b1 )
     }
   elseif ( $brbr_instr === brbr_instr_super_jam() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
+      $b0n = do_super_jam( $b0n );
+      $mid_nodes = mid_nodes( $debug, $brbr_instr, '' );
     }
   elseif ( $brbr_instr === brbr_instr_space() )
     {
       $mid_nodes = mid_nodes( $debug, $brbr_instr, ' ' );
     }
-    else
-      {
-        tneve(['unrecognized brbr instruction' => $brbr_instr]);
-      }
+  else
+    {
+      tneve(['unrecognized brbr instruction' => $brbr_instr]);
+    }
 
   $b0['nodes'] = array_merge( $b0n,
                               $mid_nodes,
@@ -1342,26 +1344,28 @@ function pairwise_do_the_txttxt( $e0, $e1 )
 
 function brbr_instr( $nodes0, $nodes1 )
 {
-  if ( count( $nodes0 ) === 0 ) { return brbr_instr_unclear(); }
+  $c0 = count( $nodes0 );
 
-  $last_of_nodes0 = $nodes0[ count( $nodes0 ) - 1 ];
+  if ( $c0 === 0 ) { return brbr_instr_unclear(); }
+
+  $last_node0 = $nodes0[ $c0 - 1 ];
 
   // For instance, it might be an italic branch ending in hypen.
   // We wouldn't know, so we better just say "unclear."
   //
-  if ( ! is_txt( $last_of_nodes0 ) ) { return brbr_instr_unclear(); }
+  if ( ! is_txt( $last_node0 ) ) { return brbr_instr_unclear(); }
 
-  $txt0 = elval( $last_of_nodes0 );
+  $te0 = elval( $last_node0 );
 
-  $slash = preg_match_toe2( '|/$|', $txt0 ); // TODO: test
+  $slash = preg_match_toe2( '|/$|', $te0 ); // TODO: test
 
   if ( $slash ) { return brbr_instr_normal_jam(); }
 
-  $dash = preg_match_toe2( '|-$|', $txt0 );
+  $dash = preg_match_toe2( '|-$|', $te0 );
 
   if ( ! $dash ) { return brbr_instr_space(); }
 
-  $w0m = preg_match_toe( '/(\w+)-$/', $txt0 );
+  $w0m = preg_match_toe( '/(\w+)-$/', $te0 );
 
   if ( is_null( $w0m ) ) { return brbr_instr_unclear(); }
 
@@ -1373,9 +1377,9 @@ function brbr_instr( $nodes0, $nodes1 )
 
   if ( ! is_txt( $first_of_nodes1 ) ) { return brbr_instr_unclear(); }
 
-  $txt1 = elval( $first_of_nodes1 );
+  $te1 = elval( $first_of_nodes1 );
 
-  $w1m = preg_match_toe( '/^(\w+)/', $txt1 );
+  $w1m = preg_match_toe( '/^(\w+)/', $te1 );
 
   if ( is_null( $w1m ) ) { return brbr_instr_unclear(); }
 
@@ -1404,6 +1408,27 @@ function brbr_instr( $nodes0, $nodes1 )
     }
 
   return brbr_instr_unclear();
+}
+
+function do_super_jam( array $nodes )
+{
+  $c = count( $nodes );
+
+  if ( $c === 0 ) { tneve(['super jam fail']); }
+
+  $last_node = $nodes[ $c - 1 ];
+
+  if ( ! is_txt( $last_node ) ) { tneve(['super jam fail']); }
+
+  $te = elval( $last_node );
+
+  $tes = substr( $te, 0, -1 );
+
+  $last_node['elval'] = $tes;
+
+  $nodes[ $c - 1 ] = $last_node;
+
+  return $nodes;
 }
 
 function spells_a_word( $x )
