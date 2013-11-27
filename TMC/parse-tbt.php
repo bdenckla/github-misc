@@ -5,8 +5,6 @@
 
    // allow search for places where char maps (coans) are used
 
-   // investigate seemingly-erroneous space before --- in 'moral freedom ---a gift'
-
    // make footnotes (numbered and asterisk) into hyperlinks
 
    // footnote sort later (e.g. after meld?)
@@ -43,6 +41,15 @@
 
    // wrong closing (xS) in "hbrk b&SSN;c&xS;"?
 
+   // seemingly-erroneous space before '---'
+   // in 'moral freedom ---a gift'
+   // coming from
+   // $[...] moral freedom \
+   // $---a gift [...]
+   // not a problem on paper because a line breaks after "moral"
+   // unless you consider starting a line with --- (em-dash) to
+   // be a stylistic error
+
    // extra &D; documented in email
 
    // inconsistent paren/italic handling
@@ -53,6 +60,8 @@
    // Is this the result of some manual process?
 
 require_once 'generate-html.php';
+
+// sudo apt-get install php5-pspell
 
 // tneve: throw new ErrorException of var_export
 function tneve( $e )
@@ -108,18 +117,18 @@ function parse_line( $zb_lineno, $line_contents )
 
   $dpat = '/(?<dollar>\$)(?<after_dollar>.+)/';
 
-  list( $r, $matches ) = preg_match_toe( $dpat, $rline );
+  $matches = preg_match_toe( $dpat, $rline );
 
-  if ( $r )
+  if ( ! is_null( $matches ) )
     {
       return dollar_pline( $matches['after_dollar'], $zb_lineno );
     }
 
   $cpat = '/(?<command>[a-z]+)(?<after_command>.*)/';
 
-  list( $r, $matches ) = preg_match_toe( $cpat, $rline );
+  $matches = preg_match_toe( $cpat, $rline );
 
-  if ( $r )
+  if ( ! is_null( $matches ) )
     {
       $m = [ 'verb' => $matches['command'],
              'arguments' => $matches['after_command'] ];
@@ -350,6 +359,7 @@ function html_body( $input_filename, $input )
         'drop',
         'substitute1',
         'substitute2',
+        'txttxt',
         'meld',
         'txttxt',
         'apply_char_maps',
@@ -539,7 +549,7 @@ function preg_match_toe( $pattern, $input )
                'input' => $input ] );
     }
 
-  return [ $r, $output ];
+  return $r === 1 ? $output : NULL;
 }
 
 // toe: throw on error
@@ -568,9 +578,9 @@ function is_english( $cblock )
 
   $tpat = '/^<(?<tag>[^>]*)>/';
 
-  list( $r, $matches ) = preg_match_toe( $tpat, $dollars );
+  $matches = preg_match_toe( $tpat, $dollars );
 
-  if ( $r )
+  if ( ! is_null( $matches ) )
     {
       $m = $matches['tag'];
 
@@ -1259,36 +1269,41 @@ function melder( $b0, $b1, $ang0, $ang1 )
     is_p_ang( $b1['pusher'], $ang1 );
 }
 
-function how_to_meld_unclear() { return 'MELD-UNCLEAR'; }
-function how_to_meld_jam()     { return 'MELD-JAM'; }
-function how_to_meld_space()   { return 'MELD-SPACE'; }
+function meld_instr_unclear()    { return 'MELD-UNCLEAR'; }
+function meld_instr_space()      { return 'MELD-SPACE'; }
+function meld_instr_normal_jam() { return 'MELD-JAM-N'; }
+function meld_instr_super_jam()  { return 'MELD-JAM-S'; }
 
 function pairwise_do_the_meld( $b0, $b1 )
 {
   $b0n = $b0['nodes'];
   $b1n = $b1['nodes'];
 
-  $how_to_meld = how_to_meld( $b0n, $b1n );
+  $meld_instr = meld_instr( $b0n, $b1n );
 
-  if ( $how_to_meld === how_to_meld_unclear() )
+  if ( $meld_instr === meld_instr_unclear() )
     {
-      $how_to_meld_nodes = [ element( 'txt', '(' . $how_to_meld . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
     }
-  elseif ( $how_to_meld === how_to_meld_jam() )
+  elseif ( $meld_instr === meld_instr_normal_jam() )
     {
-      $how_to_meld_nodes = [ element( 'txt', '(' . $how_to_meld . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
     }
-  elseif ( $how_to_meld === how_to_meld_space() )
+  elseif ( $meld_instr === meld_instr_super_jam() )
     {
-      $how_to_meld_nodes = [ element( 'txt', '(' . $how_to_meld . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
+    }
+  elseif ( $meld_instr === meld_instr_space() )
+    {
+      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
     }
     else
       {
-        tneve(['unrecognized meld instruction' => $how_to_meld]);
+        tneve(['unrecognized meld instruction' => $meld_instr]);
       }
 
   $b0['nodes'] = array_merge( $b0n,
-                              $how_to_meld_nodes,
+                              $mid_nodes,
                               $b1n );
 
   // $b0['melded poppers'][] = $b0['popper'];
@@ -1316,24 +1331,15 @@ function pairwise_do_the_txttxt( $e0, $e1 )
   return $element;
 }
 
-/* $pspell_link = pspell_new("en"); */
-
-/* if (pspell_check($pspell_link, "testt")) { */
-/*     echo "This is a valid spelling"; */
-/* } else { */
-/*     echo "Sorry, wrong spelling"; */
-/* } */
-
-function how_to_meld( $nodes0, $nodes1 )
+function meld_instr( $nodes0, $nodes1 )
 {
-  if ( count( $nodes0 ) === 0 ) { return how_to_meld_unclear(); }
+  if ( count( $nodes0 ) === 0 ) { return meld_instr_unclear(); }
 
   $last_of_nodes0 = $nodes0[ count( $nodes0 ) - 1 ];
-  //$first_of_nodes1 = $nodes1[ 0 ];
 
   // TODO: look deeper into what we should do if last of nodes0 is non-txt.
 
-  if ( ! is_txt( $last_of_nodes0 ) ) { return how_to_meld_unclear(); }
+  if ( ! is_txt( $last_of_nodes0 ) ) { return meld_instr_unclear(); }
 
   $txt0 = elval( $last_of_nodes0 );
 
@@ -1344,9 +1350,64 @@ function how_to_meld( $nodes0, $nodes1 )
   $lc0 = substr( $txt0, -1 );
 
   return is_in( $lc0, $jammers )
-    ? how_to_meld_jam()
-    : how_to_meld_space();
+    ? meld_instr_given_jammer_presence( $txt0, $nodes1 )
+    : meld_instr_space();
 }
+
+function meld_instr_given_jammer_presence( $txt0, $nodes1 )
+{
+  $w0m = preg_match_toe( '/(\w+)-$/', $txt0 );
+
+  if ( is_null( $w0m ) ) { return meld_instr_unclear(); }
+
+  $w0 = $w0m[1];
+
+  if ( count( $nodes1 ) === 0 ) { return meld_instr_unclear(); }
+
+  $first_of_nodes1 = $nodes1[0];
+
+  if ( ! is_txt( $first_of_nodes1 ) ) { return meld_instr_unclear(); }
+
+  $txt1 = elval( $first_of_nodes1 );
+
+  $w1m = preg_match_toe( '/^(\w+)/', $txt1 );
+
+  if ( is_null( $w1m ) ) { return meld_instr_unclear(); }
+
+  $w1 = $w1m[1];
+
+  $s0 = spells_a_word( $w0 );
+  $s1 = spells_a_word( $w1 );
+
+  $parts_spell_words = $s0 && $s1;
+
+  $whole = $w0 . $w1;
+
+  $whole_spells_a_word = spells_a_word( $whole );
+
+  $log_line = $w0.'-'.$w1
+    . ' '
+    . ( $parts_spell_words ? 'yp' : 'np' )
+    . ( $whole_spells_a_word ? 'yw' : 'nw' )
+    . "\n";
+
+  fprintf( STDERR, $log_line );
+
+  if ( $whole_spells_a_word )
+    {
+      return meld_instr_super_jam();
+    }
+
+  return meld_instr_unclear();
+}
+
+function spells_a_word( $x )
+{
+  $pspell_link = pspell_new('en');
+
+  return pspell_check( $pspell_link, $x );
+}
+
 
 function basic_parse( $dollars )
 {
