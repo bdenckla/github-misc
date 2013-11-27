@@ -7,7 +7,7 @@
 
    // make footnotes (numbered and asterisk) into hyperlinks
 
-   // footnote sort later (e.g. after meld?)
+   // footnote sort later (e.g. after brbr?)
 
    // footnotes mushed together: should be separated by CT
 
@@ -360,7 +360,7 @@ function html_body( $input_filename, $input )
         'substitute1',
         'substitute2',
         'txttxt',
-        'meld',
+        'brbr',
         'txttxt',
         'apply_char_maps',
         ];
@@ -384,10 +384,10 @@ function table_for_lined_tree( $lined_tree )
   return table_for_branch( $lined_tree['tree'] );
 }
 
-function melded_trs( $branch )
+function brbred_trs( $branch )
 {
-  $mpu = 'melded pushers';
-  $mpo = 'melded poppers';
+  $mpu = 'brbred pushers';
+  $mpo = 'brbred poppers';
 
   $trs = [];
 
@@ -418,7 +418,7 @@ function table_for_branch( $branch )
 
   $trs = array_merge( [ $tr_for_pusher ],
                       [ $tr_for_popper ],
-                      melded_trs( $branch ),
+                      brbred_trs( $branch ),
                       $trs_for_nodes );
 
   /* TODO: have mode where pushers and poppers aren't shown so
@@ -1162,9 +1162,9 @@ function last_char( $x )
   return substr( $x, -1 );
 }
 
-function meld( array $node )
+function brbr( array $node )
 {
-  return process_pairwise_2( 'pairwise_meld', $node );
+  return process_pairwise_2( 'pairwise_brbr', $node );
 }
 
 function txttxt( array $node )
@@ -1218,10 +1218,10 @@ function pairwise_helper( $f, $acc, $item )
   return $acc;
 }
 
-function pairwise_meld( $b0, $b1 )
+function pairwise_brbr( $b0, $b1 )
 {
-  return pairwise_should_meld( $b0, $b1 )
-    ? pairwise_do_the_meld( $b0, $b1 )
+  return pairwise_should_brbr( $b0, $b1 )
+    ? pairwise_do_the_brbr( $b0, $b1 )
     : NULL;
 }
 
@@ -1232,34 +1232,34 @@ function pairwise_txttxt( $n0, $n1 )
     : NULL;
 }
 
-function pairwise_should_meld( $n0, $n1 )
+function pairwise_should_brbr( $n0, $n1 )
 {
   return is_branch( $n0 ) && is_branch( $n1 )
     &&
     (
-     melder( $n0, $n1, 'PAR-AT', 'PAR-AT' )
+     brbrer( $n0, $n1, 'PAR-AT', 'PAR-AT' )
      ||
-     melder( $n0, $n1, 'PAR-T1', 'PAR-T1' )
+     brbrer( $n0, $n1, 'PAR-T1', 'PAR-T1' )
      ||
-     melder( $n0, $n1, 'PAR-T', 'PAR-T1' )
+     brbrer( $n0, $n1, 'PAR-T', 'PAR-T1' )
      ||
-     melder( $n0, $n1, 'PAR-BT', 'PAR-BT1' )
+     brbrer( $n0, $n1, 'PAR-BT', 'PAR-BT1' )
      ||
-     melder( $n0, $n1, 'ITX1', 'ITX1' )
+     brbrer( $n0, $n1, 'ITX1', 'ITX1' )
      ||
-     melder( $n0, $n1, 'ITX', 'ITX1' )
+     brbrer( $n0, $n1, 'ITX', 'ITX1' )
      ||
-     melder( $n0, $n1, 'ITI', 'ITX1' )
+     brbrer( $n0, $n1, 'ITI', 'ITX1' )
      ||
-     melder( $n0, $n1, 'COM', 'COM' )
+     brbrer( $n0, $n1, 'COM', 'COM' )
      ||
-     melder( $n0, $n1, 'COMa', 'COM' )
+     brbrer( $n0, $n1, 'COMa', 'COM' )
      ||
-     melder( $n0, $n1, 'COM1', 'COM' )
+     brbrer( $n0, $n1, 'COM1', 'COM' )
      );
 }
 
-function melder( $b0, $b1, $ang0, $ang1 )
+function brbrer( $b0, $b1, $ang0, $ang1 )
 {
   return
     is_p_ang( $b0['pusher'], $ang0 )
@@ -1269,45 +1269,45 @@ function melder( $b0, $b1, $ang0, $ang1 )
     is_p_ang( $b1['pusher'], $ang1 );
 }
 
-function meld_instr_unclear()    { return 'MELD-UNCLEAR'; }
-function meld_instr_space()      { return 'MELD-SPACE'; }
-function meld_instr_normal_jam() { return 'MELD-JAM-N'; }
-function meld_instr_super_jam()  { return 'MELD-JAM-S'; }
+function brbr_instr_unclear()    { return 'BRBR-UNCLEAR'; }
+function brbr_instr_space()      { return 'BRBR-SPACE'; }
+function brbr_instr_normal_jam() { return 'BRBR-JAM-N'; }
+function brbr_instr_super_jam()  { return 'BRBR-JAM-S'; }
 
-function pairwise_do_the_meld( $b0, $b1 )
+function pairwise_do_the_brbr( $b0, $b1 )
 {
   $b0n = $b0['nodes'];
   $b1n = $b1['nodes'];
 
-  $meld_instr = meld_instr( $b0n, $b1n );
+  $brbr_instr = brbr_instr( $b0n, $b1n );
 
-  if ( $meld_instr === meld_instr_unclear() )
+  if ( $brbr_instr === brbr_instr_unclear() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
     }
-  elseif ( $meld_instr === meld_instr_normal_jam() )
+  elseif ( $brbr_instr === brbr_instr_normal_jam() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
     }
-  elseif ( $meld_instr === meld_instr_super_jam() )
+  elseif ( $brbr_instr === brbr_instr_super_jam() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
     }
-  elseif ( $meld_instr === meld_instr_space() )
+  elseif ( $brbr_instr === brbr_instr_space() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $meld_instr . ')' ) ];
+      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
     }
     else
       {
-        tneve(['unrecognized meld instruction' => $meld_instr]);
+        tneve(['unrecognized brbr instruction' => $brbr_instr]);
       }
 
   $b0['nodes'] = array_merge( $b0n,
                               $mid_nodes,
                               $b1n );
 
-  // $b0['melded poppers'][] = $b0['popper'];
-  // $b0['melded pushers'][] = $b1['pusher'];
+  // $b0['brbred poppers'][] = $b0['popper'];
+  // $b0['brbred pushers'][] = $b1['pusher'];
 
   $b0['popper'] = $b1['popper'];
 
@@ -1331,15 +1331,15 @@ function pairwise_do_the_txttxt( $e0, $e1 )
   return $element;
 }
 
-function meld_instr( $nodes0, $nodes1 )
+function brbr_instr( $nodes0, $nodes1 )
 {
-  if ( count( $nodes0 ) === 0 ) { return meld_instr_unclear(); }
+  if ( count( $nodes0 ) === 0 ) { return brbr_instr_unclear(); }
 
   $last_of_nodes0 = $nodes0[ count( $nodes0 ) - 1 ];
 
   // TODO: look deeper into what we should do if last of nodes0 is non-txt.
 
-  if ( ! is_txt( $last_of_nodes0 ) ) { return meld_instr_unclear(); }
+  if ( ! is_txt( $last_of_nodes0 ) ) { return brbr_instr_unclear(); }
 
   $txt0 = elval( $last_of_nodes0 );
 
@@ -1350,29 +1350,29 @@ function meld_instr( $nodes0, $nodes1 )
   $lc0 = substr( $txt0, -1 );
 
   return is_in( $lc0, $jammers )
-    ? meld_instr_given_jammer_presence( $txt0, $nodes1 )
-    : meld_instr_space();
+    ? brbr_instr_given_jammer_presence( $txt0, $nodes1 )
+    : brbr_instr_space();
 }
 
-function meld_instr_given_jammer_presence( $txt0, $nodes1 )
+function brbr_instr_given_jammer_presence( $txt0, $nodes1 )
 {
   $w0m = preg_match_toe( '/(\w+)-$/', $txt0 );
 
-  if ( is_null( $w0m ) ) { return meld_instr_unclear(); }
+  if ( is_null( $w0m ) ) { return brbr_instr_unclear(); }
 
   $w0 = $w0m[1];
 
-  if ( count( $nodes1 ) === 0 ) { return meld_instr_unclear(); }
+  if ( count( $nodes1 ) === 0 ) { return brbr_instr_unclear(); }
 
   $first_of_nodes1 = $nodes1[0];
 
-  if ( ! is_txt( $first_of_nodes1 ) ) { return meld_instr_unclear(); }
+  if ( ! is_txt( $first_of_nodes1 ) ) { return brbr_instr_unclear(); }
 
   $txt1 = elval( $first_of_nodes1 );
 
   $w1m = preg_match_toe( '/^(\w+)/', $txt1 );
 
-  if ( is_null( $w1m ) ) { return meld_instr_unclear(); }
+  if ( is_null( $w1m ) ) { return brbr_instr_unclear(); }
 
   $w1 = $w1m[1];
 
@@ -1391,14 +1391,14 @@ function meld_instr_given_jammer_presence( $txt0, $nodes1 )
     . ( $whole_spells_a_word ? 'yw' : 'nw' )
     . "\n";
 
-  fprintf( STDERR, $log_line );
+  // fprintf( STDERR, $log_line );
 
   if ( $whole_spells_a_word )
     {
-      return meld_instr_super_jam();
+      return brbr_instr_super_jam();
     }
 
-  return meld_instr_unclear();
+  return brbr_instr_unclear();
 }
 
 function spells_a_word( $x )
