@@ -1289,7 +1289,7 @@ function pairwise_do_the_brbr( $b0, $b1 )
     }
   elseif ( $brbr_instr === brbr_instr_normal_jam() )
     {
-      $mid_nodes = [ element( 'txt', '(' . $brbr_instr . ')' ) ];
+      $mid_nodes = mid_nodes( $debug, $brbr_instr, '' );
     }
   elseif ( $brbr_instr === brbr_instr_super_jam() )
     {
@@ -1322,7 +1322,7 @@ function mid_nodes( $debug, $brbr_instr, $non_debug_txt )
 {
   return $debug
     ? [ element( 'txt', '(' . $brbr_instr . ')' ) ]
-    : [ element( 'txt', ' ' ) ];
+    : [ element( 'txt', $non_debug_txt ) ];
 }
 
 function pairwise_should_txttxt( $n0, $n1 )
