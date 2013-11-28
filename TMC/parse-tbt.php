@@ -1,7 +1,9 @@
 #!/usr/bin/php -q
 <?php
 
-   // check that TT boundaries correspond to paragraphs in printed
+   // brbr can't join COM1/COM due to htm/txt across the boundary
+
+   // eliminate excess space inside of parens
 
    // allow search for places where char maps (coans) are used
 
@@ -53,9 +55,10 @@
    // Why are some line wraps (incl. some with hypenation) "enforced"?
    // Is this the result of some manual process?
 
-require_once 'generate-html.php';
+   // b'reishit bara elohim wraps weirdly in printed (p. 19)
+   // same with eileh tol'dot (p. 22)
 
-// sudo apt-get install php5-pspell
+require_once 'generate-html.php';
 
 // tneve: throw new ErrorException of var_export
 function tneve( $e )
@@ -89,6 +92,13 @@ function array_map_pa( $f, $a, array $b )
 function array_map_wk( $f, array $a )
 {
   return array_map( $f, array_keys( $a ), $a );
+}
+
+// rn: renumber
+//
+function array_filter_rn( array $a, $f )
+{
+  return array_values( array_filter( $a, $f ) );
 }
 
 // zb_lineno: zero-based line number
@@ -357,6 +367,10 @@ function html_body( $input_filename, $input )
         'brbr',
         'txttxt',
         'apply_char_maps',
+        'inline_hebrew',
+        'txttxt',
+        'inline_italics',
+        'txthtm',
         ];
 
   $a6_blocks = array_reduce( $f, 'fl_array_map_tree', $a1_blocks );
@@ -445,13 +459,13 @@ function tr_for_node( $level, array $node )
     {
       $node_type = 'l' . $level;
       $elval = elval( $node );
-      $coan = lubn( 'char ords and names', $node );
+      $coan = lubn( 'char map', $node );
 
       if ( ! is_null( $coan ) )
         {
-          $node_value = table_for_elval_and_coan( $elval, $coan );
+          $node_value = html_for_elval_and_coan( $node, $elval, $coan );
         }
-      elseif( array_keys( $node ) !== [ 'eltype', 'elval' ] )
+      elseif ( array_keys( $node ) !== [ 'eltype', 'elval' ] )
         {
           $node_value = var_export( $node, 1 );
         }
@@ -466,11 +480,20 @@ function tr_for_node( $level, array $node )
   return tr_of_tds( $tds );
 }
 
-function table_for_elval_and_coan( $elval, $coan )
+function html_for_elval_and_coan( $node, $elval, $coan )
 {
+  if ( array_keys( $node ) !== [ 'eltype', 'elval', 'char map' ] )
+    {
+      return var_export( $node, 1 );
+    }
+
+  $show_coan = FALSE;
+
+  if ( ! $show_coan ) { return $elval; }
+
   $trs = [
           tr_of_tds( [ $elval ] ),
-          tr_of_tds( [ table_for_coan( $coan ) ] ),
+          tr_of_tds( [ table_for_coan( $coan['ords and names'] ) ] ),
           ];
 
   return table_b1( $trs );
@@ -654,6 +677,11 @@ function is_txt( array $node )
   return eltype( $node ) === 'txt';
 }
 
+function is_htm( array $node )
+{
+  return eltype( $node ) === 'htm';
+}
+
 // p: particular
 // i.e. is not only an amp, but has a particular elval
 //
@@ -738,6 +766,23 @@ function substitute1( array $node )
   return $node;
 }
 
+function replacement_for_misc( $branch )
+{
+  $nodes = $branch['nodes'];
+
+  $pusher = $branch['pusher'];
+
+  $misc = [ 'hs8', 'ib1', 'in' ];
+
+  if ( ! is_amp_in( $pusher, $misc ) ) { return FALSE; }
+
+  $leading_space = is_p_amp( $pusher, 'hs8' )
+    ? [ element( 'txt', ' ' ) ]
+    : [];
+
+  return array_merge( $leading_space, $nodes );
+}
+
 function replacement_for_numeric( $branch )
 {
   $nodes = $branch['nodes'];
@@ -750,62 +795,121 @@ function replacement_for_numeric( $branch )
 
   // Examples: '1', '12', '12--13', '12, 13, 14', '1,234', '1/2'
 
-  $first = $branch['pusher'];
+  $pusher = $branch['pusher'];
 
-  if ( ! is_amp_in( $first, $number_styles ) ) { return FALSE; }
+  if ( ! is_amp_in( $pusher, $number_styles ) ) { return FALSE; }
 
-  // evs: elval of second
+  // evfo: elval of first (and only)
   //
-  $evs = elval( $nodes[0] );
+  $evfo = elval( $nodes[0] );
 
-  if ( ! preg_match_toe2( $num_pat, $evs ) ) { return FALSE; }
+  if ( ! preg_match_toe2( $num_pat, $evfo ) ) { return FALSE; }
 
-  return $nodes[0];
-}
-
-function replacement_for_initial_drop_cap( $branch )
-{
-  $nodes = $branch['nodes'];
-
-  if ( count( $nodes ) !== 1 ) { return FALSE; }
-
-  $first = $branch['pusher'];
-
-  if ( ! is_p_amp( $first, 'in' ) ) { return FALSE; }
-
-  return $nodes[0];
+  return $nodes;
 }
 
 function substitute2( array $node )
 {
+  $a = substitute_h( 'replacement2', $node );
+
+  return $a[0];
+}
+
+function inline_hebrew( array $node )
+{
+  $a = substitute_h( 'inline_hebrew_r', $node );
+
+  return $a[0];
+}
+
+function inline_italics( array $node )
+{
+  $a = substitute_h( 'inline_italics_r', $node );
+
+  return $a[0];
+}
+
+function substitute_h( $replacement_fn, array $node )
+{
   if ( is_branch( $node ) )
     {
-      $r = replacement_for_numeric( $node );
+      $r = $replacement_fn( $node );
 
-      if ( $r !== FALSE ) { return $r; }
+      $deep = $r === FALSE ? $node['nodes'] : $r;
 
-      $r = replacement_for_initial_drop_cap( $node );
+      $aa = array_map_pa( 'substitute_h', $replacement_fn, $deep );
 
-      if ( $r !== FALSE ) { return $r; }
+      $faa = flatten( $aa );
 
-      $node['nodes'] = array_map( 'substitute2', $node['nodes'] );
+      if ( $r === FALSE )
+        {
+          $node['nodes'] = $faa;
+          return [ $node ];
+        }
 
-      return $node;
+      return $faa;
     }
 
-  return $node;
+  return [ $node ];
+}
+
+function replacement2( $branch )
+{
+  $r = replacement_for_numeric( $branch );
+
+  if ( $r === FALSE )
+    {
+      $r = replacement_for_misc( $branch );
+    }
+
+  return $r;
+}
+
+function inline_hebrew_r( $branch )
+{
+  $pusher = $branch['pusher'];
+
+  if ( ! is_p_amp( $pusher, 'H' ) ) { return FALSE; }
+
+  $nodes = $branch['nodes'];
+
+  return $nodes;
+}
+
+function inline_italics_r( $branch )
+{
+  $pusher = $branch['pusher'];
+
+  $nodes = $branch['nodes'];
+
+  if ( count( $nodes ) !== 1 ) { return FALSE; }
+
+  if ( ! is_p_amp( $pusher, 'I' ) ) { return FALSE; }
+
+  // evfo: elval of first (and only)
+  //
+  $evfo = elval( $nodes[0] );
+
+  $newfo = element( 'htm', xml_wrap( 'i', [], $evfo ) );
+
+  return [ $newfo ];
+}
+
+function flatten( array $a )
+{
+  return array_reduce( $a, 'array_merge', [] );
 }
 
 function apply_char_map( array $char_map, array $node )
 {
   if ( is_branch( $node ) )
     {
-      $first = $node['pusher'];
+      $pusher = $node['pusher'];
 
       $is_hebrew =
-        is_p_amp( $first, 'H' )
+        is_p_amp( $pusher, 'H' )
         ||
-        is_p_ang( $first, 'PAR-H' );
+        is_p_ang( $pusher, 'PAR-H' );
 
       $char_map = $is_hebrew ? hebrew_char_map() : default_char_map();
 
@@ -894,7 +998,7 @@ function drop( array $node )
           array_pop( $nodes );
         }
 
-      $filtered = array_filter( $nodes, 'do_not_drop' );
+      $filtered = array_filter_rn( $nodes, 'do_not_drop' );
 
       $node['nodes'] = array_map( 'drop', $filtered );
     }
@@ -914,6 +1018,13 @@ function has_non_printable( $x )
   return preg_match_toe2( $pat, $x );
 }
 
+function is_printable( $x )
+{
+  $pat = '/^[[:print:]]*$/';
+
+  return preg_match_toe2( $pat, $x );
+}
+
 function apply_char_map_to_txt( $char_map, $element )
 {
   $elval = elval( $element );
@@ -928,12 +1039,12 @@ function apply_char_map_to_txt( $char_map, $element )
       //
       $nps = array_filter( $eaa, 'has_non_printable' );
 
-      $ords = array_map( 'ord', $nps );
+      $element['char map']['name'] = $char_map['char map name'];
 
-      $element['char map name'] = $char_map['char map name'];
+      $element['char map']['ords and names'] =
+        array_map_pa( 'ord_and_name', $char_map, $nps );
 
-      $element['char ords and names'] =
-        array_map_pa( 'ord_and_name', $char_map, $ords );
+      $element['elval'] = implode( array_map_pa( 'acm', $char_map, $eaa ) );
     }
 
   return $element;
@@ -951,7 +1062,15 @@ function is_ang_to_drop( $d )
         ||
         begins_with( $elval, '<?tpt=' )
         ||
+        begins_with( $elval, '<?th=' )
+        ||
         begins_with( $elval, '<?twb' )
+        ||
+        $elval === '<?down>'
+        ||
+        $elval === '<?up>'
+        ||
+        $elval === '<?tf="DAN-R">'
         );
 }
 
@@ -1041,7 +1160,9 @@ function get_poppers( $element )
      'amp' =>
      [
       amp_sem('SS') => [ amp_element('XS'), amp_element('xS') ],
-      amp_sem('SSN') => [ amp_element('XSN'), amp_element('xSN'), amp_element('xS') ],
+      amp_sem('SSN') => [ amp_element('XSN'),
+                          amp_element('xSN'),
+                          amp_element('xS') ],
       amp_sem('sc') => [ $amp_d, $caret ],
       amp_sem('SC') => [ $amp_d, $caret ],
       amp_sem('H') => [ $amp_d ],
@@ -1057,6 +1178,8 @@ function get_poppers( $element )
       ],
      'ang' =>
      [
+      oab_cab('?tvs=-5pt') => [ ang_element( '?tvs' ) ],
+
       oab_cab('CT') => [ ang_element( '' ) ],
       oab_cab('IAU') => [ ang_element( '' ) ],
       oab_cab('IAH') => [ ang_element( '' ) ],
@@ -1173,6 +1296,11 @@ function txttxt( array $node )
   return process_pairwise_2( 'pairwise_txttxt', $node );
 }
 
+function txthtm( array $node )
+{
+  return process_pairwise_2( 'pairwise_txthtm', $node );
+}
+
 function process_pairwise_2( $f, array $node )
 {
   if ( is_branch( $node ) )
@@ -1230,6 +1358,13 @@ function pairwise_txttxt( $n0, $n1 )
 {
   return pairwise_should_txttxt( $n0, $n1 )
     ? pairwise_do_the_txttxt( $n0, $n1 )
+    : NULL;
+}
+
+function pairwise_txthtm( $n0, $n1 )
+{
+  return pairwise_should_txthtm( $n0, $n1 )
+    ? pairwise_do_the_txthtm( $n0, $n1 )
     : NULL;
 }
 
@@ -1340,6 +1475,27 @@ function pairwise_do_the_txttxt( $e0, $e1 )
   $txt1 = $e1['elval'];
 
   $element = element( 'txt', $txt0 . $txt1 );
+
+  return $element;
+}
+
+function pairwise_should_txthtm( $n0, $n1 )
+{
+  return
+    is_txt( $n0 ) && is_htm( $n1 )
+    ||
+    is_htm( $n0 ) && is_txt( $n1 )
+    ||
+    is_htm( $n0 ) && is_htm( $n1 )
+    ;
+}
+
+function pairwise_do_the_txthtm( $e0, $e1 )
+{
+  $ev0 = $e0['elval'];
+  $ev1 = $e1['elval'];
+
+  $element = element( 'htm', xml_seqa( $ev0, $ev1 ) );
 
   return $element;
 }
@@ -1544,12 +1700,13 @@ function default_char_map()
 {
   $a =
     [
-     0xA8 => 'ACUTE ACCENT',
-     0xA9 => 'MODIFIER LETTER GRAVE ACCENT',
-     0xAA => 'MODIFIER LETTER CIRCUMFLEX ACCENT',
-     0xAB => 'DIAERESIS',
-     0xAC => 'SMALL TILDE',
-     0xF5 => 'modifier letter caron', // differs from HP Roman-8!
+     0xA8 => [ 'aa', 'ACUTE ACCENT', hu('301') ],
+     //0xA9 => [ 'mlga', 'MODIFIER LETTER GRAVE ACCENT', hu('300') ],
+     0xAA => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
+     0xAB => [ 'dia', 'DIAERESIS', hu('308') ],
+     0xAC => [ 'til', 'SMALL TILDE', hu('303') ],
+     0xF5 => [ 'mlcaron', 'modifier letter caron', hu('30C') ],
+     // above (caron) differs from HP Roman-8!
      ];
 
   /* Below we use "ish" in the char map name because it is only kind
@@ -1559,55 +1716,98 @@ function default_char_map()
            'char map itself' => $a ];
 }
 
+
+function hu( $hex ) // hu: hex to utf-8
+{
+  return html_entity_decode('&#x'.$hex.';', ENT_COMPAT, 'UTF-8');
+}
+
 function hebrew_char_map()
 {
   $raw =
     [
-     209 => 'nun-sofit',
-     226 => 'gimel-dagesh',
-     235 => 'lamed-dagesh',
-     245 => 'shin-w-sin-dot-and-dagesh',
-     188 => 'hataf segol',
-     163 => 'patach',
-     166 => 'segol',
-     171 => 'zeire',
-     192 => 'qamats',
-     194 => 'aleph',
-     195 => 'bet',
-     197 => 'dalet',
-     198 => 'hei',
-     200 => 'zayin',
-     201 => 'chet',
-     203 => 'yod',
-     206 => 'lamed',
-     207 => 'mem-sofit',
-     208 => 'mem',
-     210 => 'gimel',
-     212 => 'ayin',
-     217 => 'qof',
-     218 => 'resh',
-     219 => 'shin',
-     220 => 'tav',
-     221 => 'hiriq',
-     222 => 'sheva',
-     224 => 'holam-haser',
-     225 => 'bet-dagesh',
-     229 => 'vav-shuruq',
-     230 => 'vav-holam-male',
-     242 => 'shin-w-shin-dot',
-     246 => 'tav-dagesh',
-     250 => 'hataf-patach',
+     163 => [ 'pt'  , 'patach', 'ַ' ],
+     166 => [ 'sg'  , 'segol', 'ֶ' ],
+     171 => [ 'zr'  , 'zeire', 'ֵ' ],
+     188 => [ 'hsg' , 'hataf segol', 'ֱ' ],
+     192 => [ 'qm'  , 'qamats', 'ָ' ],
+     194 => [ 'al'  , 'aleph', 'א' ],
+     195 => [ 'b'   , 'bet', 'ב' ],
+     // gimmel? (g)
+     197 => [ 'd', 'dalet', 'ד' ],
+     198 => [ 'h', 'hei', 'ה' ],
+     // vav? (v)
+     200 => [ 'z'  , 'zayin', 'ז' ],
+     201 => [ 'ch' , 'chet', 'ח' ],
+     // tet? (tt)
+     203 => [ 'y', 'yod', 'י' ],
+     // kaf sofit (ks)
+     // kaf (k)
+     206 => [ 'l'  , 'lamed', 'ל' ],
+     207 => [ 'ms' , 'mem-sofit', 'ם' ],
+     208 => [ 'm'  , 'mem', 'מ' ],
+     209 => [ 'ns' , 'nun-sofit', 'ן' ],
+     210 => [ 'n'  , 'nun', 'נ' ],
+     // samech?
+     212 => [ 'ay', 'ayin', 'ע' ],
+     // pei sofit? (ps)
+     // pei (p)
+     // tsadi sofit (tss)
+     // tsadi (ts)
+     217 => [ 'q'   , 'qof', 'ק' ],
+     218 => [ 'r'   , 'resh', 'ר' ],
+     219 => [ 'sh'   , 'shin', 'ש' ],
+     220 => [ 'tv'   , 'tav', 'ת' ],
+     221 => [ 'hr'  , 'hiriq', 'ִ' ],
+     222 => [ 'sv'  , 'sheva', 'ְ' ],
+     224 => [ 'hh'  , 'holam-haser', 'ֹ' ],
+     225 => [ 'bd'  , 'bet-dagesh', 'בּ' ],
+     226 => [ 'gd'  , 'gimel-dagesh', 'גּ' ],
+     229 => [ 'vs'  , 'vav-shuruq', 'וּ' ],
+     230 => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
+     235 => [ 'ld'  , 'lamed-dagesh', 'לּ' ],
+     242 => [ 'shsh'   , 'shin-w-shin-dot', 'שׁ' ],
+     245 => [ 'shsid' , 'shin-w-sin-dot-and-dagesh', 'שֹּ' ],
+     246 => [ 'td'  , 'tav-dagesh', 'תּ' ],
+     250 => [ 'hpt' , 'hataf-patach', 'ֲ' ],
      ];
 
   return [ 'char map name' => 'Hebrew',
            'char map itself' => $raw ];
 }
 
-function ord_and_name( $char_map, $ord )
+function cm_lookup( $char_map, $ord )
 {
-  $mapped_ord = lubn( $ord, $char_map['char map itself'] );
+  $r = lubn( $ord, $char_map['char map itself'] );
 
-  return [ $ord, $mapped_ord ];
+  if ( is_null( $r ) )
+    {
+      $name = 'XXX-unknown-' . $ord;
+
+      return [ 'XXX', $name, '('.$name.')' ];
+    }
+
+  return $r;
+}
+
+function ord_and_name( $char_map, $char )
+{
+  $ord = ord( $char );
+
+  $mapped_ord = cm_lookup( $char_map, $ord );
+
+  return [ $ord, $mapped_ord[0] ];
+}
+
+function acm( $char_map, $char )
+{
+  if ( is_printable( $char ) ) { return $char; }
+
+  $ord = ord( $char );
+
+  $mapped_ord = cm_lookup( $char_map, $ord );
+
+  return $mapped_ord[2];
 }
 
 function array_map_tree( $f, array $a )
