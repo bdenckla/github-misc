@@ -1254,6 +1254,8 @@ function pairwise_should_brbr( $n0, $n1 )
      ||
      brbrer( $n0, $n1, 'COM', 'COM' )
      ||
+     brbrer( $n0, $n1, 'COM1', 'COM' )
+     ||
      brbrer( $n0, $n1, 'COMa', 'COM' )
      ||
      brbrer( $n0, $n1, 'TT', 'TT1' )
