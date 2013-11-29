@@ -10,21 +10,11 @@
 
    // handle C.E. and B.C.E.
 
-   // why weird break between
-   //
-   // "the tale of the" and "stela",
-   // "JBL 92" and "(1973)", and
-   // similar others?
-
    // what's with "eine spezio-linguistische Studie..."
    // with respect to (1) quotes needed? (2) ellipsis in original?
 
    // support link-ification of chapter references in roman numerals?
    // (I've seen two in references)
-
-   // hyphen problem Biblical Liter-ature
-
-   // why is NN preseved in "45--50"? and similar others?
 
    // allow search for places where char maps (coans) are used
 
@@ -32,7 +22,7 @@
 
    // footnotes mushed together: should be separated by CT
 
-   // indentify chaper/verse references.
+   // identify chaper/verse references.
 
    // opening (``) and closing (") double quote substitution
 
@@ -387,7 +377,9 @@ function html_body( $input_filename, $input )
   $f = [
         'footnote_sort',
         'drop',
+        'txttxt',
         'substitute1',
+        'txttxt',
         'substitute2',
         'txttxt',
         'brbr',
@@ -1399,27 +1391,29 @@ function pairwise_should_brbr( $n0, $n1 )
   return is_branch( $n0 ) && is_branch( $n1 )
     &&
     (
-     brbrer( $n0, $n1, 'PAR-AT', 'PAR-AT' )
+     brbrers( $n0, $n1, 'PAR-AT' )
      ||
-     brbrer( $n0, $n1, 'PAR-T1', 'PAR-T1' )
+     brbrers( $n0, $n1, 'PAR-T1' )
      ||
      brbrer( $n0, $n1, 'PAR-T', 'PAR-T1' )
      ||
      brbrer( $n0, $n1, 'PAR-BT', 'PAR-BT1' )
      ||
-     brbrer( $n0, $n1, 'ITX1', 'ITX1' )
+     brbrers( $n0, $n1, 'ITX1' )
      ||
      brbrer( $n0, $n1, 'ITX', 'ITX1' )
      ||
      brbrer( $n0, $n1, 'ITI', 'ITX1' )
      ||
-     brbrer( $n0, $n1, 'COM', 'COM' )
+     brbrers( $n0, $n1, 'COM' )
      ||
      brbrer( $n0, $n1, 'COM1', 'COM' )
      ||
      brbrer( $n0, $n1, 'COMa', 'COM' )
      ||
      brbrer( $n0, $n1, 'TT', 'TT1' )
+     ||
+     brbrer( $n0, $n1, 'IFN', 'IFN' )
      );
 }
 
@@ -1431,6 +1425,11 @@ function brbrer( $b0, $b1, $ang0, $ang1 )
     ! is_p_ang( $b0['popper'], '' )
     &&
     is_p_ang( $b1['pusher'], $ang1 );
+}
+
+function brbrers( $b0, $b1, $ang0 )
+{
+  return brbrer( $b0, $b1, $ang0, $ang0 );
 }
 
 function brbr_instr_unclear()    { return 'BRBR-UNCLEAR'; }
