@@ -1792,7 +1792,7 @@ function hebrew_char_map()
      229 => [ 'vs'  , 'vav-shuruq', 'וּ' ],
      230 => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
      235 => [ 'ld'  , 'lamed-dagesh', 'לּ' ],
-     242 => [ 'shsh'   , 'shin-w-shin-dot', 'שׁ' ],
+     242 => [ 'shsh'   , 'shin-w-shin-dot', 'ש'.hu('5C1') ],
      245 => [ 'shsid' , 'shin-w-sin-dot-and-dagesh', 'שֹּ' ],
      246 => [ 'td'  , 'tav-dagesh', 'תּ' ],
      250 => [ 'hpt' , 'hataf-patach', 'ֲ' ],
