@@ -1105,7 +1105,7 @@ function do_not_drop( $node )
 {
   if ( is_ang_to_drop( $node )
        ||
-       is_irrelevant_whitespace( $node )
+       is_whitespace_to_drop( $node )
        ||
        is_amp_to_drop( $node ) )
     {
@@ -1114,7 +1114,7 @@ function do_not_drop( $node )
   return TRUE;
 }
 
-function is_irrelevant_whitespace( $node )
+function is_whitespace_to_drop( $node )
 {
   /* Get rid of the following 2 types of branches:
 
