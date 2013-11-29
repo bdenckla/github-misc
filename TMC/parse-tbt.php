@@ -3,7 +3,28 @@
 
    // brbr can't join COM1/COM due to htm/txt across the boundary
 
-   // eliminate excess space inside of parens
+   // eliminate excess space inside of parens (due to italics?)
+
+   // eliminate excess space before period and comma (due to italics?)
+   // (same problem as with parens?)
+
+   // handle C.E. and B.C.E.
+
+   // why weird break between
+   //
+   // "the tale of the" and "stela",
+   // "JBL 92" and "(1973)", and
+   // similar others?
+
+   // what's with "eine spezio-linguistische Studie..."
+   // with respect to (1) quotes needed? (2) ellipsis in original?
+
+   // support link-ification of chapter references in roman numerals?
+   // (I've seen two in references)
+
+   // hyphen problem Biblical Liter-ature
+
+   // why is NN preseved in "45--50"? and similar others?
 
    // allow search for places where char maps (coans) are used
 
@@ -14,7 +35,12 @@
    // indentify chaper/verse references.
 
    // opening (``) and closing (") double quote substitution
+
+   // similar single quote substitution, but how to distinguish from
+   // apostrophe? E.g. Israel Eph'al.
+
    // double-dash substitution
+
    // triple-dash substitution
 
    // handle &mul;
