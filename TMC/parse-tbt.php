@@ -10,20 +10,6 @@
 
    // handle C.E. and B.C.E.
 
-   // what's with "eine spezio-linguistische Studie..."
-   // with respect to (1) quotes needed? (2) ellipsis in original?
-
-   // support link-ification of chapter references in roman numerals?
-   // (I've seen two in references)
-
-   // allow search for places where char maps (coans) are used
-
-   // make footnotes (numbered and asterisk) into hyperlinks
-
-   // footnotes mushed together: should be separated by CT
-
-   // identify chaper/verse references.
-
    // opening (``) and closing (") double quote substitution
 
    // similar single quote substitution, but how to distinguish from
@@ -35,15 +21,26 @@
 
    // handle &mul;
 
-   // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
-   // branch of &VB; followed by 'v]' goes to verse
-
    // Pi-3 special characters:
    //    $ for asterisk
 
    // PI-21 special characters:
    //    xm for circumflex over x
    //    xl for acute accent over x
+
+   // allow search for places where char maps (coans) are used
+
+   // make footnotes (numbered and asterisk) into hyperlinks
+
+   // footnotes mushed together: should be separated by CT
+
+   // identify chaper/verse references.
+
+   // support link-ification of chapter references in roman numerals?
+   // (I've seen two in references)
+
+   // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
+   // branch of &VB; followed by 'v]' goes to verse
 
    // normally we ignore &#6; but it is needed here in a title:
    //
@@ -73,6 +70,16 @@
 
    // b'reishit bara elohim wraps weirdly in printed (p. 19)
    // same with eileh tol'dot (p. 22)
+
+   // O. Loretz, Habiru-Hebräer,
+   // eine spezio-linguistische Studie...,
+   // Zeitschrift für die Alttestamentliche Wissenschaft Beiheft 160
+   // (Berlin, 1984).
+
+   // O. Loretz, Habiru-Hebräer:
+   // eine sozio-linguistische Studie ...
+   // (= Zeitschrift für die Alttestamentliche Wissenschaft Beiheft 160)
+   // (Berlin, 1984).
 
 require_once 'generate-html.php';
 
