@@ -1,23 +1,7 @@
 #!/usr/bin/php -q
 <?php
 
-   // brbr can't join COM1/COM due to htm/txt across the boundary
-
-   // eliminate excess space inside of parens (due to italics?)
-
-   // eliminate excess space before period and comma (due to italics?)
-   // (same problem as with parens?)
-
-   // handle C.E. and B.C.E.
-
-   // opening (``) and closing (") double quote substitution
-
-   // similar single quote substitution, but how to distinguish from
-   // apostrophe? E.g. Israel Eph'al.
-
-   // double-dash substitution
-
-   // triple-dash substitution
+   // some trailing space issues (search for '. <' in HTML).
 
    // handle &mul;
 
@@ -27,6 +11,13 @@
    // PI-21 special characters:
    //    xm for circumflex over x
    //    xl for acute accent over x
+
+   // brbr can't join COM1/COM due to htm/txt across the boundary
+
+   // eliminate excess space inside of parens (due to italics?)
+
+   // eliminate excess space before period and comma (due to italics?)
+   // (same problem as with parens?)
 
    // allow search for places where char maps (coans) are used
 
@@ -662,6 +653,21 @@ function is_car( array $node )
   return eltype( $node ) === 'car';
 }
 
+function is_das( array $node )
+{
+  return eltype( $node ) === 'das';
+}
+
+function is_bkt( array $node )
+{
+  return eltype( $node ) === 'bkt';
+}
+
+function is_aoc( array $node )
+{
+  return eltype( $node ) === 'aoc';
+}
+
 function is_txt( array $node )
 {
   return eltype( $node ) === 'txt';
@@ -747,6 +753,16 @@ function substitute1( array $node )
 
   if ( is_p_amp( $node, 'mk' ) )
     {
+      $node['eltype'] = 'das';
+      $node['elval'] = '--';
+
+      return $node;
+    }
+
+  // Map single dash back from a 'das' to 'txt' type
+
+  if ( is_p_das( $node, '-' ) )
+    {
       $node['eltype'] = 'txt';
       $node['elval'] = '-';
 
@@ -754,6 +770,21 @@ function substitute1( array $node )
     }
 
   return $node;
+}
+
+function is_p_das( $node, $elval )
+{
+  return is_das( $node ) && elval( $node ) === $elval;
+}
+
+function is_p_bkt( $node, $elval )
+{
+  return is_bkt( $node ) && elval( $node ) === $elval;
+}
+
+function is_p_aoc( $node, $elval )
+{
+  return is_aoc( $node ) && elval( $node ) === $elval;
 }
 
 function replacement_for_misc( $branch )
@@ -773,7 +804,27 @@ function replacement_for_misc( $branch )
   return array_merge( $leading_space, $nodes );
 }
 
+function revert_das_2( $node )
+{
+  return is_p_das( $node, '--' )
+    ? element( 'txt', '--' )
+    : $node;
+}
+
 function replacement_for_numeric( $branch )
+{
+  $nodes = $branch['nodes'];
+
+  $dnodes = array_map( 'revert_das_2', $nodes );
+
+  $branch['nodes'] = $dnodes;
+
+  $branch2 = txttxt( $branch );
+
+  return replacement_for_numeric_2( $branch2, $nodes );
+}
+
+function replacement_for_numeric_2( $branch, $orig_nodes )
 {
   $nodes = $branch['nodes'];
 
@@ -793,9 +844,26 @@ function replacement_for_numeric( $branch )
   //
   $evfo = elval( $nodes[0] );
 
+  if ( $evfo === 'b.c.e.' || $evfo === 'c.e.' )
+    {
+      return map_upper( $orig_nodes );
+    }
+
   if ( ! preg_match_toe2( $num_pat, $evfo ) ) { return FALSE; }
 
-  return $nodes;
+  return $orig_nodes;
+}
+
+function map_upper( array $nodes )
+{
+  return array_map_pa( 'apply_to_elval', 'strtoupper', $nodes );
+}
+
+function apply_to_elval( $f, $node )
+{
+  $node['elval'] = $f( $node['elval'] );
+
+  return $node;
 }
 
 function substitute2( array $node )
@@ -914,6 +982,64 @@ function apply_char_map( array $char_map, array $node )
   if ( is_txt( $node ) )
     {
       return apply_char_map_to_txt( $char_map, $node );
+    }
+
+  // TODO: handle the below in a table-based way
+
+  if ( is_p_das( $node, '--' ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '–'; // U+2013 (en-dash)
+
+      return $node;
+    }
+
+  if ( is_p_das( $node, '---' ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '—'; // U+2014 (em-dash)
+
+      return $node;
+    }
+
+  /* NOTE: triple bkt and triple aoc not handled.  I don't they would
+   * be hard to handle. I think they would be handled by just mapping
+   * them to to double followed by single.  In the one instance I've
+   * seen where triple might have appeared, it in fact appeared as a
+   * double and a single separated by other nodes: ``&#133;&#133;`As
+   * the seal upon thine arm'
+   */
+
+  if ( is_p_bkt( $node, '`' ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '‘'; // U+2018
+
+      return $node;
+    }
+
+  if ( is_p_aoc( $node, "'" ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '’'; // U+2019
+
+      return $node;
+    }
+
+  if ( is_p_bkt( $node, '``' ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '“'; // U+201C
+
+      return $node;
+    }
+
+  if ( is_p_aoc( $node, "''" ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '”'; // U+201D
+
+      return $node;
     }
 
   return $node;
@@ -1505,12 +1631,20 @@ function brbr_instr( $nodes0, $nodes1 )
 
   $last_node0 = $nodes0[ $c0 - 1 ];
 
+  if ( is_bkt( $last_node0 ) ) { return brbr_instr_space(); }
+
+  if ( is_aoc( $last_node0 ) ) { return brbr_instr_space(); }
+
+  if ( is_das( $last_node0 ) ) { return brbr_instr_normal_jam(); }
+
   // For instance, it might be an italic branch ending in hypen.
   // We wouldn't know, so we better just say "unclear."
   //
   if ( ! is_txt( $last_node0 ) ) { return brbr_instr_unclear(); }
 
   $te0 = elval( $last_node0 );
+
+  if ( $te0 === '' ) { return brbr_instr_unclear(); }
 
   $slash = preg_match_toe2( '|/$|', $te0 ); // TODO: test
 
@@ -1598,13 +1732,40 @@ function basic_parse( $dollars )
 {
   //$x = basic_parse( '<aaa><>&bbb;ccc&d;<ee>f' );
 
+  $amp = '&'; // ampersand
+  $oab = '<'; // open angle bracket (less than)
+  $car = '\^'; // caret
+  $das = '\-'; // dash
+  $bkt = '`'; // backtick
+  $aoc = "'"; // apos/csq
+
+  $ntc = $amp . $oab . $car . $das . $bkt . $aoc;
+
   $pats =
     [
-     [ 'amp', '&[^;]*;' ],
-     [ 'ang', '<[^>]*>' ],
-     [ 'car', '\^' ],
-     [ 'txt', '[^&<\^]+' ],
+     [ 'amp', '&[^;]+;' ], // e.g. &D; or &#131;
+     [ 'ang', '<[^>]*>' ], // e.g. <COM> or <>
+     [ 'car', $car ],
+     [ 'das', $das . '+' ], // a run of one or more dashes (see below)
+     [ 'bkt', $bkt . '+' ], // a run of one or more backticks
+     [ 'aoc', $aoc . '+' ], // a run of one or more apos/csq (see below)
+     [ 'txt', '[^' . $ntc . ']+' ], // see TODO below
      ];
+
+  /* Why do we capture runs of one or more dashes instead of
+     restricting ourselves to runs of two or more? We do this to allow
+     the pattern for txt to be simpler. We later turn ['das', '-']
+     into plain ['txt', '-']. */
+
+  // apos/csq: apostrophe/closing single quote
+
+  /* TODO: find out how the following are escaped by 3B2 if they do
+     appear in text, and handle them.
+
+     & (ampersand)
+     < (open angle bracket (less than))
+     ^ (caret)
+   */
 
   // ppats: parenthesized pats
   //
