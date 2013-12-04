@@ -46,41 +46,6 @@
    //
    //    Genesis&#6;and
 
-   // extra close angle bracket in "&#131>;"?
-
-   // wrong closing (xS) in "hbrk b&SSN;c&xS;"?
-
-   // seemingly-erroneous space before '---'
-   // in 'moral freedom ---a gift'
-   // coming from
-   // $[...] moral freedom \
-   // $---a gift [...]
-   // not a problem on paper because a line breaks after "moral"
-   // unless you consider starting a line with --- (em-dash) to
-   // be a stylistic error
-
-   // extra &D; documented in email
-
-   // inconsistent paren/italic handling
-
-   // transliteration inside &H; seems like mistake and is inconsistent
-
-   // Why are some line wraps (incl. some with hypenation) "enforced"?
-   // Is this the result of some manual process?
-
-   // b'reishit bara elohim wraps weirdly in printed (p. 19)
-   // same with eileh tol'dot (p. 22)
-
-   // O. Loretz, Habiru-Hebräer,
-   // eine spezio-linguistische Studie...,
-   // Zeitschrift für die Alttestamentliche Wissenschaft Beiheft 160
-   // (Berlin, 1984).
-
-   // O. Loretz, Habiru-Hebräer:
-   // eine sozio-linguistische Studie ...
-   // (= Zeitschrift für die Alttestamentliche Wissenschaft Beiheft 160)
-   // (Berlin, 1984).
-
 require_once 'generate-html.php';
 
 // tneve: throw new ErrorException of var_export
