@@ -395,9 +395,7 @@ function brbred_trs( $branch )
 
 function table_for_branch( $branch )
 {
-  $tr_for_pusher = tr_for_pp( 'pusher', 'pu', $branch );
-
-  $tr_for_popper = tr_for_pp( 'popper', 'po', $branch );
+  $tr_for_pupo = tr_for_pupo( $branch );
 
   $level = $branch['level'];
 
@@ -405,8 +403,7 @@ function table_for_branch( $branch )
 
   $trs_for_nodes = array_map_pa( 'tr_for_node', $level, $nodes );
 
-  $trs = array_merge( [ $tr_for_pusher ],
-                      [ $tr_for_popper ],
+  $trs = array_merge( [ $tr_for_pupo ],
                       brbred_trs( $branch ),
                       $trs_for_nodes );
 
@@ -417,15 +414,29 @@ function table_for_branch( $branch )
   return table_b1( $trs );
 }
 
-function tr_for_pp( $pusher_or_popper_key,
-                    $pusher_or_popper_display,
-                    array $branch )
+function tr_for_pupo( array $branch )
 {
-  $tds[] = $pusher_or_popper_display;
+  $tds[] = '';
 
-  $tds[] = elval( $branch[ $pusher_or_popper_key ] );
+  $pu = pupo_display( $branch[ 'pusher' ] );
+  $po = pupo_display( $branch[ 'popper' ] );
+
+  $tds[] = $pu . ' ' . $po;
 
   return tr_of_tds( $tds );
+}
+
+function pupo_display( $node )
+{
+  $puv = elval( $node );
+
+  $pui = substr( $puv, 1, strlen( $puv ) - 2 );
+
+  $puf = empty( $pui ) ? 'e' : 'f';
+
+  $put = eltype( $node );
+
+  return implode( '.', [ $pui, $puf, $put ] );
 }
 
 function tr_for_node( $level, array $node )
@@ -1340,12 +1351,20 @@ function get_poppers( $element )
 
 function tree_parse( $elements )
 {
+  /* Below we add periods around the following so that things look
+     right when sent through pupo_display.
+
+     top-level-pusher
+     top-level-popper
+     auto-supplied-popper
+  */
+
   $n = 0;
   $a[0] = [ 'level' => 0,
-            'pusher' => element( 'top-level pusher',
-                                 'top-level pusher' ) ,
-            'popper' => element( 'top-level popper',
-                                 'top-level popper' ),
+            'pusher' => element( 'tpu',
+                                 '.top-level-pusher.' ) ,
+            'popper' => element( 'tpo',
+                                 '.top-level-popper.' ),
             'nodes' => [] ];
   $poppers_saught_stack[0] = [];
 
@@ -1387,8 +1406,8 @@ function tree_parse( $elements )
 
   while ( $n !== 0 )
     {
-      $a[$n]['popper'] = element( 'auto-supplied popper',
-                                  'auto-supplied popper' );
+      $a[$n]['popper'] = element( 'apo',
+                                  '.auto-supplied-popper.' );
       $a[$n-1]['nodes'][] = $a[$n];
       $a[$n] = NULL;
       $n--;
