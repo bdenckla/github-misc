@@ -5,13 +5,6 @@
 
    // handle &mul;
 
-   // Pi-3 special characters:
-   //    $ for asterisk
-
-   // PI-21 special characters:
-   //    xm for circumflex over x
-   //    xl for acute accent over x
-
    // brbr can't join COM1/COM due to htm/txt across the boundary
 
    // eliminate excess space inside of parens (due to italics?)
@@ -348,7 +341,7 @@ function html_body( $input_filename, $input )
         'brbr',
         'txttxt',
         'apply_char_maps',
-        'inline_hebrew',
+        'inline_misc',
         'txttxt',
         'inline_italics',
         'txthtm',
@@ -407,10 +400,6 @@ function table_for_branch( $branch )
                       brbred_trs( $branch ),
                       $trs_for_nodes );
 
-  /* TODO: have mode where pushers and poppers aren't shown so
-     literally so, for example, '&' (ampersand) can be searched for to
-     find leaves in need of special handling. */
-
   return table_b1( $trs );
 }
 
@@ -428,6 +417,12 @@ function tr_for_pupo( array $branch )
 
 function pupo_display( $node )
 {
+  /* We display pushers and poppers specially to make them more easily
+     distinguishable/searchabe from their appearances as plain old
+     leaves. So, for example, '&' (ampersand) or '<' (open angle
+     bracket (less than)) can be searched for to find leaves in need
+     of special handling. */
+
   $puv = elval( $node );
 
   $pui = substr( $puv, 1, strlen( $puv ) - 2 );
@@ -783,6 +778,11 @@ function substitute1( array $node )
   return $node;
 }
 
+function is_p_txt( $node, $elval )
+{
+  return is_txt( $node ) && elval( $node ) === $elval;
+}
+
 function is_p_das( $node, $elval )
 {
   return is_das( $node ) && elval( $node ) === $elval;
@@ -796,6 +796,26 @@ function is_p_bkt( $node, $elval )
 function is_p_aoc( $node, $elval )
 {
   return is_aoc( $node ) && elval( $node ) === $elval;
+}
+
+
+function replacement_for_asterisk( $branch )
+{
+  $nodes = $branch['nodes'];
+
+  $popper = $branch['popper'];
+
+  if ( ! is_p_ang( $popper, '?tvs' ) ) { return FALSE; }
+
+  $n0 = lubn( 0, $nodes );
+
+  if ( ! is_p_ang( $n0, '?tf="Pi3"' ) ) { return FALSE; }
+
+  $n1 = lubn( 1, $nodes );
+
+  if ( ! is_p_txt( $n1, '$' ) ) { return FALSE; }
+
+  return [ element( 'txt', '*' ) ];
 }
 
 function replacement_for_misc( $branch )
@@ -884,9 +904,9 @@ function substitute2( array $node )
   return $a[0];
 }
 
-function inline_hebrew( array $node )
+function inline_misc( array $node )
 {
-  $a = substitute_h( 'inline_hebrew_r', $node );
+  $a = substitute_h( 'inline_misc_r', $node );
 
   return $a[0];
 }
@@ -931,14 +951,25 @@ function replacement2( $branch )
       $r = replacement_for_misc( $branch );
     }
 
+  if ( $r === FALSE )
+    {
+      $r = replacement_for_asterisk( $branch );
+    }
+
   return $r;
 }
 
-function inline_hebrew_r( $branch )
+function qtfepi21() { return '?tf="PI-21"'; }
+
+function inline_misc_r( $branch )
 {
   $pusher = $branch['pusher'];
 
-  if ( ! is_p_amp( $pusher, 'H' ) ) { return FALSE; }
+  $is_hebrew = is_p_amp( $pusher, 'H' );
+
+  $is_pi21 = is_p_ang( $pusher, qtfepi21() );
+
+  if ( ! $is_hebrew && ! $is_pi21 ) { return FALSE; }
 
   $nodes = $branch['nodes'];
 
@@ -969,18 +1000,22 @@ function flatten( array $a )
   return array_reduce( $a, 'array_merge', [] );
 }
 
+function find_char_map_for_pusher( $pusher )
+{
+  if ( is_p_amp( $pusher, 'H' ) ) { return hebrew_char_map(); }
+
+  if ( is_p_ang( $pusher, 'PAR-H' ) ) { return hebrew_char_map(); }
+
+  if ( is_p_ang( $pusher, qtfepi21() ) ) { return pi21_char_map(); }
+
+  return default_char_map();
+}
+
 function apply_char_map( array $char_map, array $node )
 {
   if ( is_branch( $node ) )
     {
-      $pusher = $node['pusher'];
-
-      $is_hebrew =
-        is_p_amp( $pusher, 'H' )
-        ||
-        is_p_ang( $pusher, 'PAR-H' );
-
-      $char_map = $is_hebrew ? hebrew_char_map() : default_char_map();
+      $char_map = find_char_map_for_pusher( $node['pusher'] );
 
       $node['nodes'] =
         array_map_pa( 'apply_char_map',
@@ -1156,7 +1191,9 @@ function apply_char_map_to_txt( $char_map, $element )
 {
   $elval = elval( $element );
 
-  if ( has_non_printable( $elval ) )
+  $atp = apply_to_printables( $char_map );
+
+  if ( $atp || has_non_printable( $elval ) )
     {
       // eaa: elval as array of single-char strings
       //
@@ -1269,7 +1306,7 @@ function is_non_hash_6( $node )
 function get_poppers( $element )
 {
   /*
-    If $element is pusher, get its popper or poppers.
+    If $element is a pusher, get its popper or poppers.
 
     If $element is not a pusher, return the empty list.
    */
@@ -1307,6 +1344,8 @@ function get_poppers( $element )
      [
       oab_cab('?tvs=-5pt') => [ ang_element( '?tvs' ) ],
 
+      oab_cab( qtfepi21() ) => [ ang_element( '?tf="DAN-I"' ) ],
+
       oab_cab('CT') => [ ang_element( '' ) ],
       oab_cab('IAU') => [ ang_element( '' ) ],
       oab_cab('IAH') => [ ang_element( '' ) ],
@@ -1343,8 +1382,6 @@ function get_poppers( $element )
   $ps2 = lubn( elval( $element ), $ps1 );
 
   if ( is_null( $ps2 ) ) { return []; }
-
-  //fprintf( STDERR, var_export( $ps2, 1 ) );
 
   return $ps2;
 }
@@ -1708,8 +1745,6 @@ function brbr_instr( $nodes0, $nodes1 )
     . ( $whole_spells_a_word ? 'yw' : 'nw' )
     . "\n";
 
-  // fprintf( STDERR, $log_line );
-
   if ( $whole_spells_a_word )
     {
       return brbr_instr_super_jam();
@@ -1953,6 +1988,20 @@ function hebrew_char_map()
            'char map itself' => $raw ];
 }
 
+function pi21_char_map()
+{
+  $raw =
+    [
+     ord('i') => [ 'i', 'i', 'i' ],
+     ord('l') => [ 'aa', 'ACUTE ACCENT', hu('301') ],
+     ord('m') => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
+     ];
+
+  return [ 'char map name' => 'PI-21',
+           'apply to printables' => TRUE,
+           'char map itself' => $raw ];
+}
+
 function cm_lookup( $char_map, $ord )
 {
   $r = lubn( $ord, $char_map['char map itself'] );
@@ -1976,9 +2025,24 @@ function ord_and_name( $char_map, $char )
   return [ $ord, $mapped_ord[0] ];
 }
 
+// vese: var_export to standard error
+function vese( $x )
+{
+  fprintf( STDERR, var_export( $x, 1 ) );
+}
+
+function apply_to_printables( $char_map )
+{
+  $atp = lubn( 'apply to printables', $char_map );
+
+  return $atp === TRUE;
+}
+
 function acm( $char_map, $char )
 {
-  if ( is_printable( $char ) ) { return $char; }
+  $atp = apply_to_printables( $char_map );
+
+  if ( ! $atp && is_printable( $char ) ) { return $char; }
 
   $ord = ord( $char );
 
@@ -2024,7 +2088,11 @@ function main( $argv )
       tneve( [ 'error opening' => $input_filename ] );
     }
 
-  $head = html_head_contents( 'Parsed ' . $input_filename );
+  $title = 'Parsed ' . $input_filename;
+
+  $css = 'BODY { background-color: #333; color: #ddd }';
+
+  $head = html_head_contents( $title, $css );
 
   $body = html_body( $input_filename, $input );
 

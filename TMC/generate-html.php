@@ -130,16 +130,16 @@ function html_head_meta()
   return xml_sc_tag( 'meta', $attr );
 }
 
-function html_head_contents( $title )
+function html_head_contents( $title, $css )
 {
   $meta = html_head_meta();
 
   $title = xml_wrap( 'title', [], $title );
 
-  $integer = '.integer { text-align: right; }';
-  $hebrew = '.hebrew { text-align: right; }';
+  //$integer = '.integer { text-align: right; }';
+  //$hebrew = '.hebrew { text-align: right; }';
 
-  $css = $integer . "\n" . $hebrew;
+  //$css = $integer . "\n" . $hebrew;
 
   $style = xml_wrap( 'style', [ 'type' => 'text/css' ], $css );
 
