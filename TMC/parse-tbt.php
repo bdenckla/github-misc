@@ -1006,16 +1006,40 @@ function find_char_map_for_pusher( $pusher )
 
   if ( is_p_ang( $pusher, 'PAR-H' ) ) { return hebrew_char_map(); }
 
+  if ( is_p_amp( $pusher, 'NN' ) ) { return nn_char_map(); }
+
   if ( is_p_ang( $pusher, qtfepi21() ) ) { return pi21_char_map(); }
 
   return default_char_map();
+}
+
+function nn_branch_handler( $branch )
+{
+  $pusher = $branch['pusher'];
+
+  if ( is_p_amp( $pusher, 'SS' ) )
+    {
+      if ( is_p_txt( $branch['nodes'][0], '2' ) )
+        {
+          return element( 'txt', '²' ); // U+00B2
+        }
+    }
+  return FALSE;
 }
 
 function apply_char_map( array $char_map, array $node )
 {
   if ( is_branch( $node ) )
     {
-      $char_map = find_char_map_for_pusher( $node['pusher'] );
+      $bh = lubn( 'branch handler', $char_map );
+
+      $bhr = $bh ? $bh( $node ) : FALSE;
+
+      if ( $bhr !== FALSE ) { return $bhr; }
+
+      $pusher = $node['pusher'];
+
+      $char_map = find_char_map_for_pusher( $pusher );
 
       $node['nodes'] =
         array_map_pa( 'apply_char_map',
@@ -1084,6 +1108,14 @@ function apply_char_map( array $char_map, array $node )
     {
       $node['eltype'] = 'txt';
       $node['elval'] = '”'; // U+201D
+
+      return $node;
+    }
+
+  if ( is_p_amp( $node, 'mul' ) )
+    {
+      $node['eltype'] = 'txt';
+      $node['elval'] = '×'; // U+00D7
 
       return $node;
     }
@@ -1229,6 +1261,8 @@ function is_ang_to_drop( $d )
         begins_with( $elval, '<?th=' )
         ||
         begins_with( $elval, '<?twb' )
+        ||
+        begins_with( $elval, '<?tpdt=' )
         ||
         $elval === '<?down>'
         ||
@@ -1928,6 +1962,16 @@ function default_char_map()
            'char map itself' => $a ];
 }
 
+function nn_char_map()
+{
+  $a =
+    [
+     ];
+
+  return [ 'char map name' => 'nn',
+           'branch handler' => 'nn_branch_handler',
+           'char map itself' => $a ];
+}
 
 function hu( $hex ) // hu: hex to utf-8
 {
