@@ -1,11 +1,6 @@
 #!/usr/bin/php -q
 <?php
 
-   // eliminate excess space inside of parens (due to italics?)
-
-   // eliminate excess space before period and comma (due to italics?)
-   // (same problem as with parens?)
-
    // some trailing space issues (search for '. <' in HTML).
 
    // brbr can't join COM1/COM due to htm/txt across the boundary
