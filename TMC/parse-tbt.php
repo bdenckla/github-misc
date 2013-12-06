@@ -343,6 +343,8 @@ function html_body( $input_filename, $input )
         'apply_char_maps',
         'inline_misc',
         'txttxt',
+        'inline_nn_hack',
+        'txttxt',
         'inline_italics',
         'txthtm',
         ];
@@ -720,6 +722,14 @@ function is_ang_in( $node, array $elvals )
     is_in( elval( $node ), amoc( $elvals ) );
 }
 
+function is_txt_in( $node, array $elvals )
+{
+  return
+    is_txt( $node )
+    &&
+    is_in( elval( $node ), $elvals );
+}
+
 function eltype( array $node )
 {
   return lubn( 'eltype', $node );
@@ -911,6 +921,13 @@ function inline_misc( array $node )
   return $a[0];
 }
 
+function inline_nn_hack( array $node )
+{
+  $a = substitute_h( 'inline_nn_hack_r', $node );
+
+  return $a[0];
+}
+
 function inline_italics( array $node )
 {
   $a = substitute_h( 'inline_italics_r', $node );
@@ -976,6 +993,29 @@ function inline_misc_r( $branch )
   return $nodes;
 }
 
+function inline_nn_hack_r( $branch )
+{
+  // TODO: don't do this NN hack
+
+  $pusher = $branch['pusher'];
+
+  $is_nn = is_p_amp( $pusher, 'NN' );
+
+  if ( ! $is_nn ) { return FALSE; }
+
+  $node0 = $branch['nodes'][0];
+
+  $txts = [ '7×5²', '5×6²', '3×7²' ];
+
+  $is_particular_txt = is_txt_in( $node0, $txts );
+
+  if ( ! $is_particular_txt ) { return FALSE; }
+
+  $nodes = $branch['nodes'];
+
+  return $nodes;
+}
+
 function inline_italics_r( $branch )
 {
   $pusher = $branch['pusher'];
@@ -1013,15 +1053,43 @@ function find_char_map_for_pusher( $pusher )
   return default_char_map();
 }
 
-function nn_branch_handler( $branch )
+function exp2_branch_handler( $branch )
 {
+  /* exp2_branch_handler handles branches while the NN char map is
+   * active. In particular, it transforms SS (superscript) branches
+   * representing "exponent 2" into the Unicode for "exponent 2".
+   */
   $pusher = $branch['pusher'];
+
+  // handles squared (exponent of 2)
 
   if ( is_p_amp( $pusher, 'SS' ) )
     {
       if ( is_p_txt( $branch['nodes'][0], '2' ) )
         {
           return element( 'txt', '²' ); // U+00B2
+        }
+    }
+  return FALSE;
+}
+
+function expc_branch_handler( $branch )
+{
+  /* expc_branch_handler handles branches while the the default char
+   * map is active. In particular, it transforms SS and SSN
+   * (superscript) branches representing "exponent c" into the Unicode
+   * for "?".
+   */
+  $pusher = $branch['pusher'];
+
+  // handles squared (exponent of 2)
+
+  if ( is_amp_in( $pusher, [ 'SS', 'SSN' ] ) )
+    {
+      if ( is_p_txt( $branch['nodes'][0], 'c' ) )
+        {
+          return element( 'txt', 'ʿ' ); // U+02BF
+          // modifier letter left half ring
         }
     }
   return FALSE;
@@ -1959,6 +2027,7 @@ function default_char_map()
      of like HP Roman-8. */
 
   return [ 'char map name' => 'HP Roman-8-ish',
+           'branch handler' => 'expc_branch_handler',
            'char map itself' => $a ];
 }
 
@@ -1969,7 +2038,7 @@ function nn_char_map()
      ];
 
   return [ 'char map name' => 'nn',
-           'branch handler' => 'nn_branch_handler',
+           'branch handler' => 'exp2_branch_handler',
            'char map itself' => $a ];
 }
 
