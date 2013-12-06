@@ -1,16 +1,14 @@
 #!/usr/bin/php -q
 <?php
 
-   // some trailing space issues (search for '. <' in HTML).
-
-   // handle &mul;
-
-   // brbr can't join COM1/COM due to htm/txt across the boundary
-
    // eliminate excess space inside of parens (due to italics?)
 
    // eliminate excess space before period and comma (due to italics?)
    // (same problem as with parens?)
+
+   // some trailing space issues (search for '. <' in HTML).
+
+   // brbr can't join COM1/COM due to htm/txt across the boundary
 
    // allow search for places where char maps (coans) are used
 
@@ -18,17 +16,17 @@
 
    // footnotes mushed together: should be separated by CT
 
-   // identify chaper/verse references.
-
-   // support link-ification of chapter references in roman numerals?
-   // (I've seen two in references)
-
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
 
    // normally we ignore &#6; but it is needed here in a title:
    //
    //    Genesis&#6;and
+
+   // identify chaper/verse references.
+
+   // support link-ification of chapter references in roman numerals?
+   // (I've seen two in references)
 
 require_once 'generate-html.php';
 
@@ -1708,12 +1706,12 @@ function pairwise_do_the_brbr( $b0, $b1 )
     }
   elseif ( $brbr_instr === brbr_instr_normal_jam() )
     {
-      $mid_nodes = mid_nodes( $debug, $brbr_instr, '' );
+      $mid_nodes = mid_nodes( $debug, $brbr_instr );
     }
   elseif ( $brbr_instr === brbr_instr_super_jam() )
     {
       $b0n = do_super_jam( $b0n );
-      $mid_nodes = mid_nodes( $debug, $brbr_instr, '' );
+      $mid_nodes = mid_nodes( $debug, $brbr_instr );
     }
   elseif ( $brbr_instr === brbr_instr_space() )
     {
@@ -1724,9 +1722,7 @@ function pairwise_do_the_brbr( $b0, $b1 )
       tneve(['unrecognized brbr instruction' => $brbr_instr]);
     }
 
-  $b0['nodes'] = array_merge( $b0n,
-                              $mid_nodes,
-                              $b1n );
+  $b0['nodes'] = array_merge( $b0n, $mid_nodes, $b1n );
 
   // $b0['brbred poppers'][] = $b0['popper'];
   // $b0['brbred pushers'][] = $b1['pusher'];
@@ -1738,11 +1734,19 @@ function pairwise_do_the_brbr( $b0, $b1 )
   return $b0;
 }
 
-function mid_nodes( $debug, $brbr_instr, $non_debug_txt )
+function mid_nodes( $debug, $brbr_instr, $non_debug_txt = NULL )
 {
-  return $debug
-    ? [ element( 'txt', '(' . $brbr_instr . ')' ) ]
-    : [ element( 'txt', $non_debug_txt ) ];
+  if ( $debug )
+    {
+      return [ element( 'txt', '(' . $brbr_instr . ')' ) ];
+    }
+
+  if ( $non_debug_txt )
+    {
+      return [ element( 'txt', $non_debug_txt ) ];
+    }
+
+  return [];
 }
 
 function pairwise_should_txttxt( $n0, $n1 )
