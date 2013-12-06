@@ -14,7 +14,10 @@
 
    // make footnotes (numbered and asterisk) into hyperlinks
 
-   // footnotes mushed together: should be separated by CT
+   // footnotes should be at end of their corresponding essay.
+   // I.e. right now the order is
+   // e1b e2b e1f e2f; should be e1b e1f e2b e2f
+   // e=essay b=body f=footnote
 
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
@@ -349,8 +352,6 @@ function html_body( $input_filename, $input )
 
   $a6_blocks = array_reduce( $f, 'fl_array_map_tree', $a1_blocks );
 
-  //return xml_wrap( 'pre', [], var_export( $a1_blocks, 1 ) );
-
   return tables_for_lined_trees( $a6_blocks );
 }
 
@@ -366,26 +367,6 @@ function table_for_lined_tree( $lined_tree )
   return table_for_branch( $lined_tree['tree'] );
 }
 
-function brbred_trs( $branch )
-{
-  $mpu = 'brbred pushers';
-  $mpo = 'brbred poppers';
-
-  $trs = [];
-
-  if ( array_key_exists( $mpu, $branch ) )
-    {
-      $trs[] = tr_of_tds( [ $mpu, var_export( $branch[ $mpu ], 1 ) ] );
-    }
-
-  if ( array_key_exists( $mpo, $branch ) )
-    {
-      $trs[] = tr_of_tds( [ $mpo, var_export( $branch[ $mpo ], 1 ) ] );
-    }
-
-  return $trs;
-}
-
 function table_for_branch( $branch )
 {
   $tr_for_pupo = tr_for_pupo( $branch );
@@ -397,7 +378,6 @@ function table_for_branch( $branch )
   $trs_for_nodes = array_map_pa( 'tr_for_node', $level, $nodes );
 
   $trs = array_merge( [ $tr_for_pupo ],
-                      brbred_trs( $branch ),
                       $trs_for_nodes );
 
   return table_b1( $trs );
@@ -1028,7 +1008,7 @@ function inline_italics_r( $branch )
   //
   $evfo = elval( $nodes[0] );
 
-  $newfo = element( 'htm', xml_wrap( 'i', [], $evfo ) );
+  $newfo = element( 'htm', html_i_na( $evfo ) );
 
   return [ $newfo ];
 }
@@ -1724,9 +1704,6 @@ function pairwise_do_the_brbr( $b0, $b1 )
 
   $b0['nodes'] = array_merge( $b0n, $mid_nodes, $b1n );
 
-  // $b0['brbred poppers'][] = $b0['popper'];
-  // $b0['brbred pushers'][] = $b1['pusher'];
-
   $b0['popper'] = $b1['popper'];
 
   // TODO what about other fields of $b1 than just 'nodes'?
@@ -1816,6 +1793,11 @@ function brbr_instr( $nodes0, $nodes1 )
 
   if ( ! $dash ) { return brbr_instr_space(); }
 
+  return brbr_instr_for_dash( $te0, $nodes1 );
+}
+
+function brbr_instr_for_dash( $te0, $nodes1 )
+{
   $w0m = preg_match_toe( '/(\w+)-$/', $te0 );
 
   if ( is_null( $w0m ) ) { return brbr_instr_unclear(); }
@@ -1851,10 +1833,7 @@ function brbr_instr( $nodes0, $nodes1 )
     . ( $whole_spells_a_word ? 'yw' : 'nw' )
     . "\n";
 
-  if ( $whole_spells_a_word )
-    {
-      return brbr_instr_super_jam();
-    }
+  if ( $whole_spells_a_word ) { return brbr_instr_super_jam(); }
 
   return brbr_instr_unclear();
 }

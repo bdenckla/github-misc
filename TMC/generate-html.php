@@ -1,35 +1,35 @@
 <?php
 
-function xml_wrap( $tag_name, $tag_attr, $i )
+function xml_wrap( $tag_name, $tag_attr, $i, $linesep = NULL )
 {
   $r = array
     (
-     xml_open_tag( $tag_name, $tag_attr ),
+     xml_open_tag( $tag_name, $tag_attr, $linesep ),
      $i,
-     xml_close_tag( $tag_name ),
+     xml_close_tag( $tag_name, $linesep ),
      );
 
   return xml_seq( $r );
 }
 
-function xml_open_tag( $name, $attr )
+function xml_open_tag( $name, $attr, $linesep = NULL )
 {
-  return xml_tag( $name, $attr, '', '' );
+  return xml_tag( $name, $attr, '', '', $linesep );
 }
 
-function xml_close_tag( $name )
+function xml_close_tag( $name, $linesep = NULL )
 {
-  return xml_tag( $name, [], '/', '' );
+  return xml_tag( $name, [], '/', '', $linesep );
 }
 
 // sc: self-close
 //
-function xml_sc_tag( $name, $attr )
+function xml_sc_tag( $name, $attr, $linesep = NULL )
 {
-  return xml_tag( $name, $attr, '', '/' );
+  return xml_tag( $name, $attr, '', '/', $linesep );
 }
 
-function xml_tag( $name, array $attr, $bs, $es )
+function xml_tag( $name, array $attr, $bs, $es, $linesep )
 {
   // aap: attr as plain pairs (duples) (as opposed to key/value pairs)
   //
@@ -41,18 +41,24 @@ function xml_tag( $name, array $attr, $bs, $es )
 
   $aapwn = array_merge( [ $nap ], $aap );
 
-  return xml_gtag( $aapwn, $bs, $es );
+  return xml_gtag( $aapwn, $bs, $es, $linesep );
 }
 
 // bs: begin slash, e.g. </t>, i.e. used for a closing tag
 // es: end   slash, e.g. <t/>, i.e. used for a self-closing tag
 // use neither bs nor es for an opening tag
 //
-function xml_gtag( array $attr, $bs, $es )
+function xml_gtag( array $attr, $bs, $es, $linesep = NULL )
 {
   $keqv = array_map( 'xml_keqv', $attr );
 
   $attr_string = implode( ' ', $keqv );
+
+  // $linesep === NULL means "use default".
+  // The default is "<!--\n>".
+  // lss: line separator string
+
+  $lss = $linesep === NULL ? "<!--\n-->" : $linesep;
 
   $t = ''
     . '<'
@@ -60,7 +66,7 @@ function xml_gtag( array $attr, $bs, $es )
     . $attr_string
     . $es
     . '>'
-    . "\n"
+    . $lss
     ;
 
   return new xml_raw( $t );
@@ -134,14 +140,20 @@ function html_head_contents( $title, $css )
 {
   $meta = html_head_meta();
 
-  $title = xml_wrap( 'title', [], $title );
+  /* default linesep (comments) doesn't work inside title element */
+  $title_linesep = '';
+
+  $title = xml_wrap( 'title', [], $title, $title_linesep );
 
   //$integer = '.integer { text-align: right; }';
   //$hebrew = '.hebrew { text-align: right; }';
 
-  //$css = $integer . "\n" . $hebrew;
+  /* default linesep (comments) doesn't work inside title element */
+  $style_linesep = "\n";
 
-  $style = xml_wrap( 'style', [ 'type' => 'text/css' ], $css );
+  $style_attr = [ 'type' => 'text/css' ];
+
+  $style = xml_wrap( 'style', $style_attr, $css, $style_linesep );
 
   return xml_seqa( $meta, $title, $style );
 }
@@ -182,6 +194,11 @@ function html_tr( $attr, $i )
 function html_table( $attr, $i )
 {
   return xml_wrap( 'table', $attr, $i );
+}
+
+function html_i_na( $i )
+{
+  return xml_wrap( 'i', [], $i );
 }
 
 function html_p_na( $i )
