@@ -1,18 +1,24 @@
 #!/usr/bin/php -q
 <?php
 
-   // some trailing space issues (search for '. <' in HTML).
+   /* space needed after comment verse id closing bracket: fix as part
+    * of needed extract-and-re-render strategy for verse ids. */
 
-   // brbr can't join COM1/COM due to htm/txt across the boundary
+   /* loss of italics in the second (parenthetic) element within the
+    * subheads on pp. 17–18. For example: <PAR-B>living in
+    * eden (2:4–24) */
+
+   /* map to upper things like "living in eden"? */
+
+   // some trailing space issues (search for '. <' in HTML).
 
    // allow search for places where char maps (coans) are used
 
    // make footnotes (numbered and asterisk) into hyperlinks
 
-   // footnotes should be at end of their corresponding essay.
-   // I.e. right now the order is
-   // e1b e2b e1f e2f; should be e1b e1f e2b e2f
-   // e=essay b=body f=footnote
+   /* footnotes should be at end of their corresponding essay.
+    * I.e. right now the order is e1b e2b e1f e2f; should be e1b e1f
+    * e2b e2f (e=essay b=body f=footnote). */
 
    // branch of &VB; followed by 'c:v]' goes to chapter_and_verse
    // branch of &VB; followed by 'v]' goes to verse
@@ -26,12 +32,20 @@
    // support link-ification of chapter references in roman numerals?
    // (I've seen two in references)
 
+   // Is ellipsis handling okay? (e.g. River...four branches)
+
 require_once 'generate-html.php';
 
 // tneve: throw new ErrorException of var_export
 function tneve( $e )
 {
   throw new ErrorException( var_export( $e, 1 ) );
+}
+
+// vese: var_export to standard error
+function vese( $x )
+{
+  fprintf( STDERR, var_export( $x, 1 ) . "\n" );
 }
 
 function pa() // Partially Apply
@@ -301,7 +315,7 @@ function is_in( $needle, array $haystack )
   return in_array( $needle, $haystack, $strict );
 }
 
-function html_body( $input_filename, $input )
+function my_html_body( $input_filename, $input )
 {
   $plines = array_map_wk( 'parse_line', $input );
 
@@ -1826,7 +1840,9 @@ function brbr_instr_for_dash( $te0, $nodes1 )
     . ' '
     . ( $parts_spell_words ? 'yp' : 'np' )
     . ( $whole_spells_a_word ? 'yw' : 'nw' )
-    . "\n";
+    ;
+
+  // vese( $log_line );
 
   if ( $whole_spells_a_word ) { return brbr_instr_super_jam(); }
 
@@ -2116,12 +2132,6 @@ function ord_and_name( $char_map, $char )
   return [ $ord, $mapped_ord[0] ];
 }
 
-// vese: var_export to standard error
-function vese( $x )
-{
-  fprintf( STDERR, var_export( $x, 1 ) );
-}
-
 function apply_to_printables( $char_map )
 {
   $atp = lubn( 'apply to printables', $char_map );
@@ -2185,7 +2195,7 @@ function main( $argv )
 
   $head = html_head_contents( $title, $css );
 
-  $body = html_body( $input_filename, $input );
+  $body = my_html_body( $input_filename, $input );
 
   $html = html_document( $head, $body );
 

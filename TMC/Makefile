@@ -1,11 +1,20 @@
+top: ~/Downloads/TMC-sample.html ~/Downloads/RP-Gen-commentary.html
+
 O := ~/Downloads/TMC-sample.TXT
 T := ~/Downloads/TMC-sample.tmp.TXT
 P := ~/Downloads/TMC-sample.patched.TXT
 C := ~/Downloads/TMC-sample.corrected.TXT
 D := TMC-sample-corrections
 
-~/Downloads/TMC-sample.html: $P Makefile php5-pspell.novc.marker *.php
+TBT_PREREQS := $P php5-pspell.novc.marker Makefile generate-html.php parse-tbt.php
+MSW_PREREQS := ~/Downloads/RP-Gen-commentary.pp.xml Makefile generate-html.php ./parse-ms-word-xml.php
+
+~/Downloads/TMC-sample.html: $(TBT_PREREQS)
 	./parse-tbt.php $< > $@.tmp
+	mv $@.tmp $@
+
+~/Downloads/RP-Gen-commentary.html: $(MSW_PREREQS)
+	./parse-ms-word-xml.php $< > $@.tmp
 	mv $@.tmp $@
 
 $P: $O $D Makefile
