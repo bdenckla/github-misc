@@ -82,10 +82,14 @@ function my_html_body( $input_filename, $xml )
 
 function process_document( $xml, $depth )
 {
-  return process_w( $xml, $depth );
+  $cp = NULL;
+
+  return process_w( $xml, $depth, $cp );
 }
 
-function process_w( $xml, $depth )
+// cp: current paragraph
+//
+function process_w( $xml, $depth, $cp )
 {
   $depthp1 = $depth + 1;
 
@@ -96,10 +100,19 @@ function process_w( $xml, $depth )
       vese( $indent . $depthp1 . ' ' . $name );
       if ( $name === 't' )
         {
+          $cp .= (string) $c;
           vese( (string) $c );
 
         }
-      process_w( $c, $depthp1 );
+      if ( $name === 'p' )
+        {
+          if ( ! is_null( $cp ) )
+            {
+              vese( $cp );
+            }
+          $cp = '';
+        }
+      process_w( $c, $depthp1, $cp );
     }
 }
 
