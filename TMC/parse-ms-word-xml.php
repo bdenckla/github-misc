@@ -51,78 +51,113 @@ function array_filter_rn( array $a, $f )
   return array_values( array_filter( $a, $f ) );
 }
 
-function my_html_body( $input_filename, $xml )
+function tr_of_tds( $td_bodies )
 {
-  // vese( '1 ' . $xml->getName() );
+  $tds = array_map( 'td_na', $td_bodies );
 
-  foreach ($xml->children('pkg',TRUE) as $second_gen)
+  return xml_wrap( 'tr', [], xml_seq( $tds ) );
+}
+
+// na: no attributes
+//
+function td_na( $body )
+{
+  return xml_wrap( 'td', [], $body );
+}
+
+// b1: no attributes except "border"=1
+//
+function table_b1( $trs )
+{
+  $table_attr = [ 'border' => 1 ];
+
+  return xml_wrap( 'table', $table_attr, xml_seq( $trs ) );
+}
+
+function my_html_body( $input_filename, $sxml )
+{
+  // rsx: really simple XML
+  //
+  $rsx = NULL;
+
+  foreach ($sxml->children('pkg',TRUE) as $second_gen)
     {
-      // vese( '  2 ' . $second_gen->getName() );
-
       foreach ($second_gen->children('pkg',TRUE) as $third_gen)
         {
-          // vese( '    3 ' . $third_gen->getName() ) ;
-
           foreach ($third_gen->children('w',TRUE) as $fourth_gen)
             {
               $name = $fourth_gen->getName();
 
-              // vese( '      4 ' . $name );
-
               if ( $name === 'document' )
                 {
-                  process_document( $fourth_gen, 4 );
+                  if ( ! is_null( $rsx ) )
+                    {
+                      tneve( 'more than one document found' );
+                    }
+                  $rsx = process_document( $fourth_gen );
                 }
             }
         }
     }
 
-  return html_p_na('here we are');
+  $table = table_for_element( $rsx );
+
+  return $table;
 }
 
-function process_document( $xml, $depth )
+function process_document( $sxml )
 {
-  $cp = NULL;
-
-  return process_w( $xml, $depth, $cp );
+  return process_w( $sxml );
 }
 
 // cp: current paragraph
 //
-function process_w( $xml, $depth, $cp )
+function process_w( $sxml )
 {
-  $depthp1 = $depth + 1;
+  $name = $sxml->getName();
 
-  foreach ($xml->children('w',TRUE) as $c)
+  $r['name'] = $name;
+
+  foreach ( $sxml->attributes('w',TRUE) as $k => $v )
     {
-      $name = $c->getName();
-      $indent = str_repeat( '  ', $depthp1 );
-      vese( $indent . $depthp1 . ' ' . $name );
-      if ( $name === 't' )
-        {
-          $cp .= (string) $c;
-          vese( (string) $c );
-
-        }
-      if ( $name === 'p' )
-        {
-          if ( ! is_null( $cp ) )
-            {
-              vese( $cp );
-            }
-          $cp = '';
-        }
-      process_w( $c, $depthp1, $cp );
+      $r['attributes'][$k] = (string) $v;
     }
+
+  $is_text = $name === 't';
+
+  if ( $is_text )
+    {
+      $r['character data'] =  (string) $sxml;
+    }
+
+  foreach ($sxml->children('w',TRUE) as $c)
+    {
+      $r['children'][] = process_w( $c );
+    }
+
+  return $r;
+}
+
+function table_for_element( $rsx )
+{
+  vese( $rsx );
+
+  $n = tr_of_tds( 'name', $rsx['name'] );
+
+  $a = tr_of_tds( 'attributes', $rsx['attributes'] );
+
+  $c = tr_of_tds( 'character data', $rsx['character data'] );
+
+  return table_b1( [ $n, $a, $c ] );
 }
 
 function main( $argv )
 {
   $input_filename = $argv[ 1 ];
 
-  $xml = simplexml_load_file( $input_filename );
+  $sxml = simplexml_load_file( $input_filename );
 
-  if ( $xml === FALSE )
+  if ( $sxml === FALSE )
     {
       tneve( [ 'error opening' => $input_filename ] );
     }
@@ -133,7 +168,7 @@ function main( $argv )
 
   $head = html_head_contents( $title, $css );
 
-  $body = my_html_body( $input_filename, $xml );
+  $body = my_html_body( $input_filename, $sxml );
 
   $html = html_document( $head, $body );
 
