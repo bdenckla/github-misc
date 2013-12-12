@@ -5,13 +5,13 @@ function hu( $hex ) // hu: hex to utf-8
   return html_entity_decode('&#x'.$hex.';', ENT_COMPAT, 'UTF-8');
 }
 
-function cm_lookup( $char_map, $ord )
+function cm_lookup( $char_map, $char )
 {
-  $r = lubn( $ord, $char_map['char map itself'] );
+  $r = lubn( $char, $char_map['char map itself'] );
 
   if ( is_null( $r ) )
     {
-      $rep = printed_representation_of_ord( $ord );
+      $rep = printed_representation_of_char( $char );
 
       $name = 'XXX-u-' . $rep;
 
@@ -21,18 +21,21 @@ function cm_lookup( $char_map, $ord )
   return $r;
 }
 
-function printed_representation_of_ord( $ord )
+function printed_representation_of_char( $charseq )
 {
-  $char = chr( $ord );
-
-  return is_printable( $char )
-    ? 'c-' . $char
-    : 'h-' . sprintf( '%X', $ord );
+  return is_printable( $charseq )
+    ? 'c-' . $charseq
+    : 'h-' . hex_for_string( $charseq );
 }
 
-function printed_representation_of_char( $char )
+function hex_for_string( $s )
 {
-  return printed_representation_of_ord( ord( $char ) );
+  return implode( array_map( 'hex_for_char', str_split( $s ) ) );
+}
+
+function hex_for_char( $char )
+{
+  return sprintf( '%X', ord( $char ) );
 }
 
 function apply_to_printables( $char_map )
@@ -48,29 +51,18 @@ function acm( $char_map, $char )
 
   if ( ! $atp && is_printable( $char ) ) { return $char; }
 
-  $ord = ord( $char );
+  $mapped = cm_lookup( $char_map, $char );
 
-  $mapped_ord = cm_lookup( $char_map, $ord );
-
-  return $mapped_ord[2];
+  return $mapped[2];
 }
 
-function ord_and_name( $char_map, $char )
+function printed_val_and_name( $char_map, $char )
 {
-  $ord = ord( $char );
+  $mapped = cm_lookup( $char_map, $char );
 
-  $mapped_ord = cm_lookup( $char_map, $ord );
-
-  return [ $ord, $mapped_ord[0] ];
-}
-
-function printed_ord_and_name( $char_map, $char )
-{
-  $ord_and_name = ord_and_name( $char_map, $char );
-
-  return printed_representation_of_ord( $ord_and_name[0] )
+  return printed_representation_of_char( $char )
     .'-'.
-    $ord_and_name[1];
+    $mapped[0];
 }
 
 function is_printable( $x )

@@ -12,7 +12,7 @@
 
    // some trailing space issues (search for '. <' in HTML).
 
-   // allow search for places where char maps (coans) are used
+   // allow search for places where char maps are used
 
    // make footnotes (numbered and asterisk) into hyperlinks
 
@@ -436,13 +436,8 @@ function tr_for_node( $level, array $node )
     {
       $node_type = 'l' . $level;
       $elval = elval( $node );
-      $coan = lubn( 'char map', $node );
 
-      if ( ! is_null( $coan ) )
-        {
-          $node_value = html_for_elval_and_coan( $node, $elval, $coan );
-        }
-      elseif ( array_keys( $node ) !== [ 'eltype', 'elval' ] )
+      if ( array_keys( $node ) !== [ 'eltype', 'elval' ] )
         {
           $node_value = var_export( $node, 1 );
         }
@@ -457,25 +452,6 @@ function tr_for_node( $level, array $node )
   return tr_of_tds( $tds );
 }
 
-function html_for_elval_and_coan( $node, $elval, $coan )
-{
-  if ( array_keys( $node ) !== [ 'eltype', 'elval', 'char map' ] )
-    {
-      return var_export( $node, 1 );
-    }
-
-  $show_coan = FALSE;
-
-  if ( ! $show_coan ) { return $elval; }
-
-  $trs = [
-          tr_of_tds( [ $elval ] ),
-          tr_of_tds( [ table_for_coan( $coan['ords and names'] ) ] ),
-          ];
-
-  return table_b1( $trs );
-}
-
 function firsts( array $a )
 {
   return array_column( $a, 0 );
@@ -484,16 +460,6 @@ function firsts( array $a )
 function seconds( array $a )
 {
   return array_column( $a, 1 );
-}
-
-function table_for_coan( $coan )
-{
-  $trs = [
-          tr_of_tds( firsts( $coan ) ),
-          tr_of_tds( seconds( $coan ) ),
-          ];
-
-  return table_b1( $trs );
 }
 
 function tr_of_tds( $td_bodies )
@@ -1246,11 +1212,6 @@ function apply_char_map_to_txt( $char_map, $element )
       //
       $nps = array_filter( $eaa, 'has_non_printable' );
 
-      $element['char map']['name'] = $char_map['char map name'];
-
-      $element['char map']['ords and names'] =
-        array_map_pa( 'ord_and_name', $char_map, $nps );
-
       $element['elval'] = implode( array_map_pa( 'acm', $char_map, $eaa ) );
     }
 
@@ -1964,12 +1925,12 @@ function default_char_map()
 {
   $a =
     [
-     0xA8 => [ 'aa', 'ACUTE ACCENT', hu('301') ],
+     chr( 0xA8 ) => [ 'aa', 'ACUTE ACCENT', hu('301') ],
      //0xA9 => [ 'mlga', 'MODIFIER LETTER GRAVE ACCENT', hu('300') ],
-     0xAA => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
-     0xAB => [ 'dia', 'DIAERESIS', hu('308') ],
-     0xAC => [ 'til', 'SMALL TILDE', hu('303') ],
-     0xF5 => [ 'mlcaron', 'modifier letter caron', hu('30C') ],
+     chr( 0xAA ) => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
+     chr( 0xAB ) => [ 'dia', 'DIAERESIS', hu('308') ],
+     chr( 0xAC ) => [ 'til', 'SMALL TILDE', hu('303') ],
+     chr( 0xF5 ) => [ 'mlcaron', 'modifier letter caron', hu('30C') ],
      // above (caron) differs from HP Roman-8!
      ];
 
@@ -1996,50 +1957,94 @@ function hebrew_char_map()
 {
   $raw =
     [
-     163 => [ 'pt'  , 'patach', 'ַ' ],
-     166 => [ 'sg'  , 'segol', 'ֶ' ],
-     171 => [ 'zr'  , 'zeire', 'ֵ' ],
-     188 => [ 'hsg' , 'hataf segol', 'ֱ' ],
-     192 => [ 'qm'  , 'qamats', 'ָ' ],
-     194 => [ 'al'  , 'aleph', 'א' ],
-     195 => [ 'b'   , 'bet', 'ב' ],
-     // gimmel? (g)
-     197 => [ 'd', 'dalet', 'ד' ],
-     198 => [ 'h', 'hei', 'ה' ],
-     // vav? (v)
-     200 => [ 'z'  , 'zayin', 'ז' ],
-     201 => [ 'ch' , 'chet', 'ח' ],
-     // tet? (tt)
-     203 => [ 'y', 'yod', 'י' ],
-     // kaf sofit (ks)
-     // kaf (k)
-     206 => [ 'l'  , 'lamed', 'ל' ],
-     207 => [ 'ms' , 'mem-sofit', 'ם' ],
-     208 => [ 'm'  , 'mem', 'מ' ],
-     209 => [ 'ns' , 'nun-sofit', 'ן' ],
-     210 => [ 'n'  , 'nun', 'נ' ],
-     // samech?
-     212 => [ 'ay', 'ayin', 'ע' ],
-     // pei sofit? (ps)
-     // pei (p)
-     // tsadi sofit (tss)
-     // tsadi (ts)
-     217 => [ 'q'   , 'qof', 'ק' ],
-     218 => [ 'r'   , 'resh', 'ר' ],
-     219 => [ 'sh'   , 'shin', 'ש' ],
-     220 => [ 'tv'   , 'tav', 'ת' ],
-     221 => [ 'hr'  , 'hiriq', 'ִ' ],
-     222 => [ 'sv'  , 'sheva', 'ְ' ],
-     224 => [ 'hh'  , 'holam-haser', 'ֹ' ],
-     225 => [ 'bd'  , 'bet-dag', 'בּ' ],
-     226 => [ 'gd'  , 'gimel-dag', 'גּ' ],
-     229 => [ 'vs'  , 'vav-shuruq', 'וּ' ],
-     230 => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
-     235 => [ 'ld'  , 'lamed-dag', 'לּ' ],
-     242 => [ 'shsh'   , 'shin-shd', 'ש'.hu('5C1') ],
-     245 => [ 'shsid' , 'shin-sid-dag', 'ש'.hu('5C2').hu('5BC') ],
-     246 => [ 'td'  , 'tav-dag', 'תּ' ],
-     250 => [ 'hpt' , 'hataf-patach', 'ֲ' ],
+     chr( 163 ) => [ 'pt'  , 'patach', 'ַ' ],
+     // 164
+     // 165
+     chr( 166 ) => [ 'sg'  , 'segol', 'ֶ' ],
+     // 167
+     // 168
+     // 169
+     // 170
+     chr( 171 ) => [ 'zr'  , 'zeire', 'ֵ' ],
+     // 172
+     // 173
+     // 174
+     // 175
+     // 176
+     // 177
+     // 178
+     // 179
+     // 180
+     // 181
+     // 182
+     // 183
+     // 184
+     // 185
+     // 186
+     // 187
+     chr( 188 ) => [ 'hsg' , 'hataf segol', 'ֱ' ],
+     // 189
+     // 190
+     // 191
+     chr( 192 ) => [ 'qm'  , 'qamats', 'ָ' ],
+     // 193
+     chr( 194 ) => [ 'al'  , 'aleph', 'א' ],
+     chr( 195 ) => [ 'b'   , 'bet', 'ב' ],
+     // 196: gimmel? (g)
+     chr( 197 ) => [ 'd', 'dalet', 'ד' ],
+     chr( 198 ) => [ 'h', 'hei', 'ה' ],
+     // 199: vav? (v)
+     chr( 200 ) => [ 'z'  , 'zayin', 'ז' ],
+     chr( 201 ) => [ 'ch' , 'chet', 'ח' ],
+     // 202: tet? (tt)
+     chr( 203 ) => [ 'y', 'yod', 'י' ],
+     // 204: kaf sofit (ks)
+     // 205: kaf (k)
+     chr( 206 ) => [ 'l'  , 'lamed', 'ל' ],
+     chr( 207 ) => [ 'ms' , 'mem-sofit', 'ם' ],
+     chr( 208 ) => [ 'm'  , 'mem', 'מ' ],
+     chr( 209 ) => [ 'ns' , 'nun-sofit', 'ן' ],
+     chr( 210 ) => [ 'n'  , 'nun', 'נ' ],
+     // 211: samech?
+     chr( 212 ) => [ 'ay', 'ayin', 'ע' ],
+     // 213: pei sofit? (ps)
+     // 214: pei (p)
+     // 215: tsadi sofit (tss)
+     // 216: tsadi (ts)
+     chr( 217 ) => [ 'q'   , 'qof', 'ק' ],
+     chr( 218 ) => [ 'r'   , 'resh', 'ר' ],
+     chr( 219 ) => [ 'sh'   , 'shin', 'ש' ],
+     chr( 220 ) => [ 'tv'   , 'tav', 'ת' ],
+     chr( 221 ) => [ 'hr'  , 'hiriq', 'ִ' ],
+     chr( 222 ) => [ 'sv'  , 'sheva', 'ְ' ],
+     // 223
+     chr( 224 ) => [ 'hh'  , 'holam-haser', 'ֹ' ],
+     chr( 225 ) => [ 'bd'  , 'bet-dag', 'בּ' ],
+     chr( 226 ) => [ 'gd'  , 'gimel-dag', 'גּ' ],
+     // 227
+     // 228
+     chr( 229 ) => [ 'vs'  , 'vav-shuruq', 'וּ' ],
+     chr( 230 ) => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
+     // 231
+     // 232
+     // 233
+     // 234
+     chr( 235 ) => [ 'ld'  , 'lamed-dag', 'לּ' ],
+     // 236
+     // 237
+     // 238
+     // 239
+     // 240
+     // 241
+     chr( 242 ) => [ 'shsh'   , 'shin-shd', 'ש'.hu('5C1') ],
+     // 243
+     // 244
+     chr( 245 ) => [ 'shsid' , 'shin-sid-dag', 'ש'.hu('5C2').hu('5BC') ],
+     chr( 246 ) => [ 'td'  , 'tav-dag', 'תּ' ],
+     // 247
+     // 248
+     // 249
+     chr( 250 ) => [ 'hpt' , 'hataf-patach', 'ֲ' ],
      ];
 
   return [ 'char map name' => 'Hebrew',
@@ -2050,9 +2055,9 @@ function pi21_char_map()
 {
   $raw =
     [
-     ord('i') => [ 'i', 'i', 'i' ],
-     ord('l') => [ 'aa', 'ACUTE ACCENT', hu('301') ],
-     ord('m') => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
+     'i' => [ 'i', 'i', 'i' ],
+     'l' => [ 'aa', 'ACUTE ACCENT', hu('301') ],
+     'm' => [ 'mlca', 'MODIFIER LETTER CIRCUMFLEX ACCENT', hu('302') ],
      ];
 
   return [ 'char map name' => 'PI-21',

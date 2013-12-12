@@ -248,19 +248,17 @@ function apply_char_map( $char_map, $s )
 {
   // saa: s as array of single-char strings
   //
-  $saa = str_split( $s );
+  $saa = preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY);
 
-  $r = implode( ',', array_map_pa( 'printed_ord_and_name', $char_map, $saa ) );
+  $r = implode( ',', array_map_pa( 'printed_val_and_name', $char_map, $saa ) );
 
   $m = implode( array_map_pa( 'acm', $char_map, $saa ) );
 
   return $m.' '.$r;
 }
 
-function dagesh( $basics, $c )
+function dagesh( $basics, $key )
 {
-  $key = is_string( $c ) ? ord( $c ) : $c;
-
   list ( $shortname, $longname, $char ) = $basics[ $key ];
 
   return [ $shortname . 'd',
@@ -272,105 +270,111 @@ function hebraica_char_map()
 {
   $basics =
     [
-     ord('a') => [ 'al'  , 'aleph', 'א' ],
-     ord('b') => [ 'b'   , 'bet', 'ב' ],
-     ord('g') => [ 'g'   , 'gimel', 'ג' ],
-     ord('d') => [ 'd', 'dalet', 'ד' ],
-     ord('h') => [ 'h', 'hei', 'ה' ],
-     ord('w') => [ 'v', 'vav', 'ו' ],
-     ord('z') => [ 'z'  , 'zayin', 'ז' ],
-     ord('j') => [ 'ch' , 'chet', 'ח' ],
-     ord('f') => [ 'tt' , 'tet', 'ט' ],
-     ord('y') => [ 'y', 'yod', 'י' ],
-     ord('k') => [ 'k', 'kaf', 'כ' ],
-     ord('l') => [ 'l'  , 'lamed', 'ל' ],
-     ord('m') => [ 'm'  , 'mem', 'מ' ],
-     ord('n') => [ 'n'  , 'nun', 'נ' ],
-     ord('[') => [ 'ay', 'ayin', 'ע' ],
-     ord('s') => [ 'sa', 'samech', 'ס' ],
-     ord('p') => [ 'p', 'pe', 'פ' ],
-     ord('q') => [ 'q'   , 'qof', 'ק' ],
-     ord('x') => [ 'ts', 'tsadi', 'צ' ],
-     ord('r') => [ 'r'   , 'resh', 'ר' ],
-     ord('v') => [ 'shsh'   , 'shin-shd', 'ש'.hu('5C1') ],
-     ord('c') => [ 'shsi'   , 'shin-sid', 'ש'.hu('5C2') ],
-     /* 0x8D */ 141 => [ 'sh'   , 'shin', 'ש' ],
-     0xA7 => [ 'sh'   , 'shin', 'ש' ],
-     ord('t') => [ 'tv'   , 'tav', 'ת' ],
-     251 => [ 'ks' , 'kaf-sofit', 'ך' ],
+     'a' => [ 'al'  , 'aleph', 'א' ],
+     'b' => [ 'b'   , 'bet', 'ב' ],
+     'g' => [ 'g'   , 'gimel', 'ג' ],
+     'd' => [ 'd', 'dalet', 'ד' ],
+     'h' => [ 'h', 'hei', 'ה' ],
+     'w' => [ 'v', 'vav', 'ו' ],
+     'z' => [ 'z'  , 'zayin', 'ז' ],
+     'j' => [ 'ch' , 'chet', 'ח' ],
+     'f' => [ 'tt' , 'tet', 'ט' ],
+     'y' => [ 'y', 'yod', 'י' ],
+     'k' => [ 'k', 'kaf', 'כ' ],
+     'l' => [ 'l'  , 'lamed', 'ל' ],
+     'm' => [ 'm'  , 'mem', 'מ' ],
+     'n' => [ 'n'  , 'nun', 'נ' ],
+     '[' => [ 'ay', 'ayin', 'ע' ],
+     's' => [ 'sa', 'samech', 'ס' ],
+     'p' => [ 'p', 'pe', 'פ' ],
+     'q' => [ 'q'   , 'qof', 'ק' ],
+     'x' => [ 'ts', 'tsadi', 'צ' ],
+     'r' => [ 'r'   , 'resh', 'ר' ],
+     'v' => [ 'shsh'   , 'shin-shd', 'ש'.hu('5C1') ],
+     'c' => [ 'shsi'   , 'shin-sid', 'ש'.hu('5C2') ],
+     hu('E7') /* LATIN SMALL LETTER C WITH CEDILLA */ => [ 'sh'   , 'shin', 'ש' ],
+     't' => [ 'tv'   , 'tav', 'ת' ],
+     hu('2DA') /* RING ABOVE */ => [ 'ks' , 'kaf-sofit', 'ך' ],
+     hu('2248') /* ALMOST EQUAL TO */ => [ 'tss' , 'tsadi-sofit', 'ץ' ],
+     hu('3C0') /* GREEK SMALL LETTER PI */ => [ 'ps' , 'pei-sofit', 'ף' ],
+     hu('00B5') /* MICRO SIGN */ => [ 'ms' , 'mem-sofit', 'ם' ],
+     hu('2C6') /* MODIFIER LETTER CIRCUMFLEX ACCENT */ => [ 'ns' , 'nun-sofit', 'ן' ],
+
      ];
 
   $dageshes =
     [
-     ord('A') => dagesh( $basics, 'a' ),
-     ord('B') => dagesh( $basics, 'b' ),
-     ord('G') => dagesh( $basics, 'g' ),
-     ord('D') => dagesh( $basics, 'd' ),
-     ord('H') => dagesh( $basics, 'h' ),
+     'A' => dagesh( $basics, 'a' ),
+     'B' => dagesh( $basics, 'b' ),
+     'G' => dagesh( $basics, 'g' ),
+     'D' => dagesh( $basics, 'd' ),
+     'H' => dagesh( $basics, 'h' ),
      // w
-     ord('Z') => dagesh( $basics, 'z' ),
+     'Z' => dagesh( $basics, 'z' ),
      // j
-     ord('F') => dagesh( $basics, 'f' ),
-     ord('Y') => dagesh( $basics, 'y' ),
-     ord('K') => dagesh( $basics, 'k' ),
-     ord('L') => dagesh( $basics, 'l' ),
-     ord('M') => dagesh( $basics, 'm' ),
-     ord('N') => dagesh( $basics, 'n' ),
+     'F' => dagesh( $basics, 'f' ),
+     'Y' => dagesh( $basics, 'y' ),
+     'K' => dagesh( $basics, 'k' ),
+     'L' => dagesh( $basics, 'l' ),
+     'M' => dagesh( $basics, 'm' ),
+     'N' => dagesh( $basics, 'n' ),
      // [
-     ord('S') => dagesh( $basics, 's' ),
-     ord('P') => dagesh( $basics, 'p' ),
-     ord('Q') => dagesh( $basics, 'q' ),
-     ord('X') => dagesh( $basics, 'x' ),
-     ord('R') => dagesh( $basics, 'r' ),
-     ord('V') => dagesh( $basics, 'v' ),
-     ord('C') => dagesh( $basics, 'c' ),
-     ord('T') => dagesh( $basics, 't' ),
-     240      => dagesh( $basics, 251 ),
+     'S' => dagesh( $basics, 's' ),
+     'P' => dagesh( $basics, 'p' ),
+     'Q' => dagesh( $basics, 'q' ),
+     'X' => dagesh( $basics, 'x' ),
+     'R' => dagesh( $basics, 'r' ),
+     'V' => dagesh( $basics, 'v' ),
+     'C' => dagesh( $basics, 'c' ),
+     'T' => dagesh( $basics, 't' ),
+     //  => dagesh( $basics,  ),
     ];
 
   $others =
     [
-     197 => [ 'tss' , 'tsadi-sofit', 'ץ' ],
-     185 => [ 'ps' , 'pei-sofit', 'ף' ],
-     0xB5 => [ 'ms' , 'mem-sofit', 'ם' ],
-     134 => [ 'ns' , 'nun-sofit', 'ן' ],
+     hu('DA') /* LATIN CAPITAL LETTER U WITH ACUTE */ => [ 'ksqm', 'kaf-sofit-qamats', hu('5DA').hu('5B8') ],
 
+     hu('00F2') /* LATIN SMALL LETTER O WITH GRAVE */ =>
+     [ 'gr', 'geresh', hu('5F3') ],
 
-     ord('W') => [ 'vs'  , 'vav-shuruq', 'וּ' ],
-     ord('i') => [ 'hr'  , 'hiriq', 'ִ' ],
-     ord('I') => [ 'hr'  , 'hiriq', 'ִ' ],
-     ord(':') => [ 'qm'  , 'qamats', 'ָ' ],
-     ord(';') => [ 'qm'  , 'qamats', 'ָ' ],
-     226 => [ 'qm'  , 'qamats', 'ָ' ],
-     ord('"') => [ 'pt'  , 'patach', 'ַ' ],
-     ord("'") => [ 'pt'  , 'patach', 'ַ' ],
-     0xB8 => [ 'hh'  , 'holam-haser', 'ֹ' ],
-     ord('O') => [ 'hh'  , 'holam-haser', 'ֹ' ],
-     ord('o') => [ 'hh'  , 'holam-haser', 'ֹ' ],
-     ord('/') => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
-     ord('E') => [ 'zr'  , 'zeire', 'ֵ' ],
-     ord('e') => [ 'zr'  , 'zeire', 'ֵ' ],
-     180 => [ 'zr'  , 'zeire', 'ֵ' ],
-     ord(',') => [ 'sg'  , 'segol', 'ֶ' ],
-     ord('<') => [ 'sg'  , 'segol', 'ֶ' ],
-     ord(']') => [ 'sv'  , 'sheva', 'ְ' ],
-     0x9C => [ 'sv'  , 'sheva', 'ְ' ],
-     ord('}') => [ 'hpt' , 'hataf-patach', hu('5B2') ],
-     0x98 => [ 'hsg' , 'hataf segol', hu('5B1') ],
-     213 => [ 'hsg' , 'hataf qamats', hu('5B3') ],
+     // U+00EA LATIN SMALL LETTER E WITH CIRCUMFLEX: ???
 
-     0xC3 => [ 'dr' , 'drop', '' ],
-     194 => [ 'dr' , 'drop', '' ],
-     0x80 => [ 'dr' , 'drop', '' ],
-     0xE2 => [ 'dr' , 'drop', '' ],
-     203 => [ 'dr' , 'drop', '' ],
-     157 => [ 'dr' , 'drop', '' ],
-     166 => [ 'dr' , 'drop', '' ],
+     hu('2DD') /* DOUBLE ACUTE ACCENT */ => [ 'mq', 'maqaf', hu('5BE') ],
 
-     ord(' ') => [ 'sp'   , 'space', ' ' ],
-     //ord('') => [ '', '', '' ],
-     //ord('') => [ '', '', '' ],
-     //ord('') => [ '', '', '' ],
+     'u' /* DOUBLE ACUTE ACCENT */ => [ 'qb', 'qubuts', hu('5BB') ],
+     hu('A8') /* DIAERESIS */ => [ 'qb', 'qubuts', hu('5BB') ],
+
+     'W' => [ 'vs'  , 'vav-shuruq', 'וּ' ],
+     'i' => [ 'hr'  , 'hiriq', 'ִ' ],
+     'I' => [ 'hr'  , 'hiriq', 'ִ' ],
+     ':' => [ 'qm'  , 'qamats', 'ָ' ],
+     ';' => [ 'qm'  , 'qamats', 'ָ' ],
+     hu('2026') /* HORIZONTAL ELLIPSIS */ => [ 'qm'  , 'qamats', 'ָ' ],
+     '"' => [ 'pt'  , 'patach', 'ַ' ],
+     "'" => [ 'pt'  , 'patach', 'ַ' ],
+     hu('E6') /* LATIN SMALL LETTER AE */ => [ 'pt'  , 'patach', 'ַ' ],
+     hu('F8') /* LATIN SMALL LETTER O WITH STROKE */ => [ 'hh'  , 'holam-haser', 'ֹ' ],
+     'O' => [ 'hh'  , 'holam-haser', 'ֹ' ],
+     'o' => [ 'hh'  , 'holam-haser', 'ֹ' ],
+     '/' => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
+     'E' => [ 'zr'  , 'zeire', 'ֵ' ],
+     'e' => [ 'zr'  , 'zeire', 'ֵ' ],
+     hu('B4') /* ACUTE ACCENT */ => [ 'zr'  , 'zeire', 'ֵ' ],
+     // => [ 'zr'  , 'zeire', 'ֵ' ],
+     ',' => [ 'sg'  , 'segol', 'ֶ' ],
+     '<' => [ 'sg'  , 'segol', 'ֶ' ],
+     hu('2264') /* LESS-THAN OR EQUAL TO */ => [ 'sg'  , 'segol', 'ֶ' ],
+     ']' => [ 'sv'  , 'sheva', 'ְ' ],
+     hu('201C') /* LEFT DOUBLE QUOTATION MARK */ => [ 'sv'  , 'sheva', 'ְ' ],
+     '}' => [ 'hpt' , 'hataf-patach', hu('5B2') ],
+     hu('C4') /* LATIN CAPITAL LETTER A WITH DIAERESIS */ => [ 'hpt' , 'hataf-patach', hu('5B2') ],
+     hu('2018') /* LEFT SINGLE QUOTATION MARK */ => [ 'hsg' , 'hataf segol', hu('5B1') ],
+     // => [ 'hsg' , 'hataf qamats', hu('5B3') ],
+
+     hu('E2') /* LATIN SMALL LETTER A WITH CIRCUMFLEX */ => [ 'mt' , 'meteg', hu('5BD') ],
+
+     hu('2265') /* GREATER-THAN OR EQUAL TO */ => [ 'pr', 'period', '.' ],
+     ' ' => [ 'sp'   , 'space', ' ' ],
      ];
 
   $raw = $basics + $dageshes + $others;
