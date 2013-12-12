@@ -2060,15 +2060,6 @@ function pi21_char_map()
            'char map itself' => $raw ];
 }
 
-function ord_and_name( $char_map, $char )
-{
-  $ord = ord( $char );
-
-  $mapped_ord = cm_lookup( $char_map, $ord );
-
-  return [ $ord, $mapped_ord[0] ];
-}
-
 function array_map_tree( $f, array $a )
 {
   return array_map_fakl( $f, $a, 'tree', 'tree' );

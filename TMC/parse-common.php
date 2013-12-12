@@ -55,6 +55,24 @@ function acm( $char_map, $char )
   return $mapped_ord[2];
 }
 
+function ord_and_name( $char_map, $char )
+{
+  $ord = ord( $char );
+
+  $mapped_ord = cm_lookup( $char_map, $ord );
+
+  return [ $ord, $mapped_ord[0] ];
+}
+
+function printed_ord_and_name( $char_map, $char )
+{
+  $ord_and_name = ord_and_name( $char_map, $char );
+
+  return printed_representation_of_ord( $ord_and_name[0] )
+    .'-'.
+    $ord_and_name[1];
+}
+
 function is_printable( $x )
 {
   $pat = '/^[[:print:]]*$/';

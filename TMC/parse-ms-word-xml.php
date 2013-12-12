@@ -90,7 +90,7 @@ function table_b1( $trs )
 
 // rsx: really simple xml
 
-function get_rsx_from_file( $input_filename )
+function get_rsxes_from_file( $input_filename )
 {
   // tsxml: top-level SimpleXML element
   //
@@ -106,26 +106,26 @@ function get_rsx_from_file( $input_filename )
   //
   $sde = get_sde_from_tsxml( $tsxml );
 
-  return get_rsx_from_sde( $sde );
+  return get_rsxes_from_sde( $sde );
 }
 
 function get_sde_from_tsxml( $sxml )
 {
   $r = NULL;
 
-  foreach ($sxml->children('pkg',TRUE) as $second_gen)
+  foreach ($sxml->children('pkg',TRUE) as $gen2)
     {
-      foreach ($second_gen->children('pkg',TRUE) as $third_gen)
+      foreach ($gen2->children('pkg',TRUE) as $gen3)
         {
-          foreach ($third_gen->children('w',TRUE) as $fourth_gen)
+          foreach ($gen3->children('w',TRUE) as $gen4)
             {
-              if ( $fourth_gen->getName() === 'document' )
+              if ( $gen4->getName() === 'document' )
                 {
                   if ( ! is_null( $r ) )
                     {
                       tneve( 'more than one document found' );
                     }
-                  $r = $fourth_gen;
+                  $r = $gen4;
                 }
             }
         }
@@ -136,18 +136,22 @@ function get_sde_from_tsxml( $sxml )
 
 function my_html_body( $input_filename )
 {
-  $rsx = get_rsx_from_file( $input_filename );
+  $rsxes = get_rsxes_from_file( $input_filename );
 
-  $srsx = simplify_rsx( $rsx );
+  $srsxes = array_map( 'simplify_rsx', $rsxes );
 
-  $table = get_table_for_rsx( $srsx );
+  $tables = get_tables_for_rsxes( $srsxes );
 
-  return $table;
+  return xml_seq( $tables );
 }
 
-function get_rsx_from_sde( $sde )
+function get_rsxes_from_sde( $sde )
 {
-  return get_rsx_from_sxml( $sde );
+  foreach ($sde->body->children('w',TRUE) as $body_child)
+    {
+      $r[] = get_rsx_from_sxml( $body_child );
+    }
+  return $r;
 }
 
 function get_rsx_from_sxml( $sxml )
@@ -246,7 +250,7 @@ function apply_char_map( $char_map, $s )
   //
   $saa = str_split( $s );
 
-  $r = implode( ',', array_map( 'printed_representation_of_char', $saa ) );
+  $r = implode( ',', array_map_pa( 'printed_ord_and_name', $char_map, $saa ) );
 
   $m = implode( array_map_pa( 'acm', $char_map, $saa ) );
 
@@ -290,8 +294,8 @@ function hebraica_char_map()
      ord('r') => [ 'r'   , 'resh', 'ר' ],
      ord('v') => [ 'shsh'   , 'shin-shd', 'ש'.hu('5C1') ],
      ord('c') => [ 'shsi'   , 'shin-sid', 'ש'.hu('5C2') ],
-     0xA7 => [ 'shsi'   , 'shin-sid', 'ש'.hu('5C2') ],
      /* 0x8D */ 141 => [ 'sh'   , 'shin', 'ש' ],
+     0xA7 => [ 'sh'   , 'shin', 'ש' ],
      ord('t') => [ 'tv'   , 'tav', 'ת' ],
      251 => [ 'ks' , 'kaf-sofit', 'ך' ],
      ];
@@ -340,7 +344,7 @@ function hebraica_char_map()
      226 => [ 'qm'  , 'qamats', 'ָ' ],
      ord('"') => [ 'pt'  , 'patach', 'ַ' ],
      ord("'") => [ 'pt'  , 'patach', 'ַ' ],
-     0xC3 => [ 'hh'  , 'holam-haser', 'ֹ' ], // XXX see ish
+     0xB8 => [ 'hh'  , 'holam-haser', 'ֹ' ],
      ord('O') => [ 'hh'  , 'holam-haser', 'ֹ' ],
      ord('o') => [ 'hh'  , 'holam-haser', 'ֹ' ],
      ord('/') => [ 'vhm' , 'vav-holam-male', 'וֹ' ],
@@ -350,14 +354,15 @@ function hebraica_char_map()
      ord(',') => [ 'sg'  , 'segol', 'ֶ' ],
      ord('<') => [ 'sg'  , 'segol', 'ֶ' ],
      ord(']') => [ 'sv'  , 'sheva', 'ְ' ],
+     0x9C => [ 'sv'  , 'sheva', 'ְ' ],
      ord('}') => [ 'hpt' , 'hataf-patach', hu('5B2') ],
-     0xE2 => [ 'hsg' , 'hataf segol', hu('5B1') ],
+     0x98 => [ 'hsg' , 'hataf segol', hu('5B1') ],
      213 => [ 'hsg' , 'hataf qamats', hu('5B3') ],
 
+     0xC3 => [ 'dr' , 'drop', '' ],
      194 => [ 'dr' , 'drop', '' ],
-     184 => [ 'dr' , 'drop', '' ],
-     128 => [ 'dr' , 'drop', '' ],
-     152 => [ 'dr' , 'drop', '' ],
+     0x80 => [ 'dr' , 'drop', '' ],
+     0xE2 => [ 'dr' , 'drop', '' ],
      203 => [ 'dr' , 'drop', '' ],
      157 => [ 'dr' , 'drop', '' ],
      166 => [ 'dr' , 'drop', '' ],
@@ -449,6 +454,11 @@ function get_aap_from_rpr_chi( $rpr_child )
     }
 
   tneve( [ 'unrecognized rpr child', $rpr_child ] );
+}
+
+function get_tables_for_rsxes( $rsxes )
+{
+  return array_map( 'get_table_for_rsx', $rsxes );
 }
 
 function get_table_for_rsx( $rsx )
