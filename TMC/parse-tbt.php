@@ -35,6 +35,7 @@
    // Is ellipsis handling okay? (e.g. River...four branches)
 
 require_once 'generate-html.php';
+require_once 'parse-common.php';
 
 // tneve: throw new ErrorException of var_export
 function tneve( $e )
@@ -523,44 +524,6 @@ function table_b1( $trs )
 function lubn( $k, array $a )
 {
   return array_key_exists( $k, $a ) ? $a[ $k ] : NULL;
-}
-
-// toe: throw on error
-//
-function preg_match_toe( $pattern, $input )
-{
-  $output = NULL;
-
-  $r = preg_match( $pattern, $input, $output );
-
-  if ( $r === FALSE )
-    {
-      // TODO: how to provoke (i.e. test) such an error?
-
-      tneve( [ 'preg_match error',
-               'pattern' => $pattern,
-               'input' => $input ] );
-    }
-
-  return $r === 1 ? $output : NULL;
-}
-
-// toe: throw on error
-//
-function preg_match_toe2( $pattern, $input )
-{
-  $r = preg_match( $pattern, $input );
-
-  if ( $r === FALSE )
-    {
-      // TODO: how to provoke (i.e. test) such an error?
-
-      tneve( [ 'preg_match error',
-               'pattern' => $pattern,
-               'input' => $input ] );
-    }
-
-  return $r; // 0 or 1
 }
 
 function is_english( $cblock )
@@ -1263,13 +1226,6 @@ function is_branch( array $node )
 function has_non_printable( $x )
 {
   $pat = '/[^[:print:]]/';
-
-  return preg_match_toe2( $pat, $x );
-}
-
-function is_printable( $x )
-{
-  $pat = '/^[[:print:]]*$/';
 
   return preg_match_toe2( $pat, $x );
 }
@@ -2036,11 +1992,6 @@ function nn_char_map()
            'char map itself' => $a ];
 }
 
-function hu( $hex ) // hu: hex to utf-8
-{
-  return html_entity_decode('&#x'.$hex.';', ENT_COMPAT, 'UTF-8');
-}
-
 function hebrew_char_map()
 {
   $raw =
@@ -2109,20 +2060,6 @@ function pi21_char_map()
            'char map itself' => $raw ];
 }
 
-function cm_lookup( $char_map, $ord )
-{
-  $r = lubn( $ord, $char_map['char map itself'] );
-
-  if ( is_null( $r ) )
-    {
-      $name = 'XXX-unknown-' . $ord;
-
-      return [ 'XXX', $name, '('.$name.')' ];
-    }
-
-  return $r;
-}
-
 function ord_and_name( $char_map, $char )
 {
   $ord = ord( $char );
@@ -2130,26 +2067,6 @@ function ord_and_name( $char_map, $char )
   $mapped_ord = cm_lookup( $char_map, $ord );
 
   return [ $ord, $mapped_ord[0] ];
-}
-
-function apply_to_printables( $char_map )
-{
-  $atp = lubn( 'apply to printables', $char_map );
-
-  return $atp === TRUE;
-}
-
-function acm( $char_map, $char )
-{
-  $atp = apply_to_printables( $char_map );
-
-  if ( ! $atp && is_printable( $char ) ) { return $char; }
-
-  $ord = ord( $char );
-
-  $mapped_ord = cm_lookup( $char_map, $ord );
-
-  return $mapped_ord[2];
 }
 
 function array_map_tree( $f, array $a )
