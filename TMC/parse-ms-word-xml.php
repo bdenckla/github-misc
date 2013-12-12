@@ -192,44 +192,101 @@ function tneve_ake( $k, array $a )
     }
 }
 
+function get_rpr_children_as_attr( $r )
+{
+  // aap: attributes as pairs
+  //
+  $aap = array_map( 'get_aap_from_rpr_chi', $r['children'] );
+
+  tneve_ake( 'attributes', $r );
+
+  return kvs_from_pairs( $aap );
+}
+
+/* Hoist rpr into its enclosing r. I.e. hoist the attributes of an rpr
+   into being attributes of its enclosing r and get rid of the (now
+   empty) rpr.
+ */
+function hoist_rpr( $r )
+{
+  if ( $r['name'] !== 'r' )  { return FALSE; }
+
+  $chi = $r['children'];
+
+  if ( count( $chi ) === 1 ) { return hoist_r_1( $r ); }
+
+  if ( count( $chi ) === 2 ) { return hoist_r_2( $r ); }
+
+  return FALSE;
+}
+
+function hoist_r_1( $r )
+{
+  $chi = $r['children'];
+
+  $chi0 = $chi[0];
+
+  if ( $chi0['name'] !== 't' ) { return FALSE; }
+
+  return hoist_common( $r, $chi0 );
+}
+
+function hoist_r_2( $r )
+{
+  $chi = $r['children'];
+
+  $chi0 = $chi[0];
+
+  if ( $chi0['name'] !== 'rPr' ) { return FALSE; }
+
+  $chi1 = $chi[1];
+
+  if ( $chi1['name'] !== 't' ) { return FALSE; }
+
+  tneve_ake( 'attributes', $r );
+
+  $r['attributes'] = get_rpr_children_as_attr( $chi0 );
+
+  $r = hoist_common( $r, $chi1 );
+
+  $y = apply_hebraica_map_to_span( $r );
+
+  if ( $y !== FALSE ) { $r = $y; }
+
+  return $r;
+}
+
+// chin: child n (n=0 or n=1)
+//
+function hoist_common( $r, $chin )
+{
+  $r['character data'] = $chin['character data'];
+
+  unset( $r['children'] );
+
+  $r['name'] = 'span';
+
+  return $r;
+}
+
+function apply_hebraica_map_to_span( $r )
+{
+  $attr = $r['attributes'];
+
+  if ( lubn( 'font', $attr ) !== 'Hebraica' ) { return FALSE; }
+
+  $c = $r['character data'];
+
+  $r['character data'] = apply_hebraica_char_map( $c );
+
+  return $r;
+}
+
 function simplify_rsx( $r )
 {
-  if ( $r['name'] === 'rPr' )
-    {
-      tneve_ake( 'attributes', $r );
+  $y = hoist_rpr( $r );
 
-      // aap: attributes as pairs
-      $aap = array_map( 'get_aap_from_rpr_chi',
-                        $r['children'] );
-
-      $r['attributes'] = kvs_from_pairs( $aap );
-      unset( $r['children'] );
-
-      return $r;
-    }
-
-  if ( $r['name'] === 'r' )
-    {
-      $chi = $r['children'];
-
-      if ( $chi[0]['name'] === 'rPr' )
-        {
-          $schi0 = simplify_rsx( $chi[0] );
-          $schi0a = $schi0['attributes'];
-          if ( lubn( 'font', $schi0a ) === 'Hebraica' )
-            {
-              $chi1 = $chi[1];
-
-              if ( $chi1['name'] === 't' )
-                {
-                  $r['children'][0] = $schi0;
-                  $c = $r['children'][1]['character data'];
-                  $r['children'][1]['character data'] = apply_hebraica_char_map( $c );
-                  return $r;
-                }
-            }
-        }
-    }
+  if ( $y !== FALSE ) { return $y; }
 
   if ( array_key_exists( 'children', $r ) )
     {
@@ -250,11 +307,22 @@ function apply_char_map( $char_map, $s )
   //
   $saa = preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY);
 
-  $r = implode( ',', array_map_pa( 'printed_val_and_name', $char_map, $saa ) );
+  $debug = FALSE;
+
+  $maybe_debug_suffix = $debug
+    ? ' ' . char_map_debug_string( $char_map, $saa )
+    : '';
 
   $m = implode( array_map_pa( 'acm', $char_map, $saa ) );
 
-  return $m.' '.$r;
+  return $m . $maybe_debug_suffix;
+}
+
+function char_map_debug_string( $char_map, $saa )
+{
+  $y = array_map_pa( 'printed_val_and_name', $char_map, $saa );
+
+  return implode( ',', $y );
 }
 
 function dagesh( $basics, $key )
