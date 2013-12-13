@@ -88,6 +88,105 @@ function table_b1( $trs )
   return xml_wrap( 'table', $table_attr, xml_seq( $trs ) );
 }
 
+function spanspan( array $node )
+{
+  return process_pairwise_2( 'pairwise_spanspan', $node );
+}
+
+function pairwise_spanspan( $n0, $n1 )
+{
+  return pairwise_should_spanspan( $n0, $n1 )
+    ? pairwise_do_the_spanspan( $n0, $n1 )
+    : NULL;
+}
+
+function pairwise_tt( $n0, $n1 )
+{
+  return pairwise_should_tt( $n0, $n1 )
+    ? pairwise_do_the_tt( $n0, $n1 )
+    : NULL;
+}
+
+function pairwise_should_spanspan( $n0, $n1 )
+{
+  if ( is_t( $n0 ) && is_t( $n1 ) ) { return TRUE; }
+
+  if ( ! is_span( $n0 ) || ! is_span( $n1 ) ) { return FALSE; }
+
+  $a0 = lubn( 'attributes', $n0 );
+  $a1 = lubn( 'attributes', $n1 );
+
+  return $a0 === $a1;
+}
+
+function pairwise_should_tt( $n0, $n1 )
+{
+  return is_t( $n0 ) && is_t( $n1 );
+}
+
+function is_span( $r )
+{
+  return $r['name'] === 'span';
+}
+
+function is_t( $r )
+{
+  return $r['name'] === 't';
+}
+
+function pairwise_do_the_spanspan( $e0, $e1 )
+{
+  $e0['character data'] .= $e1['character data'];
+
+  return $e0;
+}
+
+function pairwise_do_the_tt( $e0, $e1 )
+{
+  $e0['character data'] .= $e1['character data'];
+
+  return $e0;
+}
+
+function process_pairwise_2( $f, array $node )
+{
+  $f2 = pa( 'process_pairwise', $f );
+
+  return traverse_yyy( $f2, $node );
+}
+
+function process_pairwise( $f, array $a )
+{
+  $pa = pa( 'pairwise_helper', $f );
+
+  return array_reduce( $a, $pa, [] );
+}
+
+function pairwise_helper( $f, $acc, $item )
+{
+  $c = count( $acc );
+
+  if ( $c !== 0 )
+    {
+      $cm1 = $c - 1;
+
+      $acc_cm1 = $acc[ $cm1 ];
+
+      $r = $f( $acc_cm1, $item );
+
+      if ( ! is_null( $r ) )
+        {
+          $acc[ $cm1 ] = $r;
+
+          return $acc;
+        }
+    }
+
+  $acc[] = $item;
+
+  return $acc;
+}
+
 // rsx: really simple xml
 
 function get_rsxes_from_file( $input_filename )
@@ -138,9 +237,13 @@ function my_html_body( $input_filename )
 {
   $rsxes = get_rsxes_from_file( $input_filename );
 
-  $srsxes = array_map( 'simplify_rsx', $rsxes );
+  $r1 = array_map( 'simplify_rsx', $rsxes );
 
-  $tables = get_tables_for_rsxes( $srsxes );
+  $r2 = array_map( 'spanspan', $r1 );
+
+  $rfinal = $r2;
+
+  $tables = get_tables_for_rsxes( $rfinal );
 
   return xml_seq( $tables );
 }
@@ -209,24 +312,27 @@ function get_rpr_children_as_attr( $r )
  */
 function hoist_rpr( $r )
 {
-  if ( $r['name'] !== 'r' )  { return FALSE; }
+  if ( $r['name'] === 'tab' )  { return [ 'name' => 't',
+                                          'character data' => '' ]; }
 
-  $chi = $r['children'];
+  if ( $r['name'] !== 'r' )  { return $r; }
 
-  if ( count( $chi ) === 1 ) { return hoist_r_1( $r ); }
+  $r['children'] = process_pairwise( 'pairwise_tt', $r['children'] );
 
-  if ( count( $chi ) === 2 ) { return hoist_r_2( $r ); }
+  $c = count( $r['children'] );
 
-  return FALSE;
+  if ( $c === 1 ) { return hoist_r_1( $r ); }
+
+  if ( $c === 2 ) { return hoist_r_2( $r ); }
+
+  return $r;
 }
 
 function hoist_r_1( $r )
 {
-  $chi = $r['children'];
+  $chi0 = $r['children'][0];
 
-  $chi0 = $chi[0];
-
-  if ( $chi0['name'] !== 't' ) { return FALSE; }
+  if ( $chi0['name'] !== 't' ) { return $r; }
 
   return hoist_common( $r, $chi0 );
 }
@@ -237,11 +343,11 @@ function hoist_r_2( $r )
 
   $chi0 = $chi[0];
 
-  if ( $chi0['name'] !== 'rPr' ) { return FALSE; }
+  if ( $chi0['name'] !== 'rPr' ) { return $r; }
 
   $chi1 = $chi[1];
 
-  if ( $chi1['name'] !== 't' ) { return FALSE; }
+  if ( $chi1['name'] !== 't' ) { return $r; }
 
   tneve_ake( 'attributes', $r );
 
@@ -273,7 +379,7 @@ function apply_hebraica_map_to_span( $r )
 {
   $attr = $r['attributes'];
 
-  if ( lubn( 'font', $attr ) !== 'Hebraica' ) { return FALSE; }
+  if ( lubn( 'font', $attr ) !== 'Hebraica' ) { return $r; }
 
   $c = $r['character data'];
 
@@ -284,14 +390,30 @@ function apply_hebraica_map_to_span( $r )
 
 function simplify_rsx( $r )
 {
-  $y = hoist_rpr( $r );
+  return traverse_xxx( 'hoist_rpr', $r );
+}
 
-  if ( $y !== FALSE ) { return $y; }
+function traverse_xxx( $f, $r )
+{
+  $c = lubn( 'children', $r );
 
-  if ( array_key_exists( 'children', $r ) )
+  if ( ! is_null( $c ) )
     {
-      $r['children'] = array_map( 'simplify_rsx', $r['children'] );
+      $r['children'] = array_map_pa( __FUNCTION__, $f, $c );
     }
+
+  return $f( $r );
+}
+
+function traverse_yyy( $f, $r )
+{
+  $c = lubn( 'children', $r );
+
+  if ( is_null( $c ) ) { return $r; }
+
+  $cdeep = array_map_pa( __FUNCTION__, $f, $c );
+
+  $r['children'] = $f( $cdeep );
 
   return $r;
 }
