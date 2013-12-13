@@ -93,10 +93,22 @@ function spanspan( array $node )
   return process_pairwise_2( 'pairwise_spanspan', $node );
 }
 
+function htmhtm( array $node )
+{
+  return process_pairwise_2( 'pairwise_htmhtm', $node );
+}
+
 function pairwise_spanspan( $n0, $n1 )
 {
   return pairwise_should_spanspan( $n0, $n1 )
     ? pairwise_do_the_spanspan( $n0, $n1 )
+    : NULL;
+}
+
+function pairwise_htmhtm( $n0, $n1 )
+{
+  return pairwise_should_htmhtm( $n0, $n1 )
+    ? pairwise_do_the_htmhtm( $n0, $n1 )
     : NULL;
 }
 
@@ -119,6 +131,11 @@ function pairwise_should_spanspan( $n0, $n1 )
   return $a0 === $a1;
 }
 
+function pairwise_should_htmhtm( $n0, $n1 )
+{
+  return ( is_htm( $n0 ) && is_htm( $n1 ) );
+}
+
 function pairwise_should_tt( $n0, $n1 )
 {
   return is_t( $n0 ) && is_t( $n1 );
@@ -134,9 +151,21 @@ function is_t( $r )
   return $r['name'] === 't';
 }
 
+function is_htm( $r )
+{
+  return $r['name'] === 'htm';
+}
+
 function pairwise_do_the_spanspan( $e0, $e1 )
 {
   $e0['character data'] .= $e1['character data'];
+
+  return $e0;
+}
+
+function pairwise_do_the_htmhtm( $e0, $e1 )
+{
+  $e0['htm'] = xml_seqa( $e0['htm'], $e1['htm'] );
 
   return $e0;
 }
@@ -241,7 +270,9 @@ function my_html_body( $input_filename )
 
   $r2 = array_map( 'spanspan', $r1 );
 
-  $rfinal = $r2;
+  $r3 = array_map( 'htmhtm', $r2 );
+
+  $rfinal = $r3;
 
   $tables = get_tables_for_rsxes( $rfinal );
 
@@ -334,7 +365,13 @@ function hoist_r_1( $r )
 
   if ( $chi0['name'] !== 't' ) { return $r; }
 
-  return hoist_common( $r, $chi0 );
+  $r = hoist_common( $r, $chi0 );
+
+  /* Italics are not possible here, since this is a plain text
+     element, but we use the general routine here since it handles
+     plain case.
+   */
+  return maybe_italicize( $r );
 }
 
 function hoist_r_2( $r )
@@ -358,6 +395,40 @@ function hoist_r_2( $r )
   $y = apply_hebraica_map_to_span( $r );
 
   if ( $y !== FALSE ) { $r = $y; }
+
+  $r = maybe_italicize( $r );
+
+  return $r;
+}
+
+function maybe_italicize( $r )
+{
+  if ( ! array_key_exists( 'attributes', $r ) )
+    {
+      return [ 'name' => 'htm',
+               'htm' => $r['character data'] ];
+    }
+
+  if ( $r['attributes'] === [ 'italic' => 1 ] )
+    {
+      return [ 'name' => 'htm',
+               'htm' => html_i_na( $r['character data'] ) ];
+    }
+
+  if ( $r['attributes'] === [ 'underline' => 'single' ] )
+    {
+      return [ 'name' => 'htm',
+               'htm' => xml_wrap( 'u', [], $r['character data'] ) ];
+    }
+
+  if ( $r['attributes'] === [ 'font' => 'Hebraica',
+                              'size' => '22' ] )
+    {
+      return [ 'name' => 'htm',
+               'htm' => xml_wrap( 'span',
+                                  [ 'lang' => 'hbo' ],
+                                  $r['character data'] ) ];
+    }
 
   return $r;
 }
@@ -673,6 +744,13 @@ function get_table_for_rsx( $rsx )
   if ( $cha )
     {
       $n_a_cha_rows[] = tr_of_tds( [ 'cha', $cha ] );
+    }
+
+  $htm = lubn( 'htm', $rsx );
+
+  if ( $htm )
+    {
+      $n_a_cha_rows[] = tr_of_tds( [ 'htm', $htm ] );
     }
 
   $chi = lubn( 'children', $rsx );
