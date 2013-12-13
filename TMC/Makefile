@@ -15,7 +15,7 @@ MSW_PREREQS := ~/Downloads/RP-Gen-commentary.pp.xml Makefile $(CMN_PHP) ./parse-
 	./parse-tbt.php $< > $@.tmp
 	mv $@.tmp $@
 
-~/Downloads/RP-Gen-commentary.pp.xml: ~/Downloads/RP-Gen-commentary.xml libxml2-utils.novc.marker
+~/Downloads/RP-Gen-commentary.pp.xml: ~/Downloads/RP-Gen-commentary.xml libxml2-utils.novc.marker php5-intl.novc.marker
 	xmllint --format $< > $@.tmp
 	mv $@.tmp $@
 
@@ -39,4 +39,8 @@ php5-pspell.novc.marker:
 
 libxml2-utils.novc.marker:
 	sudo apt-get install libxml2-utils
+	touch $@
+
+php5-intl.novc.marker:
+	sudo apt-get install php5-intl
 	touch $@

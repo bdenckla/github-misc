@@ -508,7 +508,45 @@ function apply_char_map( $char_map, $s )
 
   $m = implode( array_map_pa( 'acm', $char_map, $saa ) );
 
-  return $m . $maybe_debug_suffix;
+  // $mrm: maybe reversed [version of] $m
+  //
+  $mrm = lubn( 'reverse', $char_map )
+    ? unicode_aware_reverse_string( $m )
+    : $m;
+
+  return $mrm . $maybe_debug_suffix;
+}
+
+function unicode_aware_reverse_string( $string )
+{
+    $length = grapheme_strlen( $string );
+
+    $initial = '';
+    $ret = '';
+    $final = '';
+
+    for ($i = $length-1; $i >= 0; $i--)
+      {
+        $g = grapheme_substr($string, $i, 1);
+
+        if ( $ret === '' && $g === ' ' )
+          {
+            $final = ' ';
+          }
+        elseif ( $i === 0 && $g === ' ' )
+          {
+            $initial = ' ';
+          }
+        else
+          {
+            $ret .= $g;
+          }
+      }
+
+    $irf = $initial . $ret . $final;
+
+    vese([$string,$ret, $irf]);
+    return $irf;
 }
 
 function char_map_debug_string( $char_map, $saa )
@@ -642,6 +680,7 @@ function hebraica_char_map()
 
   return [ 'char map name' => 'Hebrew',
            'apply to printables' => TRUE,
+           'reverse' => TRUE,
            'char map itself' => $raw ];
 }
 
