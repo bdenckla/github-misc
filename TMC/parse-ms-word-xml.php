@@ -1,6 +1,11 @@
 #!/usr/bin/php -q
 <?php
 
+   /* TODO: restore spanspan (e.g. <i>Gleaning</i><i>s,</i> should be
+      <i>Gleanings,</i> */
+
+   /* TODO: get rid of formatting (e.g. italics) of space */
+
 require_once 'generate-html.php';
 require_once 'parse-common.php';
 
@@ -264,15 +269,17 @@ function get_sde_from_tsxml( $sxml )
 
 function my_html_body( $input_filename )
 {
-  $rsxes = get_rsxes_from_file( $input_filename );
+  $r0 = get_rsxes_from_file( $input_filename );
 
-  $r1 = array_map( 'simplify_rsx', $rsxes );
+  $r1 = array_map( 'traverse_flatten_r', $r0 );
 
   $r2 = array_map( 'spanspan', $r1 );
 
   $r3 = array_map( 'htmhtm', $r2 );
 
-  $rfinal = $r3;
+  $r4 = array_map( 'traverse_flatten_p', $r3 );
+
+  $rfinal = $r4;
 
   $tables = get_tables_for_rsxes( $rfinal );
 
@@ -341,31 +348,60 @@ function get_rpr_children_as_attr( $r )
    into being attributes of its enclosing r and get rid of the (now
    empty) rpr.
  */
-function hoist_rpr( $r )
+function flatten_r( $r )
 {
-  if ( $r['name'] === 'tab' )  { return [ 'name' => 't',
-                                          'character data' => '' ]; }
+  if ( $r['name'] === 'tab' )
+    {
+      return [ 'name' => 't',
+               'character data' => '' ];
+    }
 
-  if ( $r['name'] !== 'r' )  { return $r; }
+  if ( $r['name'] === 'r' )
+    {
+      $r['children'] = process_pairwise( 'pairwise_tt', $r['children'] );
 
-  $r['children'] = process_pairwise( 'pairwise_tt', $r['children'] );
+      $c = count( $r['children'] );
 
-  $c = count( $r['children'] );
+      if ( $c === 1 ) { return flatten_r_1( $r ); }
 
-  if ( $c === 1 ) { return hoist_r_1( $r ); }
-
-  if ( $c === 2 ) { return hoist_r_2( $r ); }
+      if ( $c === 2 ) { return flatten_r_2( $r ); }
+    }
 
   return $r;
 }
 
-function hoist_r_1( $r )
+function flatten_p( $r )
+{
+  if ( $r['name'] === 'p' )
+    {
+      if ( $r['attributes'] == [ 'rsidR' => '00000000',
+                                 'rsidRDefault' => '006D4F4E' ] )
+        {
+          $c = count( $r['children'] );
+
+          if ( $c === 1 ) { return flatten_p_1( $r ); }
+        }
+    }
+
+  return $r;
+}
+
+function flatten_p_1( $r )
+{
+  $chi0 = $r['children'][0];
+
+  if ( $chi0['name'] !== 'htm' ) { return $r; }
+
+  return flatten_p_common( $r, $chi0 );
+}
+
+function flatten_r_1( $r )
 {
   $chi0 = $r['children'][0];
 
   if ( $chi0['name'] !== 't' ) { return $r; }
 
-  $r = hoist_common( $r, $chi0 );
+  $r = flatten_r_common( $r, $chi0 );
 
   /* Italics are not possible here, since this is a plain text
      element, but we use the general routine here since it handles
@@ -374,7 +410,7 @@ function hoist_r_1( $r )
   return maybe_italicize( $r );
 }
 
-function hoist_r_2( $r )
+function flatten_r_2( $r )
 {
   $chi = $r['children'];
 
@@ -390,7 +426,7 @@ function hoist_r_2( $r )
 
   $r['attributes'] = get_rpr_children_as_attr( $chi0 );
 
-  $r = hoist_common( $r, $chi1 );
+  $r = flatten_r_common( $r, $chi1 );
 
   $y = apply_hebraica_map_to_span( $r );
 
@@ -435,13 +471,25 @@ function maybe_italicize( $r )
 
 // chin: child n (n=0 or n=1)
 //
-function hoist_common( $r, $chin )
+function flatten_r_common( $r, $chin )
 {
+  $r['name'] = 'span';
+
   $r['character data'] = $chin['character data'];
 
   unset( $r['children'] );
 
-  $r['name'] = 'span';
+  return $r;
+}
+
+function flatten_p_common( $r, $chin )
+{
+  $r['name'] = 'p-htm';
+
+  $r['htm'] = $chin['htm'];
+
+  unset( $r['children'] );
+  unset( $r['attributes'] );
 
   return $r;
 }
@@ -459,9 +507,14 @@ function apply_hebraica_map_to_span( $r )
   return $r;
 }
 
-function simplify_rsx( $r )
+function traverse_flatten_r( $r )
 {
-  return traverse_xxx( 'hoist_rpr', $r );
+  return traverse_xxx( 'flatten_r', $r );
+}
+
+function traverse_flatten_p( $r )
+{
+  return traverse_xxx( 'flatten_p', $r );
 }
 
 function traverse_xxx( $f, $r )
@@ -545,7 +598,6 @@ function unicode_aware_reverse_string( $string )
 
     $irf = $initial . $ret . $final;
 
-    vese([$string,$ret, $irf]);
     return $irf;
 }
 
