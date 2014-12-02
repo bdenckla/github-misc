@@ -1,0 +1,6 @@
+digraph gift_exchange
+{
+        root=Salvatore;
+
+        Salvatore -> Pate -> Emily -> Bryant -> Ben -> Nonie -> Zach -> Sarah -> Salvatore;
+}

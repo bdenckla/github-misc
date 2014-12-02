@@ -1,3 +1,5 @@
 [user]
 	name = Ben Denckla
 	email = bdenckla@alum.mit.edu
+[gui]
+	fontdiff = -family \"Liberation Serif\" -size 18 -weight normal -slant roman -underline 0 -overstrike 0
