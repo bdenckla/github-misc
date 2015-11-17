@@ -1,0 +1,6 @@
+digraph gift_exchange
+{
+        root=Sarah;
+
+        Sarah -> Dan -> Julie -> Ben -> Melissa -> Steve -> Sarah;
+}

@@ -1,0 +1,6 @@
+digraph gift_exchange
+{
+        root=Rose;
+
+        Rose -> Zach -> Eli -> Jack -> Tallie -> Ben -> Rose;
+}

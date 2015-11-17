@@ -4,3 +4,5 @@
 [gui]
 	fontdiff = -family \"DejaVu Sans Mono\" -size 18 -weight normal -slant roman -underline 0 -overstrike 0
 	fontui = -family \"DejaVu Sans Mono\" -size -12 -weight normal -slant roman -underline 0 -overstrike 0
+[push]
+	default = simple
