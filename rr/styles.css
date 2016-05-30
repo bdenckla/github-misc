@@ -1,0 +1,20 @@
+table,
+blockquote,
+div,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6
+{
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+rt
+{
+    font-size: 1rem;
+}
