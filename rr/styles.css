@@ -18,3 +18,15 @@ rt
 {
     font-size: 1rem;
 }
+
+p
+{
+    line-height: 4em;
+    word-spacing: 150%;
+}
+
+ruby
+{
+    ruby-position: under;
+    ruby-align: start;
+}
