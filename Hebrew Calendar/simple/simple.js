@@ -348,7 +348,7 @@ function work_our_way_up()
     var d =
         "Finally,"
         +" we will present the Jewish calendar"
-        +" as a set of complications to the simple calendar.";
+        +" as a set of complications to this simple calendar.";
 
     return se( a, b, c, d );
 }
@@ -375,8 +375,13 @@ function reconcile_cycles()
 
     var c =
         "There are other cycles"
-        +" that correspond to the same underlying facts,"
-        +" e.g. the sidereal year.";
+        +" that correspond to the same underlying facts.";
+
+    var c2 =
+        "For example, like the tropical year,"
+        +" the sidereal year corresponds, rougly,"
+        +" to the underlying fact"
+        +" that they earth orbits the sun.";
 
     var d =
         "But, without getting into details, suffice it to say that"
@@ -385,7 +390,7 @@ function reconcile_cycles()
         +" the tropical year"
         +" are usually the cycles most relevant to life on earth.";
 
-    return se( a, b, c, d );
+    return se( a, b, c2, d );
 }
 
 function c2a1s( a, c )
@@ -857,7 +862,7 @@ function slc_bounds()
         +" "+km_product+" and not after.";
 
     var f =
-        "So if the origin "
+        "So if the origin"
         +" is an autumnal equinox and a full moon,"
         +" and the estimates "+constant_m_symbol
         +" and "+constant_a_symbol
@@ -896,17 +901,19 @@ function phases()
 
 var outstr =
     pa(
-        // work_our_way_up(),
-        // reconcile_cycles(),
-        // lunisolar_goals(),
-        // slc_is_arithmetic(),
-        // constant_values(),
-        // slc_goals(),
-        // what_implement_means(),
-        // slc_details_1(),
-        // slc_details_2(),
-        // slc_bounds(),
-        phases() );
+        work_our_way_up(),
+        reconcile_cycles(),
+        lunisolar_goals(),
+        slc_is_arithmetic(),
+        constant_values(),
+        slc_goals(),
+        what_implement_means(),
+        slc_details_1(),
+        slc_details_2(),
+        slc_bounds(),
+        // phases(),
+        ""
+    );
 
 process.stdout.write( outstr );
 
