@@ -35,3 +35,10 @@ ruby
 {
     background-color: lightblue;
 }
+
+.focused-syl
+{
+    background-color: lightgreen;
+    padding-left: .2em;
+    padding-right: .2em;
+}
