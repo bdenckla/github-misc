@@ -30,3 +30,8 @@ ruby
     ruby-position: under;
     ruby-align: start;
 }
+
+.focused
+{
+    background-color: lightblue;
+}
